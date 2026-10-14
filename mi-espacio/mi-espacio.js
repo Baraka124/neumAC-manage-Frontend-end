@@ -1175,37 +1175,42 @@
           <div v-if="state.quickActions && linked && !isContextWorkspace" class="me-v20-quick-actions">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
           </div>
-          <!-- Secondary workspaces stay adjacent to their toolbar, not below the full activity page. -->
-          <section v-if="state.colleagues.open" class="me-v20-colleagues" aria-label="Directorio de compañeros">
-            <div class="me-v20-colleagues-head">
-              <h3>Directorio del equipo</h3>
-              <button type="button" class="me-v15-profile-close" @click="closeSecondary('directory')" aria-label="Cerrar directorio">✕</button>
-            </div>
-            <input type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Buscar por nombre, departamento o especialidad…" aria-label="Buscar compañeros">
+          <section v-if="isContextWorkspace && workspaceState.workspace==='directory'" id="me-v26b-directory" class="me-v26b-workspace me-v20-colleagues" aria-label="Directorio del equipo">
+            <div class="me-v26b-topline"><span>Mi espacio / Directorio</span><button type="button" @click="returnToOverview">← Volver a Mi espacio</button></div>
+            <h3 class="me-v26b-workspace-title" tabindex="-1">Directorio del equipo</h3>
+            <p>Perfiles profesionales visibles para tu cuenta.</p>
+            <label for="me-v26b-search">Buscar profesionales</label>
+            <input id="me-v26b-search" type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Nombre, departamento o especialidad…">
             <p v-if="state.colleagues.busy" class="mi-espacio-state" role="status">Cargando directorio…</p>
-            <p v-else-if="state.colleagues.error" class="me-form-error" role="alert">{{state.colleagues.error}}</p>
-            <p v-else-if="!filteredColleagues.length && state.colleagues.search" class="me-v8-quiet">No se encontraron resultados para «{{state.colleagues.search}}».</p>
-            <p v-else-if="!state.colleagues.items.length" class="me-v8-quiet">Ningún compañero tiene un perfil público activo.</p>
-            <ul v-else class="me-v20-colleagues-list">
-              <li v-for="c in filteredColleagues" :key="c.id" class="me-v20-colleague-card">
-                <div class="me-v20-colleague-avatar">
-                  <img v-if="c.photo" :src="c.photo" alt="" class="me-v20-colleague-photo">
-                  <span v-else class="me-v20-colleague-initials">{{c.name.split(/\\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}}</span>
-                </div>
-                <div class="me-v20-colleague-info">
-                  <strong>{{c.name}}</strong>
-                  <span v-if="c.title || c.specialization" class="me-v20-colleague-role">{{c.title || c.specialization}}</span>
-                  <span v-if="c.department" class="me-v20-colleague-dept">{{c.department}}</span>
-                </div>
-                <div v-if="c.orcid || c.scholar || c.researchgate" class="me-v20-colleague-links">
-                  <span v-if="c.orcid" class="me-v20-link-chip">ORCID</span>
-                  <span v-if="c.scholar" class="me-v20-link-chip">Scholar</span>
-                  <span v-if="c.researchgate" class="me-v20-link-chip">RG</span>
-                </div>
-              </li>
-            </ul>
+            <p v-else-if="state.colleagues.error" class="me-form-error" role="alert">{{state.colleagues.error}} <button type="button" @click="loadColleagues">Reintentar</button></p>
+            <div v-else class="me-v26b-split">
+              <div class="me-v26b-results">
+                <p class="me-v26b-count">{{filteredColleagues.length}} profesionales</p>
+                <p v-if="!filteredColleagues.length && state.colleagues.search" class="me-v8-quiet">No se encontraron resultados para «{{state.colleagues.search}}».</p>
+                <p v-else-if="!state.colleagues.items.length" class="me-v8-quiet">Ningún compañero tiene un perfil público activo.</p>
+                <ul v-else class="me-v20-colleagues-list">
+                  <li v-for="c in filteredColleagues" :key="c.id" class="me-v20-colleague-card">
+                    <button type="button" class="me-v26b-person" :id="'me-v26b-staff-'+c.id" :aria-pressed="selectedColleague?.id===c.id" @click="selectColleague(c)">
+                      <span class="me-v20-colleague-avatar"><img v-if="c.photo" :src="c.photo" alt="" class="me-v20-colleague-photo"><span v-else class="me-v20-colleague-initials">{{c.name.split(/\\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}}</span></span>
+                      <span class="me-v20-colleague-info"><strong>{{c.name}}</strong><span v-if="c.title || c.specialization" class="me-v20-colleague-role">{{c.title || c.specialization}}</span><span v-if="c.department" class="me-v20-colleague-dept">{{c.department}}</span></span><span aria-hidden="true">→</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              <aside class="me-v26b-detail me-v26b-staff-detail" aria-label="Vista previa profesional">
+                <template v-if="selectedColleague">
+                  <button type="button" @click="backContextDetail">← Volver a resultados</button>
+                  <h4 tabindex="-1">{{selectedColleague.name}}</h4>
+                  <p v-if="selectedColleague.title || selectedColleague.specialization">{{selectedColleague.title || selectedColleague.specialization}}</p>
+                  <p v-if="selectedColleague.department">{{selectedColleague.department}}</p>
+                  <p v-if="selectedColleague.bio">{{selectedColleague.bio}}</p>
+                  <dl v-if="selectedColleague.orcid"><dt>ORCID</dt><dd>{{selectedColleague.orcid}}</dd></dl>
+                  <p class="me-v26b-note">Datos autorizados del directorio. No se permite editar otro perfil desde aquí.</p>
+                </template>
+                <p v-else class="me-v8-quiet">Selecciona un profesional para consultar su perfil público autorizado.</p>
+              </aside>
+            </div>
           </section>
-
           <!-- Phase 21: Notification center -->
           <section v-if="state.notifications.open" class="me-v21-notifications" aria-label="Notificaciones">
             <div class="me-v21-notif-head">
@@ -1227,37 +1232,37 @@
             </ul>
           </section>
 
-          <!-- Phase 21: Availability calendar -->
-          <section v-if="state.calendar.open" class="me-v21-calendar" aria-label="Calendario de disponibilidad">
-            <div class="me-v21-cal-head">
-              <h3>Calendario</h3>
-              <button type="button" class="me-v15-profile-close" @click="closeSecondary('calendar')" aria-label="Cerrar">✕</button>
-            </div>
-            <div class="me-v21-cal-nav">
-              <button type="button" @click="calendarPrev" aria-label="Mes anterior">◀</button>
-              <span class="me-v21-cal-month">{{calendarMonthLabel}}</span>
-              <button type="button" @click="calendarNext" aria-label="Mes siguiente">▶</button>
-            </div>
+          <section v-if="isContextWorkspace && workspaceState.workspace==='calendar'" id="me-v26b-calendar" class="me-v26b-workspace me-v21-calendar" aria-label="Calendario personal">
+            <div class="me-v26b-topline"><span>Mi espacio / Calendario</span><button type="button" @click="returnToOverview">← Volver a Mi espacio</button></div>
+            <h3 class="me-v26b-workspace-title" tabindex="-1">Calendario</h3>
+            <p>Eventos vinculados a tu perfil según los registros disponibles.</p>
+            <div class="me-v21-cal-nav"><button type="button" @click="calendarPrev" aria-label="Mes anterior">←</button><span class="me-v21-cal-month">{{calendarMonthLabel}}</span><button type="button" @click="calendarNext" aria-label="Mes siguiente">→</button></div>
             <p v-if="state.calendar.busy" class="mi-espacio-state" role="status">Cargando calendario…</p>
-            <p v-else-if="state.calendar.error" class="me-form-error" role="alert">{{state.calendar.error}}</p>
-            <template v-else>
-              <div class="me-v21-cal-weekdays"><span v-for="d in ['L','M','X','J','V','S','D']" :key="d">{{d}}</span></div>
-              <div class="me-v21-cal-grid">
-                <div v-for="(cell,i) in calendarDays" :key="i" class="me-v21-cal-cell" :class="{'me-v21-cal-empty':!cell.day,'me-v21-cal-today':cell.date===localToday}">
-                  <span v-if="cell.day" class="me-v21-cal-day">{{cell.day}}</span>
-                  <div v-if="cell.events.length" class="me-v21-cal-dots">
-                    <span v-for="ev in cell.events.slice(0,3)" :key="ev.id" class="me-v21-cal-dot" :style="{background:ev.color||'#158a89'}" :title="ev.title"></span>
+            <p v-else-if="state.calendar.error" class="me-form-error" role="alert">{{state.calendar.error}} <button type="button" @click="openCalendar(state.calendar.month)">Reintentar</button></p>
+            <div v-else class="me-v26b-split">
+              <div class="me-v26b-month">
+                <div class="me-v21-cal-weekdays"><span v-for="d in ['L','M','X','J','V','S','D']" :key="d">{{d}}</span></div>
+                <div class="me-v21-cal-grid">
+                  <div v-for="(cell,i) in calendarDays" :key="i" class="me-v21-cal-cell" :class="{'me-v21-cal-empty':!cell.day,'me-v21-cal-today':cell.date===localToday}">
+                    <button v-if="cell.day" type="button" class="me-v26b-day" :id="'me-v26b-day-'+cell.date" :aria-label="cell.date+' · '+cell.events.length+' eventos registrados'" :aria-pressed="selectedDate===cell.date" @click="selectCalendarDate(cell.date)">
+                      <span class="me-v21-cal-day">{{cell.day}}</span><span v-if="cell.events.length" class="me-v26b-count">{{cell.events.length}} eventos</span>
+                      <span v-if="cell.events.length" class="me-v21-cal-dots" aria-hidden="true"><span v-for="ev in cell.events.slice(0,3)" :key="ev.id" class="me-v21-cal-dot" :style="{background:ev.color||'#158a89'}"></span></span>
+                    </button>
                   </div>
                 </div>
+                <p class="me-v26b-note">Un día sin eventos registrados no confirma disponibilidad.</p>
               </div>
-              <div class="me-v21-cal-legend">
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#158a89"></span> Guardia</span>
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#e8913a"></span> Ausencia</span>
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#6366f1"></span> Formación</span>
-              </div>
-            </template>
+              <aside class="me-v26b-detail" aria-label="Agenda del día">
+                <template v-if="selectedDate">
+                  <button type="button" @click="backContextDetail">← Volver al mes</button><h4>{{fmtDate(selectedDate)}}</h4>
+                  <p>{{selectedDayEvents.length}} eventos registrados</p>
+                  <ul v-if="selectedDayEvents.length"><li v-for="(ev,i) in selectedDayEvents" :key="ev.id||i"><strong>{{ev.title}}</strong><span v-if="ev.type"> · {{ev.type}}</span><span v-if="ev.status"> · Estado: {{ev.status}}</span></li></ul>
+                  <p v-else class="me-v8-quiet">No hay eventos registrados para esta fecha. Esto no confirma disponibilidad.</p>
+                </template>
+                <p v-else class="me-v8-quiet">Selecciona un día para consultar los eventos registrados.</p>
+              </aside>
+            </div>
           </section>
-
           <!-- Phase 21: Activity digest -->
           <section v-if="state.digest.open" class="me-v21-digest" aria-label="Resumen de actividad">
             <div class="me-v21-digest-head">
