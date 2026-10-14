@@ -7,9 +7,9 @@ test('profile unfolds inside identity with semantic chevron, not detached footer
  assert.match(src,/me-v28-inline-profile/);
  assert.doesNotMatch(src,/class="me-v22-identity-footer"/);
 });
-test('profile save and protected discard preserved; personal overview stays mounted',()=>{
+test('profile save and protected discard preserved; overview hidden while profile active',()=>{
  for(const s of ['profileDirty.value','validateProfileDraft','discardProfile','profileConfirm','loadProfile','profileBaseline'])assert.ok(src.includes(s),s);
- assert.match(src,/<template v-if="linked && !isContextWorkspace">/);
+ assert.match(src,/<template v-if="linked && !isContextWorkspace && !profileActive">/);
  assert.match(css,/grid-template-columns:auto minmax\(0,1fr\) auto/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
