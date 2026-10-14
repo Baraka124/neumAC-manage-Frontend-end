@@ -150,10 +150,12 @@ for(const [name,scenario] of Object.entries(cases)){
    }
    if(name==='head'){
     await expect(page.locator('.me-v8-research-groups li')).toHaveCount(5);
-    await page.getByRole('button',{name:/Ver toda mi investigación/}).click();
+    await page.getByRole('button',{name:/Estudios 4/}).click();
+    await expect(page.locator('.me-v8-research-groups li')).toHaveCount(7);
+    await page.getByRole('button',{name:/Proyectos 3/}).click();
     await expect(page.locator('.me-v8-research-groups li')).toHaveCount(8);
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(3);
-    await page.getByRole('button',{name:/Ver todas mis publicaciones/}).click();
+    await page.getByRole('button',{name:/Mostrar todas las publicaciones/}).click();
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(4);
    }
    if(a.publications.items.length>0)await expect(page.getByText('No hay publicaciones vinculadas a tu perfil.')).toHaveCount(0);
