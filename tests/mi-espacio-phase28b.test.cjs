@@ -1,0 +1,15 @@
+'use strict';const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+const src=fs.readFileSync('mi-espacio/mi-espacio.js','utf8');
+test('research disclosure categories have independent presentation state',()=>{
+ for(const k of ['lines','studies','projects']){
+  assert.ok(src.includes('state.researchOpen.'+k+'=!state.researchOpen.'+k));
+  assert.ok(src.includes('aria-controls="me-v28-'+k+'"'));
+ }
+ assert.ok(src.includes('state.publicationsExpanded=!state.publicationsExpanded'));
+ assert.ok(src.includes('aria-controls="me-v28-publications"'));
+});
+test('existing authorized data arrays are reused without changing the normalizer',()=>{
+ for(const k of ['lines','studies','projects'])assert.ok(src.includes('state.activity.research.'+k+'.slice('));
+ assert.ok(src.includes('state.activity.publications.items.slice('));
+ assert.ok(src.includes("state.researchOpen={lines:false,studies:false,projects:false}"));
+});
