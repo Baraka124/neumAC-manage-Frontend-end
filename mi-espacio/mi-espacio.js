@@ -138,7 +138,8 @@
           (['head_of_department','department_head'].includes(state.context?.account?.role) || leadershipRoles.value.length>=2));
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
-          workspaceNav?.reset();
+          if(workspaceNav) workspaceState.value=workspaceNav.reset();
+          ++calendarRequest; ++directoryRequest;
           ++seq;
           if(controller)controller.abort();
           controller=null;
@@ -163,8 +164,16 @@
         const profilePhotoUrl=Vue.computed(()=>state.profile.data?.publicPhotoUrl || '');
         // Exactly one secondary workspace at a time; core activity stays authoritative.
         const workspaceNav=root.NeumMiEspacioWorkspace?.create?.() || null;
+        const workspaceState=Vue.ref(workspaceNav?.get() || {view:'overview',workspace:null,detail:null,origin:null});
+        let calendarRequest=0,directoryRequest=0;
+        function navigateWorkspace(e){const next=workspaceNav?.dispatch(e);if(next)workspaceState.value=next;return next;}
+        const isContextWorkspace=Vue.computed(()=>workspaceState.value.view==='workspace' && ['calendar','directory'].includes(workspaceState.value.workspace));
+        const selectedDate=Vue.computed(()=>workspaceState.value.workspace==='calendar'&&workspaceState.value.detail?.type==='date'?workspaceState.value.detail.id:'');
+        const selectedDayEvents=Vue.computed(()=>state.calendar.events.filter(e=>selectedDate.value&&e.date===selectedDate.value));
+        const selectedColleague=Vue.computed(()=>workspaceState.value.workspace==='directory'&&workspaceState.value.detail?.type==='staff' ?
+          state.colleagues.items.find(c=>c.id===workspaceState.value.detail.id)||null:null);
         function closeSecondary(which){
-          if(workspaceNav?.get().workspace===which)workspaceNav.dispatch({type:'CLOSE'});
+          if(workspaceState.value.workspace===which)navigateWorkspace({type:'CLOSE'});
           if(which==='profile')state.profile.open=false;
           else if(which==='directory')state.colleagues.open=false;
           else if(which==='calendar')state.calendar.open=false;
@@ -172,20 +181,55 @@
           else if(which==='notifications')state.notifications.open=false;
         }
         function activateSecondary(which){
-          const before=workspaceNav?.get();
-          const next=workspaceNav?.dispatch({type:'OPEN_WORKSPACE',workspace:which});
-          if(before?.dirty&&next===before)return false;
+          const before=workspaceState.value, contextual=['calendar','directory'].includes(which);
+          const fallback=which==='calendar'?'me-v26b-calendar-trigger':'me-v26b-directory-trigger';
+          const origin=contextual&&before.view==='overview' ? {
+            focusId:document.activeElement?.id || fallback,scrollY:window.scrollY
+          }:undefined;
+          const next=navigateWorkspace({type:'OPEN_WORKSPACE',workspace:which,origin});
+          if(before.dirty&&next===before)return false;
           if(which!=='profile')state.profile.open=false;
           if(which!=='directory')state.colleagues.open=false;
           if(which!=='calendar')state.calendar.open=false;
           if(which!=='digest')state.digest.open=false;
           if(which!=='notifications')state.notifications.open=false;
           Vue.nextTick(()=>{
-            const selector={profile:'.me-v15-profile-panel',directory:'.me-v20-colleagues',calendar:'.me-v21-calendar',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
-            const element=selector && document.querySelector('.mi-espacio '+selector);
-            if(element)element.scrollIntoView({behavior:'auto',block:'start'});
+            const selector=contextual?'.me-v26b-workspace-title':
+              {profile:'.me-v15-profile-panel',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
+            const el=selector&&document.querySelector('.mi-espacio '+selector);
+            if(el){el.scrollIntoView({behavior:'auto',block:'start'});if(contextual)el.focus({preventScroll:true});}
           });
           return true;
+        }
+        function returnToOverview(){
+          const origin=workspaceState.value.origin,which=workspaceState.value.workspace;
+          if(workspaceState.value.detail)navigateWorkspace({type:'BACK'});
+          navigateWorkspace({type:'BACK'});
+          if(which==='calendar')state.calendar.open=false;
+          if(which==='directory')state.colleagues.open=false;
+          Vue.nextTick(()=>{
+            const fallback=which==='calendar'?'me-v26b-calendar-trigger':'me-v26b-directory-trigger';
+            const control=document.getElementById(origin?.focusId||'')||document.getElementById(fallback);
+            if(Number.isFinite(origin?.scrollY))window.scrollTo({top:origin.scrollY,behavior:'auto'});
+            control?.focus({preventScroll:true});
+          });
+        }
+        function backContextDetail(){
+          const detail=workspaceState.value.detail;if(!detail)return;
+          navigateWorkspace({type:'BACK'});
+          Vue.nextTick(()=>{
+            const id=(detail.type==='date'?'me-v26b-day-':'me-v26b-staff-')+detail.id;
+            (document.getElementById(id)||document.querySelector('.me-v26b-workspace-title'))?.focus({preventScroll:true});
+          });
+        }
+        function selectCalendarDate(date){
+          if(state.calendar.busy||!calendarDays.value.some(c=>c.day&&c.date===date))return;
+          navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'date',id:date}});
+        }
+        function selectColleague(person){
+          if(!person?.id||!state.colleagues.items.some(c=>c.id===person.id))return;
+          navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'staff',id:person.id}});
+          Vue.nextTick(()=>document.querySelector('.me-v26b-staff-detail h4')?.focus({preventScroll:true}));
         }
         function toggleNotifications(){
           if(state.notifications.open){closeSecondary('notifications');return;}
@@ -355,17 +399,20 @@
         // ── Phase 20: colleague directory ──
         async function loadColleagues(){
           if(!activateSecondary('directory'))return;
-          if(state.colleagues.items.length) { state.colleagues.open=true; return; }
+          if(state.colleagues.items.length){state.colleagues.open=true;return;}
           state.colleagues.open=true;state.colleagues.busy=true;state.colleagues.error='';
-          const requestSeq=seq, identity=String(props.user?.id||'');
-          try {
+          const ticket=++directoryRequest,requestSeq=seq,identity=String(props.user?.id||'');
+          const current=()=>ticket===directoryRequest&&requestSeq===seq&&props.active&&linked.value&&
+            String(props.user?.id||'')===identity&&workspaceState.value.workspace==='directory';
+          try{
             const items=await root.NeumMiEspacioData.loadColleagues((p,o)=>API.request(p,o),controller&&controller.signal);
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(!current())return;
             state.colleagues.items=items;
-          } catch(err){
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
-            if(err?.name!=='AbortError') state.colleagues.error=err?.message||'No se ha podido cargar el directorio.';
-          } finally { if(requestSeq===seq) state.colleagues.busy=false; }
+            if(workspaceState.value.detail?.type==='staff' &&
+              !items.some(c=>c.id===workspaceState.value.detail.id))navigateWorkspace({type:'BACK'});
+          }catch(err){
+            if(current()&&err?.name!=='AbortError')state.colleagues.error=err?.message||'No se ha podido cargar el directorio.';
+          }finally{if(ticket===directoryRequest&&requestSeq===seq)state.colleagues.busy=false;}
         }
         const filteredColleagues=Vue.computed(()=>{
           const q=state.colleagues.search.toLowerCase().trim();
@@ -438,13 +485,19 @@
         async function openCalendar(month){
           if(!state.calendar.open&&!activateSecondary('calendar'))return;
           const m=month||state.calendar.month||currentMonth();
-          state.calendar.open=true;state.calendar.busy=true;state.calendar.error='';state.calendar.month=m;
-          try {
+          if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(m))return;
+          if(selectedDate.value)navigateWorkspace({type:'BACK'});
+          state.calendar.open=true;state.calendar.busy=true;state.calendar.error='';
+          state.calendar.events=[];state.calendar.month=m;
+          const ticket=++calendarRequest,requestSeq=seq,identity=String(props.user?.id||'');
+          const current=()=>ticket===calendarRequest&&requestSeq===seq&&props.active&&linked.value&&
+            String(props.user?.id||'')===identity&&workspaceState.value.workspace==='calendar'&&state.calendar.month===m;
+          try{
             const result=await root.NeumMiEspacioData.loadCalendar((p,o)=>API.request(p,o),controller&&controller.signal,m);
-            state.calendar.events=result.events;
-          } catch(err){
-            if(err?.name!=='AbortError') state.calendar.error=err?.message||'Error cargando calendario.';
-          } finally { state.calendar.busy=false; }
+            if(current())state.calendar.events=result.events;
+          }catch(err){
+            if(current()&&err?.name!=='AbortError')state.calendar.error=err?.message||'Error cargando calendario.';
+          }finally{if(ticket===calendarRequest&&requestSeq===seq)state.calendar.busy=false;}
         }
         function calendarPrev(){ const [y,m]=state.calendar.month.split('-').map(Number); const pm=m===1?12:m-1; const py=m===1?y-1:y; openCalendar(py+'-'+String(pm).padStart(2,'0')); }
         function calendarNext(){ const [y,m]=state.calendar.month.split('-').map(Number); const nm=m===12?1:m+1; const ny=m===12?y+1:y; openCalendar(ny+'-'+String(nm).padStart(2,'0')); }
@@ -896,6 +949,9 @@
           // Only nested personal disclosures; keep global shell shortcuts untouched.
           const target=event.target;
           if(!target || typeof target.closest!=='function')return;
+          if(isContextWorkspace.value&&workspaceState.value.detail&&target.closest('.me-v26b-workspace')){
+            backContextDetail();event.stopPropagation();return;
+          }
           if(target.closest('.me-duty-list') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
           else if(target.closest('.me-publication-layout') && selectedPublication.value){closePublication();event.stopPropagation();}
           else if(target.closest('.me-portfolio:not(.me-publications)') && selectedResearch.value){closeResearch();event.stopPropagation();}
@@ -910,6 +966,8 @@
           TIMELINE_FILTERS,filteredTimeline,
           quickActionItems,doQuickAction,
           loadColleagues,filteredColleagues,toggleNotifications,closeSecondary,
+          workspaceState,isContextWorkspace,selectedDate,selectedDayEvents,selectedColleague,
+          selectCalendarDate,selectColleague,backContextDetail,returnToOverview,
           notificationBadge,upcomingEvents,showPhotoNudge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,localToday,
           openDigest,digestResourceLabel,exportCV,exportDossier,
           urgentCertificates,certUrgencyLabel,fmtRelative,
@@ -1102,7 +1160,7 @@
               </div>
             </template>
           </section>
-          <div v-if="linked && upcomingEvents.length && !state.profile.open" class="me-v23-upcoming" aria-label="Próximos 7 días">
+          <div v-if="linked && upcomingEvents.length && !state.profile.open && !isContextWorkspace" class="me-v23-upcoming" aria-label="Próximos 7 días">
             <div v-for="(ev,i) in upcomingEvents" :key="i" class="me-v23-event" :data-urgency="ev.urgency">
               <span class="me-v23-event-icon">{{ev.icon}}</span>
               <div class="me-v23-event-text"><span class="me-v23-event-title">{{ev.title}}</span><span class="me-v23-event-date">{{fmtDate(ev.date)}}</span></div>
@@ -1111,44 +1169,49 @@
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
             <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
             <button type="button" class="me-v21-notif-btn" @click="toggleNotifications" :aria-expanded="state.notifications.open" aria-label="Notificaciones">🔔<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
-            <button type="button" class="me-v20-directory-btn" @click="loadColleagues">Directorio</button>
-            <button type="button" class="me-v21-cal-btn" @click="openCalendar()">📅</button>
+            <button id="me-v26b-directory-trigger" type="button" class="me-v20-directory-btn" @click="loadColleagues" :aria-expanded="isContextWorkspace && workspaceState.workspace==='directory'" aria-controls="me-v26b-directory">Directorio</button>
+            <button id="me-v26b-calendar-trigger" type="button" class="me-v21-cal-btn" @click="openCalendar()" :aria-expanded="isContextWorkspace && workspaceState.workspace==='calendar'" aria-controls="me-v26b-calendar" aria-label="Abrir calendario">📅</button>
             <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">📄 {{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
           </div>
-          <div v-if="state.quickActions && linked" class="me-v20-quick-actions">
+          <div v-if="state.quickActions && linked && !isContextWorkspace" class="me-v20-quick-actions">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
           </div>
-          <!-- Secondary workspaces stay adjacent to their toolbar, not below the full activity page. -->
-          <section v-if="state.colleagues.open" class="me-v20-colleagues" aria-label="Directorio de compañeros">
-            <div class="me-v20-colleagues-head">
-              <h3>Directorio del equipo</h3>
-              <button type="button" class="me-v15-profile-close" @click="closeSecondary('directory')" aria-label="Cerrar directorio">✕</button>
-            </div>
-            <input type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Buscar por nombre, departamento o especialidad…" aria-label="Buscar compañeros">
+          <section v-if="isContextWorkspace && workspaceState.workspace==='directory'" id="me-v26b-directory" class="me-v26b-workspace me-v20-colleagues" aria-label="Directorio del equipo">
+            <div class="me-v26b-topline"><span>Mi espacio / Directorio</span><button type="button" @click="returnToOverview">← Volver a Mi espacio</button></div>
+            <h3 class="me-v26b-workspace-title" tabindex="-1">Directorio del equipo</h3>
+            <p>Perfiles profesionales visibles para tu cuenta.</p>
+            <label for="me-v26b-search">Buscar profesionales</label>
+            <input id="me-v26b-search" type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Nombre, departamento o especialidad…">
             <p v-if="state.colleagues.busy" class="mi-espacio-state" role="status">Cargando directorio…</p>
-            <p v-else-if="state.colleagues.error" class="me-form-error" role="alert">{{state.colleagues.error}}</p>
-            <p v-else-if="!filteredColleagues.length && state.colleagues.search" class="me-v8-quiet">No se encontraron resultados para «{{state.colleagues.search}}».</p>
-            <p v-else-if="!state.colleagues.items.length" class="me-v8-quiet">Ningún compañero tiene un perfil público activo.</p>
-            <ul v-else class="me-v20-colleagues-list">
-              <li v-for="c in filteredColleagues" :key="c.id" class="me-v20-colleague-card">
-                <div class="me-v20-colleague-avatar">
-                  <img v-if="c.photo" :src="c.photo" alt="" class="me-v20-colleague-photo">
-                  <span v-else class="me-v20-colleague-initials">{{c.name.split(/\\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}}</span>
-                </div>
-                <div class="me-v20-colleague-info">
-                  <strong>{{c.name}}</strong>
-                  <span v-if="c.title || c.specialization" class="me-v20-colleague-role">{{c.title || c.specialization}}</span>
-                  <span v-if="c.department" class="me-v20-colleague-dept">{{c.department}}</span>
-                </div>
-                <div v-if="c.orcid || c.scholar || c.researchgate" class="me-v20-colleague-links">
-                  <span v-if="c.orcid" class="me-v20-link-chip">ORCID</span>
-                  <span v-if="c.scholar" class="me-v20-link-chip">Scholar</span>
-                  <span v-if="c.researchgate" class="me-v20-link-chip">RG</span>
-                </div>
-              </li>
-            </ul>
+            <p v-else-if="state.colleagues.error" class="me-form-error" role="alert">{{state.colleagues.error}} <button type="button" @click="loadColleagues">Reintentar</button></p>
+            <div v-else class="me-v26b-split">
+              <div class="me-v26b-results">
+                <p class="me-v26b-count">{{filteredColleagues.length}} profesionales</p>
+                <p v-if="!filteredColleagues.length && state.colleagues.search" class="me-v8-quiet">No se encontraron resultados para «{{state.colleagues.search}}».</p>
+                <p v-else-if="!state.colleagues.items.length" class="me-v8-quiet">Ningún compañero tiene un perfil público activo.</p>
+                <ul v-else class="me-v20-colleagues-list">
+                  <li v-for="c in filteredColleagues" :key="c.id" class="me-v20-colleague-card">
+                    <button type="button" class="me-v26b-person" :id="'me-v26b-staff-'+c.id" :aria-pressed="selectedColleague?.id===c.id" @click="selectColleague(c)">
+                      <span class="me-v20-colleague-avatar"><img v-if="c.photo" :src="c.photo" alt="" class="me-v20-colleague-photo"><span v-else class="me-v20-colleague-initials">{{c.name.split(/\\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}}</span></span>
+                      <span class="me-v20-colleague-info"><strong>{{c.name}}</strong><span v-if="c.title || c.specialization" class="me-v20-colleague-role">{{c.title || c.specialization}}</span><span v-if="c.department" class="me-v20-colleague-dept">{{c.department}}</span></span><span aria-hidden="true">→</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              <aside class="me-v26b-detail me-v26b-staff-detail" aria-label="Vista previa profesional">
+                <template v-if="selectedColleague">
+                  <button type="button" @click="backContextDetail">← Volver a resultados</button>
+                  <h4 tabindex="-1">{{selectedColleague.name}}</h4>
+                  <p v-if="selectedColleague.title || selectedColleague.specialization">{{selectedColleague.title || selectedColleague.specialization}}</p>
+                  <p v-if="selectedColleague.department">{{selectedColleague.department}}</p>
+                  <p v-if="selectedColleague.bio">{{selectedColleague.bio}}</p>
+                  <dl v-if="selectedColleague.orcid"><dt>ORCID</dt><dd>{{selectedColleague.orcid}}</dd></dl>
+                  <p class="me-v26b-note">Datos autorizados del directorio. No se permite editar otro perfil desde aquí.</p>
+                </template>
+                <p v-else class="me-v8-quiet">Selecciona un profesional para consultar su perfil público autorizado.</p>
+              </aside>
+            </div>
           </section>
-
           <!-- Phase 21: Notification center -->
           <section v-if="state.notifications.open" class="me-v21-notifications" aria-label="Notificaciones">
             <div class="me-v21-notif-head">
@@ -1170,37 +1233,37 @@
             </ul>
           </section>
 
-          <!-- Phase 21: Availability calendar -->
-          <section v-if="state.calendar.open" class="me-v21-calendar" aria-label="Calendario de disponibilidad">
-            <div class="me-v21-cal-head">
-              <h3>Calendario</h3>
-              <button type="button" class="me-v15-profile-close" @click="closeSecondary('calendar')" aria-label="Cerrar">✕</button>
-            </div>
-            <div class="me-v21-cal-nav">
-              <button type="button" @click="calendarPrev" aria-label="Mes anterior">◀</button>
-              <span class="me-v21-cal-month">{{calendarMonthLabel}}</span>
-              <button type="button" @click="calendarNext" aria-label="Mes siguiente">▶</button>
-            </div>
+          <section v-if="isContextWorkspace && workspaceState.workspace==='calendar'" id="me-v26b-calendar" class="me-v26b-workspace me-v21-calendar" aria-label="Calendario personal">
+            <div class="me-v26b-topline"><span>Mi espacio / Calendario</span><button type="button" @click="returnToOverview">← Volver a Mi espacio</button></div>
+            <h3 class="me-v26b-workspace-title" tabindex="-1">Calendario</h3>
+            <p>Eventos vinculados a tu perfil según los registros disponibles.</p>
+            <div class="me-v21-cal-nav"><button type="button" @click="calendarPrev" aria-label="Mes anterior">←</button><span class="me-v21-cal-month">{{calendarMonthLabel}}</span><button type="button" @click="calendarNext" aria-label="Mes siguiente">→</button></div>
             <p v-if="state.calendar.busy" class="mi-espacio-state" role="status">Cargando calendario…</p>
-            <p v-else-if="state.calendar.error" class="me-form-error" role="alert">{{state.calendar.error}}</p>
-            <template v-else>
-              <div class="me-v21-cal-weekdays"><span v-for="d in ['L','M','X','J','V','S','D']" :key="d">{{d}}</span></div>
-              <div class="me-v21-cal-grid">
-                <div v-for="(cell,i) in calendarDays" :key="i" class="me-v21-cal-cell" :class="{'me-v21-cal-empty':!cell.day,'me-v21-cal-today':cell.date===localToday}">
-                  <span v-if="cell.day" class="me-v21-cal-day">{{cell.day}}</span>
-                  <div v-if="cell.events.length" class="me-v21-cal-dots">
-                    <span v-for="ev in cell.events.slice(0,3)" :key="ev.id" class="me-v21-cal-dot" :style="{background:ev.color||'#158a89'}" :title="ev.title"></span>
+            <p v-else-if="state.calendar.error" class="me-form-error" role="alert">{{state.calendar.error}} <button type="button" @click="openCalendar(state.calendar.month)">Reintentar</button></p>
+            <div v-else class="me-v26b-split">
+              <div class="me-v26b-month">
+                <div class="me-v21-cal-weekdays"><span v-for="d in ['L','M','X','J','V','S','D']" :key="d">{{d}}</span></div>
+                <div class="me-v21-cal-grid">
+                  <div v-for="(cell,i) in calendarDays" :key="i" class="me-v21-cal-cell" :class="{'me-v21-cal-empty':!cell.day,'me-v21-cal-today':cell.date===localToday}">
+                    <button v-if="cell.day" type="button" class="me-v26b-day" :id="'me-v26b-day-'+cell.date" :aria-label="cell.date+' · '+cell.events.length+' eventos registrados'" :aria-pressed="selectedDate===cell.date" @click="selectCalendarDate(cell.date)">
+                      <span class="me-v21-cal-day">{{cell.day}}</span><span v-if="cell.events.length" class="me-v26b-count">{{cell.events.length}} eventos</span>
+                      <span v-if="cell.events.length" class="me-v21-cal-dots" aria-hidden="true"><span v-for="ev in cell.events.slice(0,3)" :key="ev.id" class="me-v21-cal-dot" :style="{background:ev.color||'#158a89'}"></span></span>
+                    </button>
                   </div>
                 </div>
+                <p class="me-v26b-note">Un día sin eventos registrados no confirma disponibilidad.</p>
               </div>
-              <div class="me-v21-cal-legend">
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#158a89"></span> Guardia</span>
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#e8913a"></span> Ausencia</span>
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#6366f1"></span> Formación</span>
-              </div>
-            </template>
+              <aside class="me-v26b-detail" aria-label="Agenda del día">
+                <template v-if="selectedDate">
+                  <button type="button" @click="backContextDetail">← Volver al mes</button><h4>{{fmtDate(selectedDate)}}</h4>
+                  <p>{{selectedDayEvents.length}} eventos registrados</p>
+                  <ul v-if="selectedDayEvents.length"><li v-for="(ev,i) in selectedDayEvents" :key="ev.id||i"><strong>{{ev.title}}</strong><span v-if="ev.type"> · {{ev.type}}</span><span v-if="ev.status"> · Estado: {{ev.status}}</span></li></ul>
+                  <p v-else class="me-v8-quiet">No hay eventos registrados para esta fecha. Esto no confirma disponibilidad.</p>
+                </template>
+                <p v-else class="me-v8-quiet">Selecciona un día para consultar los eventos registrados.</p>
+              </aside>
+            </div>
           </section>
-
           <!-- Phase 21: Activity digest -->
           <section v-if="state.digest.open" class="me-v21-digest" aria-label="Resumen de actividad">
             <div class="me-v21-digest-head">
@@ -1236,7 +1299,7 @@
           </section>
 
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
-          <template v-if="linked">
+          <template v-if="linked && !isContextWorkspace">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
               <span class="me-v10d-loading-label">Cargando actividad vinculada…</span>
               <div class="me-v10d-loading-grid" aria-hidden="true"><div class="me-v10d-loading-block"></div><div class="me-v10d-loading-block"></div></div>
