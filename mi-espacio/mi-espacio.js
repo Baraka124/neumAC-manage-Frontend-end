@@ -1132,21 +1132,7 @@
             <p v-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
             <div v-if="profileConfirm" class="me-v26c-confirm" role="group" aria-labelledby="me-v26c-discard-title"><h4 id="me-v26c-discard-title" class="me-v26c-discard-title" tabindex="-1">Cambios sin guardar</h4><p>Si sales ahora, perderás los cambios del formulario.</p><button type="button" @click="cancelDiscard">Seguir editando</button><button type="button" @click="discardProfile">Descartar y salir</button></div>
             <template v-else-if="state.profile.data && state.profile.edit">
-              <div class="me-v15-photo-section me-v19-photo-section">
-                <div class="me-v15-photo-preview me-v19-photo-preview">
-                  <img v-if="state.profile.data.publicPhotoUrl" :src="state.profile.data.publicPhotoUrl" alt="Foto de perfil" class="me-v15-photo-img">
-                  <span v-else class="me-v15-photo-placeholder me-v19-photo-placeholder">{{initials}}</span>
-                </div>
-                <div class="me-v15-photo-actions">
-                  <strong class="me-v19-photo-name">{{state.profile.data.fullName}}</strong>
-                  <span v-if="state.profile.data.title" class="me-v19-photo-title">{{state.profile.data.title}}</span>
-                  <label class="me-v15-photo-upload-label" :class="{disabled:state.profile.photoUploading}">
-                    {{state.profile.photoUploading?'Subiendo…':'Cambiar foto'}}
-                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="me-v15-photo-input" @change="onPhotoSelect" :disabled="state.profile.photoUploading">
-                  </label>
-                  <small>JPEG, PNG, WEBP o GIF. Máx. 8 MB.</small>
-                </div>
-              </div>
+
               <section v-if="scientificParticipation.total" class="me-v15-readonly-section me-v35-participation" aria-labelledby="me-v35-participation-title">
                 <div class="me-v35-heading"><h4 id="me-v35-participation-title">Actividad científica y clínica</h4><p>Participación vinculada a los registros autorizados del departamento.</p></div>
                 <ul v-if="scientificParticipation.current.length" class="me-v35-records">
@@ -1222,6 +1208,16 @@
               </div>
               <form id="me-v34-profile-edit" class="me-v15-edit-section" @submit.prevent="saveProfile" :aria-busy="state.profile.saving">
                 <h4 class="me-v34-edit-heading" tabindex="-1">Datos editables</h4>
+                <div class="me-v15-photo-section me-v38-photo-tools" aria-label="Fotografía del perfil">
+                  <div class="me-v15-photo-actions">
+                    <span class="me-v38-photo-label">Fotografía profesional</span>
+                    <label class="me-v15-photo-upload-label" :class="{disabled:state.profile.photoUploading}">
+                      {{state.profile.photoUploading?'Subiendo…':'Cambiar imagen'}}
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="me-v15-photo-input" @change="onPhotoSelect" :disabled="state.profile.photoUploading">
+                    </label>
+                    <small>Se actualiza al seleccionarla · JPEG, PNG, WEBP o GIF · Máx. 8 MB.</small>
+                  </div>
+                </div>
                 <p class="me-v26c-edit-hint">Solo los campos de esta sección pueden modificarse desde Mi Espacio. El correo profesional es administrativo.</p>
                 <div class="me-field me-field-readonly"><label>Correo profesional</label><span class="me-readonly-value">{{state.profile.data?.professionalEmail || '—'}}</span><small class="me-readonly-hint">Solo modificable por administración</small></div>
                 <div class="me-field"><label for="me-profile-phone">Teléfono móvil</label><input id="me-profile-phone" type="tel" v-model="state.profile.edit.mobile_phone" maxlength="40"></div>
@@ -1258,13 +1254,11 @@
                   <label class="me-v19-toggle"><input type="checkbox" :checked="state.profile.data.notificationPrefs.announcementNotifications" @change="toggleNotifPref('announcementNotifications')"><span class="me-v19-toggle-label">Comunicaciones y anuncios</span></label>
                 </div>
               </div>
-              <div v-if="state.profile.edit && state.profile.edit.is_public && publicPreview" class="me-v19-public-preview">
-                <h4>Vista previa pública</h4>
+              <details v-if="state.profile.edit && state.profile.edit.is_public && publicPreview" class="me-v19-public-preview me-v38-public-preview">
+                <summary>Vista previa pública <span>Mostrar detalles</span></summary>
                 <p class="me-v19-preview-hint">Así se verá tu perfil para otros miembros del equipo.</p>
                 <div class="me-v19-preview-card">
                   <div class="me-v19-preview-header">
-                    <div v-if="publicPreview.photo" class="me-v19-preview-photo"><img :src="publicPreview.photo" alt=""></div>
-                    <span v-else class="me-v19-preview-initials">{{initials}}</span>
                     <div><strong>{{publicPreview.name}}</strong><span v-if="publicPreview.title" class="me-v19-preview-title">{{publicPreview.title}}</span></div>
                   </div>
                   <p v-if="publicPreview.department || publicPreview.specialization" class="me-v19-preview-dept">{{[publicPreview.department,publicPreview.specialization].filter(Boolean).join(' · ')}}</p>
@@ -1275,11 +1269,11 @@
                     <span v-if="publicPreview.researchgate">ResearchGate</span>
                   </div>
                 </div>
-              </div>
+              </details>
             </template>
             </section>
           </section>
-          <div v-if="linked && upcomingEvents.length && !isContextWorkspace" class="me-v23-upcoming" aria-label="Próximos 7 días">
+          <div v-if="linked && upcomingEvents.length && !isContextWorkspace && !profileActive" class="me-v23-upcoming" aria-label="Próximos 7 días">
             <div v-for="(ev,i) in upcomingEvents" :key="i" class="me-v23-event" :data-urgency="ev.urgency">
               <span class="me-v23-event-icon">{{ev.icon}}</span>
               <div class="me-v23-event-text"><span class="me-v23-event-title">{{ev.title}}</span><span class="me-v23-event-date">{{fmtDate(ev.date)}}</span></div>
@@ -1292,7 +1286,7 @@
             <button id="me-v26b-calendar-trigger" type="button" class="me-v21-cal-btn" @click="openCalendar()" :aria-expanded="isContextWorkspace && workspaceState.workspace==='calendar'" aria-controls="me-v26b-calendar" aria-label="Abrir calendario">Calendario</button>
             <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">{{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
           </div>
-          <div v-if="state.quickActions && linked && !isContextWorkspace" id="me-v32-tool-details" class="me-v20-quick-actions me-v32-tools-panel" aria-label="Herramientas adicionales">
+          <div v-if="state.quickActions && linked && !isContextWorkspace && !profileActive" id="me-v32-tool-details" class="me-v20-quick-actions me-v32-tools-panel" aria-label="Herramientas adicionales">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
             <div class="me-v21-extras-bar">
               <button type="button" class="me-v21-extras-btn" @click="openDigest()">Resumen</button>
@@ -1478,7 +1472,7 @@
               <p v-if="!state.activity.publications.items.length">No hay publicaciones vinculadas a tu perfil.</p>
             </template>
           </section>
-          <template v-if="linked && !isContextWorkspace">
+          <template v-if="linked && !isContextWorkspace && !profileActive">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
               <span class="me-v10d-loading-label">Cargando actividad vinculada…</span>
               <div class="me-v10d-loading-grid" aria-hidden="true"><div class="me-v10d-loading-block"></div><div class="me-v10d-loading-block"></div></div>
@@ -1558,19 +1552,19 @@
                   <div class="me-v9-panel-heading"><div><h3 id="me-v9-research-title">Investigación</h3></div></div>
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
                     <div v-if="state.activity.research.lines.length" class="me-v28-disclosure">
-                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.lines" aria-controls="me-v28-lines" @click="state.researchOpen.lines=!state.researchOpen.lines"><span>Líneas de investigación <small>{{state.activity.counts.lines}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <button v-if="state.activity.research.lines.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.lines" aria-controls="me-v28-lines" @click="state.researchOpen.lines=!state.researchOpen.lines"><span>Líneas de investigación <small>{{state.activity.counts.lines}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                       <ul id="me-v28-lines"><li v-for="l in state.activity.research.lines.slice(0,state.researchOpen.lines?state.activity.research.lines.length:2)" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul>
                     </div>
                     <div v-if="state.activity.research.studies.length" class="me-v28-disclosure">
-                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.researchOpen.studies=!state.researchOpen.studies"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <button v-if="state.activity.research.studies.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.researchOpen.studies=!state.researchOpen.studies"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                       <ul id="me-v28-studies"><li v-for="st in state.activity.research.studies.slice(0,state.researchOpen.studies?state.activity.research.studies.length:2)" :key="st.id"><span>{{st.title}}</span><small>{{studyRole(st.role)}}<template v-if="st.code"> · {{st.code}}</template></small></li></ul>
                     </div>
                     <div v-if="state.activity.research.projects.length" class="me-v28-disclosure">
-                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.researchOpen.projects=!state.researchOpen.projects"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <button v-if="state.activity.research.projects.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.researchOpen.projects=!state.researchOpen.projects"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                       <ul id="me-v28-projects"><li v-for="p in state.activity.research.projects.slice(0,state.researchOpen.projects?state.activity.research.projects.length:2)" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul>
                     </div>
                   </div>
-                  <button v-if="hasResearch" type="button" id="me-v26d-research-trigger" class="me-v9-inline-action" @click="openPortfolio('research')">Ver investigación →</button>
+                  <p class="me-v38-research-guidance">Las líneas, estudios y proyectos se despliegan aquí, sin abrir otra pantalla.</p>
 
                 </section>
               </div>
