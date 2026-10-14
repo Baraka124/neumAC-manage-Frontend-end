@@ -137,7 +137,10 @@
         // Evidence-led leadership lens: never determined from a name or an arbitrary KPI.
         const leadershipFocus=Vue.computed(()=>linked.value && hasResearch.value &&
           (['head_of_department','department_head'].includes(state.context?.account?.role) || leadershipRoles.value.length>=2));
-        const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
+        // Place the actual next confirmed clinical commitment first; otherwise
+        // let verified research lead. Counts are never a proxy for urgency.
+        const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value &&
+          upcomingGuardias.value.length===0 && personalRotations.value.length===0 && supervisedRotations.value.length===0);
         function clear(){
           if(workspaceNav) workspaceState.value=workspaceNav.reset();
           ++calendarRequest; ++directoryRequest; ++profileRequest;
@@ -1122,24 +1125,13 @@
             <!-- Phase 28A: the authorized profile stays inside its identity surface. -->
             <section v-if="profileActive && linked" id="me-v28-profile-panel" class="me-v15-profile-panel me-v26c-profile me-v28-inline-profile" aria-label="Perfil profesional">
             <div class="me-v15-profile-head">
-              <div><h3 class="me-v26c-title" tabindex="-1">Perfil profesional</h3><p>Datos institucionales y presentación profesional.</p><button v-if="state.profile.edit && !state.profile.busy" type="button" class="me-v34-edit-shortcut" @click="focusProfileEditor">Editar información <span aria-hidden="true">↗</span></button></div>
+              <div><h3 class="me-v26c-title" tabindex="-1">Perfil profesional</h3><p>Trayectoria profesional y participación registrada.</p><button v-if="state.profile.edit && !state.profile.busy" type="button" class="me-v34-edit-shortcut" @click="focusProfileEditor">Editar información <span aria-hidden="true">↗</span></button></div>
               <button type="button" class="me-v15-profile-close" @click="closeProfile" aria-label="Volver a Mi espacio">← Volver</button>
             </div>
             <p v-if="state.profile.busy" class="mi-espacio-state" role="status">Cargando perfil…</p>
             <p v-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
             <div v-if="profileConfirm" class="me-v26c-confirm" role="group" aria-labelledby="me-v26c-discard-title"><h4 id="me-v26c-discard-title" class="me-v26c-discard-title" tabindex="-1">Cambios sin guardar</h4><p>Si sales ahora, perderás los cambios del formulario.</p><button type="button" @click="cancelDiscard">Seguir editando</button><button type="button" @click="discardProfile">Descartar y salir</button></div>
             <template v-else-if="state.profile.data && state.profile.edit">
-              <div class="me-v15-completeness me-v20-completeness" role="meter" :aria-valuenow="profileCompleteness" aria-valuemin="0" aria-valuemax="100" :aria-label="'Perfil completo al '+profileCompleteness+'%'">
-                <div class="me-v15-completeness-bar"><div class="me-v15-completeness-fill" :style="{width:profileCompleteness+'%'}" :class="{'me-v20-complete':profileCompleteness>=100}"></div></div>
-                <span class="me-v15-completeness-label">{{profileCompleteness}}% completo</span>
-                <p v-if="profileCompleteness>=100" class="me-v20-completeness-done">¡Perfil completo!</p>
-                <div v-else-if="missingFields.length" class="me-v20-missing-hints">
-                  <p class="me-v20-missing-title">{{completenessHint}}</p>
-                  <div class="me-v20-missing-tags">
-                    <button v-for="f in missingFields" :key="f.key" type="button" class="me-v20-missing-tag" @click="scrollToField(f.key)">{{f.label}} <span aria-hidden="true">→</span></button>
-                  </div>
-                </div>
-              </div>
               <div class="me-v15-photo-section me-v19-photo-section">
                 <div class="me-v15-photo-preview me-v19-photo-preview">
                   <img v-if="state.profile.data.publicPhotoUrl" :src="state.profile.data.publicPhotoUrl" alt="Foto de perfil" class="me-v15-photo-img">
@@ -1155,6 +1147,31 @@
                   <small>JPEG, PNG, WEBP o GIF. Máx. 8 MB.</small>
                 </div>
               </div>
+              <section v-if="scientificParticipation.total" class="me-v15-readonly-section me-v35-participation" aria-labelledby="me-v35-participation-title">
+                <div class="me-v35-heading"><h4 id="me-v35-participation-title">Actividad científica y clínica</h4><p>Participación vinculada a los registros autorizados del departamento.</p></div>
+                <ul v-if="scientificParticipation.current.length" class="me-v35-records">
+                  <li v-for="item in scientificParticipation.current" :key="item.key" class="me-v35-record">
+                    <span class="me-v35-kind">{{item.kind}}</span>
+                    <strong>{{item.title}}</strong>
+                    <span class="me-v35-record-meta">{{item.role}} <span aria-hidden="true">·</span> {{item.status}}</span>
+                    <small v-if="item.protocol">Protocolo: {{item.protocol}}</small>
+                  </li>
+                </ul>
+                <p v-else class="me-v8-quiet">No constan actividades en curso vinculadas a este perfil.</p>
+                <div v-if="scientificParticipation.history.length" class="me-v35-history">
+                  <button type="button" class="me-v35-history-toggle" :aria-expanded="scientificHistoryOpen" aria-controls="me-v35-history-records" @click="scientificHistoryOpen=!scientificHistoryOpen">
+                    <span>Participación finalizada <small>{{scientificParticipation.history.length}}</small></span>
+                    <svg class="me-v28-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <ul v-if="scientificHistoryOpen" id="me-v35-history-records" class="me-v35-records">
+                    <li v-for="item in scientificParticipation.history" :key="item.key" class="me-v35-record">
+                      <span class="me-v35-kind">{{item.kind}}</span><strong>{{item.title}}</strong>
+                      <span class="me-v35-record-meta">{{item.role}} <span aria-hidden="true">·</span> {{item.status}}</span>
+                      <small v-if="item.protocol">Protocolo: {{item.protocol}}</small>
+                    </li>
+                  </ul>
+                </div>
+              </section>
               <details class="me-v15-readonly-section me-v34-institutional-details">
                 <summary class="me-v34-institutional-summary"><span>Datos institucionales</span><span class="me-v34-institutional-hint">Consultar información registrada</span><svg class="me-v28-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
                 <dl class="me-v15-dl">
@@ -1186,36 +1203,22 @@
                   <li v-if="state.profile.data.canSuperviseResidents"><span class="me-v18-cap-check" aria-hidden="true">✓</span> Puede supervisar residentes</li>
                 </ul>
               </div>
-              <section v-if="scientificParticipation.total" class="me-v15-readonly-section me-v35-participation" aria-labelledby="me-v35-participation-title">
-                <div class="me-v35-heading"><h4 id="me-v35-participation-title">Actividad científica y clínica</h4><p>Participación vinculada a los registros autorizados del departamento.</p></div>
-                <ul v-if="scientificParticipation.current.length" class="me-v35-records">
-                  <li v-for="item in scientificParticipation.current" :key="item.key" class="me-v35-record">
-                    <span class="me-v35-kind">{{item.kind}}</span>
-                    <strong>{{item.title}}</strong>
-                    <span class="me-v35-record-meta">{{item.role}} <span aria-hidden="true">·</span> {{item.status}}</span>
-                    <small v-if="item.protocol">Protocolo: {{item.protocol}}</small>
-                  </li>
-                </ul>
-                <p v-else class="me-v8-quiet">No constan actividades en curso vinculadas a este perfil.</p>
-                <div v-if="scientificParticipation.history.length" class="me-v35-history">
-                  <button type="button" class="me-v35-history-toggle" :aria-expanded="scientificHistoryOpen" aria-controls="me-v35-history-records" @click="scientificHistoryOpen=!scientificHistoryOpen">
-                    <span>Participación finalizada <small>{{scientificParticipation.history.length}}</small></span>
-                    <svg class="me-v28-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
-                  <ul v-if="scientificHistoryOpen" id="me-v35-history-records" class="me-v35-records">
-                    <li v-for="item in scientificParticipation.history" :key="item.key" class="me-v35-record">
-                      <span class="me-v35-kind">{{item.kind}}</span><strong>{{item.title}}</strong>
-                      <span class="me-v35-record-meta">{{item.role}} <span aria-hidden="true">·</span> {{item.status}}</span>
-                      <small v-if="item.protocol">Protocolo: {{item.protocol}}</small>
-                    </li>
-                  </ul>
-                </div>
-              </section>
               <div v-if="leadershipRoles.length" class="me-v15-readonly-section me-v19-leadership">
                 <h4>Roles de liderazgo activos</h4>
                 <ul class="me-v19-leadership-list">
                   <li v-for="(r,i) in leadershipRoles" :key="i"><span class="me-v19-role-badge">{{r.label}}</span> <span class="me-v19-role-name">{{r.name}}</span></li>
                 </ul>
+              </div>
+              <div class="me-v15-completeness me-v20-completeness" role="meter" :aria-valuenow="profileCompleteness" aria-valuemin="0" aria-valuemax="100" :aria-label="'Perfil completo al '+profileCompleteness+'%'">
+                <div class="me-v15-completeness-bar"><div class="me-v15-completeness-fill" :style="{width:profileCompleteness+'%'}" :class="{'me-v20-complete':profileCompleteness>=100}"></div></div>
+                <span class="me-v15-completeness-label">{{profileCompleteness}}% completo</span>
+                <p v-if="profileCompleteness>=100" class="me-v20-completeness-done">¡Perfil completo!</p>
+                <div v-else-if="missingFields.length" class="me-v20-missing-hints">
+                  <p class="me-v20-missing-title">{{completenessHint}}</p>
+                  <div class="me-v20-missing-tags">
+                    <button v-for="f in missingFields" :key="f.key" type="button" class="me-v20-missing-tag" @click="scrollToField(f.key)">{{f.label}} <span aria-hidden="true">→</span></button>
+                  </div>
+                </div>
               </div>
               <form id="me-v34-profile-edit" class="me-v15-edit-section" @submit.prevent="saveProfile" :aria-busy="state.profile.saving">
                 <h4 class="me-v34-edit-heading" tabindex="-1">Datos editables</h4>
@@ -1461,7 +1464,12 @@
             <p>Registros vinculados y autorizados para tu cuenta. Esta vista no constituye un historial completo; consulta el módulo institucional para modificaciones.</p>
             <template v-if="workspaceState.workspace==='research'">
               <div class="me-v26d-filters"><button v-for="g in researchGroups" :key="g.id" type="button" @click="changeResearchGroup(g.id)" :aria-pressed="state.researchGroup===g.id">{{g.label}}</button></div>
-              <ul class="me-v26d-list"><li v-for="record in researchItems" :key="record.id"><strong>{{researchRecordTitle(record)}}</strong><span>{{researchRecordRole(record)}}</span><small>{{researchRecordMeta(record)}}</small></li></ul>
+              <ul class="me-v26d-list me-v38-research-list"><li v-for="(record,index) in researchItems" :key="record.id||index">
+                <details class="me-v38-research-disclosure">
+                  <summary class="me-v38-research-summary"><span class="me-v38-research-summary-text"><strong>{{researchRecordTitle(record)}}</strong><span>{{researchRecordRole(record)}}</span></span><svg class="me-v28-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+                  <p class="me-v38-research-meta">{{researchRecordMeta(record) || 'No hay metadatos adicionales registrados.'}}</p>
+                </details>
+              </li></ul>
               <p v-if="!researchItems.length">No constan registros en esta categoría.</p>
               <button v-if="can('research')" type="button" @click="navigate('research')">Ir al módulo de investigación ↗</button>
             </template>
