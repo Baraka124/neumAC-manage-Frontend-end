@@ -23,7 +23,7 @@ test('normalizeActivity lifts structured publications from items', () => {
 
 test('loadLineOptions labels lines and tolerates {data} or array', async () => {
   const opts = await data.loadLineOptions(async () => ({ data: [
-    { id: 'L2', line_number: 2, short_name: 'Vía aérea' },
+    { id: 'L2', line_number: 2, name: 'Vía aérea' },
     { id: 'L3', research_line_name: 'Sueño' },
     { id: '', short_name: 'skip-me' }
   ] }));
