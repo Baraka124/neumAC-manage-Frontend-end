@@ -73,6 +73,8 @@ jobs:
         run: node --test tests/mi-espacio-phase27c.test.cjs
       - name: Mi espacio Phase 28A inline profile disclosure
         run: node --test tests/mi-espacio-phase28a.test.cjs
+      - name: Mi espacio Phase 28B independent research disclosures
+        run: node --test tests/mi-espacio-phase28b.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
