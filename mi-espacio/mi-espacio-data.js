@@ -296,7 +296,7 @@
     const raw = await request('/api/research-lines', { skipCache: true, timeoutMs: 15000, signal });
     return rows(raw).map(l => ({
       id: id(l && l.id),
-      label: ((l && (typeof l.line_number === 'number')) ? 'L' + l.line_number + ' · ' : '') + safe(l && (l.short_name || l.research_line_name || l.name))
+      label: ((l && (typeof l.line_number === 'number')) ? 'L' + l.line_number + ' · ' : '') + safe(l && (l.research_line_name || l.name))
     })).filter(o => o.id && o.label);
   }
 
