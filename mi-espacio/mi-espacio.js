@@ -174,7 +174,7 @@
         const profileNotice=Vue.ref('');
         const profileActive=Vue.computed(()=>workspaceState.value.workspace==='profile'&&state.profile.open);
         function navigateWorkspace(e){const next=workspaceNav?.dispatch(e);if(next)workspaceState.value=next;return next;}
-        const isContextWorkspace=Vue.computed(()=>workspaceState.value.view==='workspace' && ['calendar','directory'].includes(workspaceState.value.workspace));
+        const isContextWorkspace=Vue.computed(()=>workspaceState.value.view==='workspace' && ['calendar','directory','research','publications'].includes(workspaceState.value.workspace));
         const selectedDate=Vue.computed(()=>workspaceState.value.workspace==='calendar'&&workspaceState.value.detail?.type==='date'?workspaceState.value.detail.id:'');
         const selectedDayEvents=Vue.computed(()=>state.calendar.events.filter(e=>selectedDate.value&&e.date===selectedDate.value));
         const selectedColleague=Vue.computed(()=>workspaceState.value.workspace==='directory'&&workspaceState.value.detail?.type==='staff' ?
@@ -188,8 +188,8 @@
           else if(which==='notifications')state.notifications.open=false;
         }
         function activateSecondary(which){
-          const before=workspaceState.value, contextual=['calendar','directory'].includes(which);
-          const fallback=which==='calendar'?'me-v26b-calendar-trigger':'me-v26b-directory-trigger';
+          const before=workspaceState.value, contextual=['calendar','directory','research','publications'].includes(which);
+          const fallback={calendar:'me-v26b-calendar-trigger',directory:'me-v26b-directory-trigger',research:'me-v26d-research-trigger',publications:'me-v26d-publications-trigger'}[which]||'mi-espacio-title';
           const origin=contextual&&before.view==='overview' ? {
             focusId:document.activeElement?.id || fallback,scrollY:window.scrollY
           }:undefined;
@@ -206,7 +206,7 @@
           if(which!=='digest')state.digest.open=false;
           if(which!=='notifications')state.notifications.open=false;
           Vue.nextTick(()=>{
-            const selector=contextual?'.me-v26b-workspace-title':
+            const selector=contextual?'.me-v26d-title,.me-v26b-workspace-title':
               {profile:'.me-v15-profile-panel',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
             const el=selector&&document.querySelector('.mi-espacio '+selector);
             if(el){el.scrollIntoView({behavior:'auto',block:'start'});if(contextual)el.focus({preventScroll:true});}
@@ -220,7 +220,7 @@
           if(which==='calendar')state.calendar.open=false;
           if(which==='directory')state.colleagues.open=false;
           Vue.nextTick(()=>{
-            const fallback=which==='calendar'?'me-v26b-calendar-trigger':'me-v26b-directory-trigger';
+            const fallback={calendar:'me-v26b-calendar-trigger',directory:'me-v26b-directory-trigger',research:'me-v26d-research-trigger',publications:'me-v26d-publications-trigger'}[which]||'mi-espacio-title';
             const control=document.getElementById(origin?.focusId||'')||document.getElementById(fallback);
             if(Number.isFinite(origin?.scrollY))window.scrollTo({top:origin.scrollY,behavior:'auto'});
             control?.focus({preventScroll:true});
@@ -980,6 +980,16 @@
           const index=state.publicationIndex;state.publicationIndex=null;
           focusDuty('.me-publication-entry[data-index="'+index+'"]');
         }
+        function openPortfolio(which){
+          if(!linked.value||!state.activity||!['research','publications'].includes(which))return;
+          activateSecondary(which);
+        }
+        function closePortfolio(){
+          const which=workspaceState.value.workspace;
+          if(!['research','publications'].includes(which))return;
+          navigateWorkspace({type:'BACK'});
+          Vue.nextTick(()=>document.getElementById(which==='research'?'me-v26d-research-trigger':'me-v26d-publications-trigger')?.focus({preventScroll:true}));
+        }
         function onEscape(event){
           // Only nested personal disclosures; keep global shell shortcuts untouched.
           const target=event.target;
@@ -1008,7 +1018,7 @@
           notificationBadge,upcomingEvents,showPhotoNudge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,localToday,
           openDigest,digestResourceLabel,exportCV,exportDossier,
           urgentCertificates,certUrgencyLabel,fmtRelative,
-          openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
+          openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,openPortfolio,closePortfolio,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
           researchRecordTitle,researchRecordMeta,researchRecordRole,
@@ -1340,6 +1350,21 @@
           </section>
 
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
+          <section v-if="linked && isContextWorkspace && ['research','publications'].includes(workspaceState.workspace)" class="me-v26d-workspace" aria-label="Actividad personal">
+            <button type="button" @click="closePortfolio">← Volver a Mi espacio</button>
+            <h3 class="me-v26d-title" tabindex="-1">{{workspaceState.workspace==='research'?'Mi investigación':'Mis publicaciones'}}</h3>
+            <p>Registros vinculados a tu perfil. Consulta el módulo institucional para cualquier modificación autorizada.</p>
+            <template v-if="workspaceState.workspace==='research'">
+              <div class="me-v26d-filters"><button v-for="g in researchGroups" :key="g.id" type="button" @click="changeResearchGroup(g.id)" :aria-pressed="state.researchGroup===g.id">{{g.label}}</button></div>
+              <ul class="me-v26d-list"><li v-for="record in researchItems" :key="record.id"><strong>{{researchRecordTitle(record)}}</strong><span>{{researchRecordRole(record)}}</span><small>{{researchRecordMeta(record)}}</small></li></ul>
+              <p v-if="!researchItems.length">No constan registros en esta categoría.</p>
+              <button v-if="can('research')" type="button" @click="navigate('research')">Ir al módulo de investigación ↗</button>
+            </template>
+            <template v-else>
+              <ul class="me-v26d-list"><li v-for="record in state.activity.publications.items" :key="record.id"><strong>{{record.title}}</strong><span>{{record.byline}}</span></li></ul>
+              <p v-if="!state.activity.publications.items.length">No hay publicaciones vinculadas a tu perfil.</p>
+            </template>
+          </section>
           <template v-if="linked && !isContextWorkspace && !profileActive">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
               <span class="me-v10d-loading-label">Cargando actividad vinculada…</span>
@@ -1397,6 +1422,7 @@
                     <div v-if="state.activity.research.studies.length"><h4>Estudios <span>{{state.activity.counts.studies}}</span></h4><ul><li v-for="s in state.activity.research.studies.slice(0,state.researchExpanded?state.activity.research.studies.length:2)" :key="s.id"><span>{{s.title}}</span><small>{{studyRole(s.role)}}<template v-if="s.code"> · {{s.code}}</template></small></li></ul></div>
                     <div v-if="state.activity.research.projects.length"><h4>Proyectos <span>{{state.activity.counts.projects}}</span></h4><ul><li v-for="p in state.activity.research.projects.slice(0,state.researchExpanded?state.activity.research.projects.length:2)" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul></div>
                   </div>
+                  <button v-if="hasResearch" type="button" id="me-v26d-research-trigger" class="me-v9-inline-action" @click="openPortfolio('research')">Explorar mi investigación →</button>
                   <button v-if="hasResearchOverflow" type="button" class="me-v10-research-toggle" :aria-expanded="state.researchExpanded" @click="state.researchExpanded=!state.researchExpanded">{{state.researchExpanded?'Ver resumen':'Ver toda mi investigación'}} <span aria-hidden="true">{{state.researchExpanded?'↑':'→'}}</span></button>
                 </section>
               </div>
@@ -1412,7 +1438,8 @@
                   <ol v-if="state.activity.publications.items.length" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,state.publicationsExpanded?state.activity.publications.items.length:3)" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
                   <p v-if="!state.activity.publications.items.length && !state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p>
                   <p v-else-if="!state.activity.publications.items.length" class="me-v8-quiet">No hay publicaciones vinculadas a tu perfil.</p>
-                  <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle" :aria-expanded="state.publicationsExpanded" @click="state.publicationsExpanded=!state.publicationsExpanded">{{state.publicationsExpanded?'Ver resumen':'Ver todas mis publicaciones'}} <span aria-hidden="true">{{state.publicationsExpanded?'↑':'→'}}</span></button>
+                  <button v-if="state.activity.publications.items.length" id="me-v26d-publications-trigger" type="button" @click="openPortfolio('publications')">Explorar mis publicaciones →</button>
+                   <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle" :aria-expanded="state.publicationsExpanded" @click="state.publicationsExpanded=!state.publicationsExpanded">{{state.publicationsExpanded?'Ver resumen':'Ver todas mis publicaciones'}} <span aria-hidden="true">{{state.publicationsExpanded?'↑':'→'}}</span></button>
                 </section>
                 <section class="me-v9-services" aria-label="Comunicaciones y gestiones">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">GESTIÓN PERSONAL</p><h3>Comunicaciones</h3></div></div>
