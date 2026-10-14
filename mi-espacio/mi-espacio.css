@@ -1610,3 +1610,59 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
  .mi-espacio .me-v32-tools-panel .me-v21-extras-btn{flex:1 1 130px}
 }
 @media(prefers-reduced-motion:reduce){.mi-espacio .me-v32-tool-chevron{transition:none!important}}
+
+/* Phase 33 · One continuous editorial language for contextual workspaces. */
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties){
+  scroll-margin-top:clamp(76px,8vw,102px);
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties) :is(h3,h4){
+  font-family:inherit;
+  color:var(--me30-reading,#26444a);
+  letter-spacing:-.012em;
+  text-wrap:balance;
+}
+.mi-espacio :is(.me-v26b-topline,.me-v26d-workspace>.me-v26d-title,.me-v26g-duty-title){
+  margin-bottom:clamp(14px,2vw,22px);
+}
+.mi-espacio .me-v26b-workspace .me-v26b-topline{
+  padding-bottom:12px;
+  border-bottom:1px solid var(--me30-line,#dfe8e5);
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties) :is(button,a):focus-visible,
+.mi-espacio :is(.me-v26b-calendar-detail-title,.me-v26b-staff-detail-title):focus{
+  outline:3px solid #158a89;
+  outline-offset:3px;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-detail h4{
+  font-size:clamp(19px,1.9vw,24px);
+  line-height:1.35;
+  scroll-margin-top:90px;
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace) :is(p,li,dd){
+  line-height:1.65;
+}
+.mi-espacio .me-v26d-workspace{
+  border-color:var(--me30-line,#dfe8e5);
+  box-shadow:none;
+}
+.mi-espacio .me-v26d-workspace>.me-v26d-title{
+  font-size:clamp(23px,2.4vw,30px);
+  font-weight:600;
+}
+.mi-espacio .me-v26d-workspace .me-v26d-list li{
+  border-color:var(--me30-line,#dfe8e5);
+  padding-block:16px;
+}
+.mi-espacio .me-v26d-workspace .me-v26d-list strong{
+  font-size:15px;
+  line-height:1.6;
+  font-weight:550;
+  overflow-wrap:anywhere;
+}
+@media(max-width:760px){
+  .mi-espacio .me-v26b-workspace .me-v26b-detail{padding-top:21px}
+  .mi-espacio .me-v26d-workspace{padding:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties) *{scroll-behavior:auto!important}
+}
