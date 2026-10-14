@@ -67,6 +67,8 @@ jobs:
         run: node --test tests/mi-espacio-phase26e.test.cjs
       - name: Mi espacio Phase 26F permission and acceptance gates
         run: node --test tests/mi-espacio-phase26f.test.cjs
+      - name: Mi espacio Phase 26G duty navigation
+        run: node --test tests/mi-espacio-phase26g.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
