@@ -23,11 +23,12 @@ test('normalizeActivity lifts structured publications from items', () => {
 
 test('loadLineOptions labels lines and tolerates {data} or array', async () => {
   const opts = await data.loadLineOptions(async () => ({ data: [
-    { id: 'L2', line_number: 2, name: 'Vía aérea' },
+    { id: 'L2', line_number: 2, research_line_name: 'Vía aérea' },
     { id: 'L3', research_line_name: 'Sueño' },
+    { id: 'L4', line_number: 4, name: 'Nombre institucional', short_name: 'Nombre obsoleto' },
     { id: '', short_name: 'skip-me' }
   ] }));
-  assert.deepEqual(opts, [{ id: 'L2', label: 'L2 · Vía aérea' }, { id: 'L3', label: 'Sueño' }]);
+  assert.deepEqual(opts, [{ id: 'L2', label: 'L2 · Vía aérea' }, { id: 'L3', label: 'Sueño' }, { id: 'L4', label: 'L4 · Nombre institucional' }]);
   assert.deepEqual(await data.loadLineOptions(async () => 'nope'), []);
 });
 

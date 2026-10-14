@@ -976,8 +976,8 @@
         const researchRecordMeta=r=>{
           if(!r)return '';
           if(state.researchGroup==='lines')return r.number?'L'+r.number:'';
-          if(state.researchGroup==='studies')return r.code || '';
-          return r.stage || '';
+          if(state.researchGroup==='studies')return [r.code?'Protocolo: '+r.code:'', 'Estado: '+root.NeumMiEspacioData.participationStatus(r.status)].filter(Boolean).join(' · ');
+          return 'Etapa: '+root.NeumMiEspacioData.participationStatus(r.stage);
         };
         const researchRecordRole=r=>{
           if(!r)return '';
@@ -1458,7 +1458,7 @@
           <section v-if="linked && isContextWorkspace && ['research','publications'].includes(workspaceState.workspace)" class="me-v26d-workspace" aria-label="Actividad personal">
             <button type="button" @click="closePortfolio">← Volver a Mi espacio</button>
             <h3 class="me-v26d-title" tabindex="-1">{{workspaceState.workspace==='research'?'Investigación':'Publicaciones'}}</h3>
-            <p>Registros vinculados a tu perfil. Consulta el módulo institucional para cualquier modificación autorizada.</p>
+            <p>Registros vinculados y autorizados para tu cuenta. Esta vista no constituye un historial completo; consulta el módulo institucional para modificaciones.</p>
             <template v-if="workspaceState.workspace==='research'">
               <div class="me-v26d-filters"><button v-for="g in researchGroups" :key="g.id" type="button" @click="changeResearchGroup(g.id)" :aria-pressed="state.researchGroup===g.id">{{g.label}}</button></div>
               <ul class="me-v26d-list"><li v-for="record in researchItems" :key="record.id"><strong>{{researchRecordTitle(record)}}</strong><span>{{researchRecordRole(record)}}</span><small>{{researchRecordMeta(record)}}</small></li></ul>
