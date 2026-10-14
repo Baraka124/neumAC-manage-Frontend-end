@@ -30,7 +30,7 @@ test('Directory is constrained to authorized normalized records and identity',()
 test('Accessible detail controls and overview suppression exist',()=>{
  assert.match(view,/:aria-pressed="selectedDate===cell.date"/);
  assert.match(view,/:aria-pressed="selectedColleague\?\.id===c.id"/);
- assert.match(view,/<template v-if="linked && !isContextWorkspace">/);
+ assert.match(view,/<template v-if="linked && !isContextWorkspace && !profileActive">/);
  assert.match(view,/returnToOverview/);
  assert.match(view,/backContextDetail/);
  assert.match(view,/No hay eventos registrados para esta fecha/);

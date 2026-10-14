@@ -454,12 +454,68 @@
     return normalizeDigest(raw);
   }
 
+
+  // Phase 26C: explicit self-service allowlist, independent of institutional fields.
+  const PROFILE_EDIT_KEYS=Object.freeze([
+    'mobile_phone','public_bio','orcid_id','scholar_url','researchgate_url',
+    'pubmed_query','is_public','indexed_publications_count','h_index'
+  ]);
+  function profileDraft(p) {
+    return {
+      mobile_phone:p?.mobilePhone ?? '', public_bio:p?.publicBio ?? '',
+      orcid_id:p?.orcidId ?? '', scholar_url:p?.scholarUrl ?? '',
+      researchgate_url:p?.researchgateUrl ?? '', pubmed_query:p?.pubmedQuery ?? '',
+      is_public:!!p?.isPublic,
+      indexed_publications_count:p?.indexedPublicationsCount ?? null,
+      h_index:p?.hIndex ?? null
+    };
+  }
+  function normalizeProfileDraft(form) {
+    const f=form&&typeof form==='object'?form:{};
+    const result={};
+    for(const key of PROFILE_EDIT_KEYS){
+      const v=f[key];
+      if(key==='is_public')result[key]=v===true;
+      else if(key==='indexed_publications_count'||key==='h_index'){
+        result[key]=v===''||v==null?null:(typeof v==='number'?v:Number(v));
+      }else result[key]=typeof v==='string'?v.trim():'';
+    }
+    return result;
+  }
+  function profileChanged(form,baseline) {
+    if(!form||!baseline)return false;
+    const a=normalizeProfileDraft(form),b=normalizeProfileDraft(baseline);
+    return PROFILE_EDIT_KEYS.some(k=>!Object.is(a[k],b[k]));
+  }
+  function validateProfileDraft(form) {
+    const fields=normalizeProfileDraft(form),errors={};
+    const limits={mobile_phone:40,public_bio:2000,orcid_id:40,scholar_url:500,researchgate_url:500,pubmed_query:500};
+    for(const [key,max] of Object.entries(limits)){
+      if((form?.[key]??'').toString().length>max)errors[key]='Supera el límite de '+max+' caracteres.';
+    }
+    if(fields.orcid_id && !/^\d{4}-\d{4}-\d{4}-[\dX]{4}$/i.test(fields.orcid_id))
+      errors.orcid_id='Introduce un identificador ORCID con formato 0000-0000-0000-0000.';
+    for(const key of ['scholar_url','researchgate_url']){
+      if(!fields[key])continue;
+      try {
+        const u=new URL(fields[key]);
+        if(!['http:','https:'].includes(u.protocol)||u.username||u.password)throw Error('invalid');
+      }catch(_){errors[key]='Utiliza una URL http o https válida, sin credenciales.';}
+    }
+    for(const [key,max] of [['indexed_publications_count',9999],['h_index',999]]){
+      const n=fields[key];
+      if(n!==null&&(!Number.isSafeInteger(n)||n<0||n>max))errors[key]='Introduce un número entero entre 0 y '+max+'.';
+    }
+    return {valid:Object.keys(errors).length===0,errors,fields};
+  }
+
   return Object.freeze({
     normalizeContext, loadContext, normalizeActivity, loadActivity, formatDutyShift,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
     loadLineOptions, loadPublicationOptions,
     normalizeProfile, loadProfile, updateProfile, updateNotificationPrefs, uploadPhoto, loadMyCertificates,
+    PROFILE_EDIT_KEYS, profileDraft, normalizeProfileDraft, profileChanged, validateProfileDraft,
     normalizeColleague, loadColleagues, normalizeDashboard, loadDashboard,
     normalizeActivityEntry, loadMyActivity,
     normalizeNotification, loadNotifications, normalizeCalendarEvent, loadCalendar, normalizeDigest, loadDigest
