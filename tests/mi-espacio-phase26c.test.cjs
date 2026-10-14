@@ -31,7 +31,7 @@ test('workspace protects dirty edits, refetches saved data and avoids duplicate 
   "if(!linked.value||!state.profile.edit||!state.profile.data?.id||state.profile.saving)return",
   'validateProfileDraft(state.profile.edit)',"navigateWorkspace({type:'SAVE_SUCCESS'})",
   "Cambios guardados. No se pudo actualizar la vista"])assert.ok(src.includes(s),s);
- assert.match(src,/ticket===profileRequest\|\|/);
+ assert.match(src,/ticket!==profileRequest\|\|/);
  assert.match(src,/requestSeq===seq&&props.active&&linked.value/);
 });
 test('profile uses a single contextual surface, with deterministic cancel and responsive keyboard affordances',()=>{
