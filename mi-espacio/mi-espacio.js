@@ -239,11 +239,12 @@
         function selectCalendarDate(date){
           if(state.calendar.busy||!calendarDays.value.some(c=>c.day&&c.date===date))return;
           navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'date',id:date}});
+          Vue.nextTick(()=>document.querySelector('.mi-espacio .me-v26b-calendar-detail-title')?.focus({preventScroll:true}));
         }
         function selectColleague(person){
           if(!person?.id||!state.colleagues.items.some(c=>c.id===person.id))return;
           navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'staff',id:person.id}});
-          Vue.nextTick(()=>document.querySelector('.me-v26b-staff-detail h4')?.focus({preventScroll:true}));
+          Vue.nextTick(()=>document.querySelector('.mi-espacio .me-v26b-staff-detail-title')?.focus({preventScroll:true}));
         }
         function toggleNotifications(){
           if(state.notifications.open){closeSecondary('notifications');return;}
@@ -999,8 +1000,7 @@
         function closePortfolio(){
           const which=workspaceState.value.workspace;
           if(!['research','publications'].includes(which))return;
-          navigateWorkspace({type:'BACK'});
-          Vue.nextTick(()=>document.getElementById(which==='research'?'me-v26d-research-trigger':'me-v26d-publications-trigger')?.focus({preventScroll:true}));
+          returnToOverview();
         }
         // Phase 28E: preserve the clicked disclosure's viewport position after Vue patches.
         // Read-only presentation behavior only; no data, navigation or authorization changes.
@@ -1247,14 +1247,18 @@
             </div>
           </div>
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
-            <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
+            <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions" aria-controls="me-v32-tool-details"><span>Acciones rápidas</span><svg class="me-v28-chevron me-v32-tool-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <button type="button" class="me-v21-notif-btn" @click="toggleNotifications" :aria-expanded="state.notifications.open" aria-label="Notificaciones">Notificaciones<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
             <button id="me-v26b-directory-trigger" type="button" class="me-v20-directory-btn" @click="loadColleagues" :aria-expanded="isContextWorkspace && workspaceState.workspace==='directory'" aria-controls="me-v26b-directory">Directorio</button>
             <button id="me-v26b-calendar-trigger" type="button" class="me-v21-cal-btn" @click="openCalendar()" :aria-expanded="isContextWorkspace && workspaceState.workspace==='calendar'" aria-controls="me-v26b-calendar" aria-label="Abrir calendario">Calendario</button>
             <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">{{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
           </div>
-          <div v-if="state.quickActions && linked && !isContextWorkspace" class="me-v20-quick-actions">
+          <div v-if="state.quickActions && linked && !isContextWorkspace" id="me-v32-tool-details" class="me-v20-quick-actions me-v32-tools-panel" aria-label="Herramientas adicionales">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
+            <div class="me-v21-extras-bar">
+              <button type="button" class="me-v21-extras-btn" @click="openDigest()">Resumen</button>
+              <button type="button" class="me-v21-extras-btn" @click="exportCV()" :disabled="state.cvExport.busy">{{state.cvExport.busy?'Exportando…':'Exportar CV'}}</button>
+            </div>
           </div>
           <section v-if="isContextWorkspace && workspaceState.workspace==='directory'" id="me-v26b-directory" class="me-v26b-workspace me-v20-colleagues" aria-label="Directorio del equipo">
             <div class="me-v26b-topline"><span>Mi espacio / Directorio</span><button type="button" @click="returnToOverview">← Volver a Mi espacio</button></div>
@@ -1281,7 +1285,7 @@
               <aside class="me-v26b-detail me-v26b-staff-detail" aria-label="Vista previa profesional">
                 <template v-if="selectedColleague">
                   <button type="button" @click="backContextDetail">← Volver a resultados</button>
-                  <h4 tabindex="-1">{{selectedColleague.name}}</h4>
+                  <h4 class="me-v26b-staff-detail-title" tabindex="-1">{{selectedColleague.name}}</h4>
                   <p v-if="selectedColleague.title || selectedColleague.specialization">{{selectedColleague.title || selectedColleague.specialization}}</p>
                   <p v-if="selectedColleague.department">{{selectedColleague.department}}</p>
                   <p v-if="selectedColleague.bio">{{selectedColleague.bio}}</p>
@@ -1335,7 +1339,7 @@
               </div>
               <aside class="me-v26b-detail" aria-label="Agenda del día">
                 <template v-if="selectedDate">
-                  <button type="button" @click="backContextDetail">← Volver al mes</button><h4>{{fmtDate(selectedDate)}}</h4>
+                  <button type="button" @click="backContextDetail">← Volver al mes</button><h4 class="me-v26b-calendar-detail-title" tabindex="-1">{{fmtDate(selectedDate)}}</h4>
                   <p>{{selectedDayEvents.length}} eventos registrados</p>
                   <ul v-if="selectedDayEvents.length"><li v-for="(ev,i) in selectedDayEvents" :key="ev.id||i"><strong>{{ev.title}}</strong><span v-if="ev.type"> · {{ev.type}}</span><span v-if="ev.status"> · Estado: {{ev.status}}</span></li></ul>
                   <p v-else class="me-v8-quiet">No hay eventos registrados para esta fecha. Esto no confirma disponibilidad.</p>
@@ -1660,11 +1664,6 @@
               </div>
             </template>
           </template>
-          <!-- Phase 21: Quick bar — digest + CV export -->
-          <div v-if="linked && !state.profile.open" class="me-v21-extras-bar">
-            <button type="button" class="me-v21-extras-btn" @click="openDigest()">Resumen</button>
-            <button type="button" class="me-v21-extras-btn" @click="exportCV()" :disabled="state.cvExport.busy">{{state.cvExport.busy?'Exportando…':'Exportar CV'}}</button>
-          </div>
         </template>
       </section>`
     };

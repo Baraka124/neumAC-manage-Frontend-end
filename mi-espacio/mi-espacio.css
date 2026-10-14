@@ -1573,3 +1573,96 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 @media(prefers-reduced-motion:reduce){
   .mi-espacio .me-v26b-workspace .me-v26b-person{transition:none!important}
 }
+
+/* Phase 32 — institutional convergence: deliberate hierarchy, no new features. */
+@media(min-width:1500px){
+ .mi-espacio--v9{max-width:1320px;padding-inline:clamp(25px,3vw,46px)}
+ .mi-espacio--v9 .me-v9-overview{gap:clamp(30px,3vw,48px)}
+ .mi-espacio--v9 .me-v8-research-groups li span,
+ .mi-espacio--v9 .me-v9-publications .me-v8-publication-list strong{max-width:77ch}
+}
+.mi-espacio .me-v22-identity{margin-top:0}
+.mi-espacio .me-v22-name-line h3{line-height:1.24;letter-spacing:-.022em}
+.mi-espacio .me-v22-identity-top{padding-block:clamp(19px,2vw,26px)}
+.mi-espacio .me-v28-identity-actions{gap:9px}
+.mi-espacio .me-v9-panel-heading h3{font-weight:600;letter-spacing:-.014em}
+.mi-espacio .me-v8-research-groups li,
+.mi-espacio .me-v8-publication-list li{min-width:0}
+.mi-espacio .me-v8-research-groups li :is(span,small),
+.mi-espacio .me-v8-publication-list li :is(strong,span,small){overflow-wrap:anywhere}
+.mi-espacio .me-v20-quick-toggle{justify-content:space-between}
+.mi-espacio .me-v32-tool-chevron{flex:none;transition:transform .18s ease}
+.mi-espacio .me-v20-quick-toggle[aria-expanded=true] .me-v32-tool-chevron{transform:rotate(180deg)}
+.mi-espacio .me-v32-tools-panel{align-items:center;margin:0 0 16px;padding:11px 0;border-bottom:1px solid var(--me30-line,#dfe8e5);gap:8px 12px}
+.mi-espacio .me-v32-tools-panel>.me-v20-quick-item{flex:0 1 auto;min-height:44px;background:transparent;border-color:var(--me30-line,#dfe8e5);font-size:13px}
+.mi-espacio .me-v32-tools-panel .me-v21-extras-bar{display:flex;flex:1 1 240px;justify-content:flex-end;gap:8px;margin:0;padding:0;border:0}
+.mi-espacio .me-v32-tools-panel .me-v21-extras-btn{flex:0 1 auto;min-height:44px;padding:10px 13px;text-align:left;font-weight:500}
+.mi-espacio .me-v32-tools-panel :is(button):focus-visible{outline:3px solid #158a89;outline-offset:3px}
+.mi-espacio .me-v9-publications .me-v8-quiet{margin-bottom:8px}
+.mi-espacio .me-v9-services{gap:8px}
+@media(max-width:850px){
+ .mi-espacio .me-v32-tools-panel{align-items:stretch}
+ .mi-espacio .me-v32-tools-panel .me-v21-extras-bar{flex:1 1 100%;justify-content:flex-start}
+}
+@media(max-width:480px){
+ .mi-espacio .me-v32-tools-panel>.me-v20-quick-item{flex:1 1 100%}
+ .mi-espacio .me-v32-tools-panel .me-v21-extras-bar{flex-direction:row;flex-wrap:wrap}
+ .mi-espacio .me-v32-tools-panel .me-v21-extras-btn{flex:1 1 130px}
+}
+@media(prefers-reduced-motion:reduce){.mi-espacio .me-v32-tool-chevron{transition:none!important}}
+
+/* Phase 33 · One continuous editorial language for contextual workspaces. */
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties){
+  scroll-margin-top:clamp(76px,8vw,102px);
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties) :is(h3,h4){
+  font-family:inherit;
+  color:var(--me30-reading,#26444a);
+  letter-spacing:-.012em;
+  text-wrap:balance;
+}
+.mi-espacio :is(.me-v26b-topline,.me-v26d-workspace>.me-v26d-title,.me-v26g-duty-title){
+  margin-bottom:clamp(14px,2vw,22px);
+}
+.mi-espacio .me-v26b-workspace .me-v26b-topline{
+  padding-bottom:12px;
+  border-bottom:1px solid var(--me30-line,#dfe8e5);
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties) :is(button,a):focus-visible,
+.mi-espacio :is(.me-v26b-calendar-detail-title,.me-v26b-staff-detail-title):focus{
+  outline:3px solid #158a89;
+  outline-offset:3px;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-detail h4{
+  font-size:clamp(19px,1.9vw,24px);
+  line-height:1.35;
+  scroll-margin-top:90px;
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace) :is(p,li,dd){
+  line-height:1.65;
+}
+.mi-espacio .me-v26d-workspace{
+  border-color:var(--me30-line,#dfe8e5);
+  box-shadow:none;
+}
+.mi-espacio .me-v26d-workspace>.me-v26d-title{
+  font-size:clamp(23px,2.4vw,30px);
+  font-weight:600;
+}
+.mi-espacio .me-v26d-workspace .me-v26d-list li{
+  border-color:var(--me30-line,#dfe8e5);
+  padding-block:16px;
+}
+.mi-espacio .me-v26d-workspace .me-v26d-list strong{
+  font-size:15px;
+  line-height:1.6;
+  font-weight:550;
+  overflow-wrap:anywhere;
+}
+@media(max-width:760px){
+  .mi-espacio .me-v26b-workspace .me-v26b-detail{padding-top:21px}
+  .mi-espacio .me-v26d-workspace{padding:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mi-espacio :is(.me-v26b-workspace,.me-v26d-workspace,.me-v26g-duties) *{scroll-behavior:auto!important}
+}
