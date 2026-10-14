@@ -23,11 +23,17 @@ test('normalizeActivity lifts structured publications from items', () => {
 
 test('loadLineOptions labels lines and tolerates {data} or array', async () => {
   const opts = await data.loadLineOptions(async () => ({ data: [
-    { id: 'L2', line_number: 2, short_name: 'Vía aérea' },
+    { id: 'L2', line_number: 2, research_line_name: 'Vía aérea' },
     { id: 'L3', research_line_name: 'Sueño' },
-    { id: '', short_name: 'skip-me' }
+    { id: 'L4', line_number: 4, name: 'Nombre institucional', short_name: 'Nombre obsoleto' },
+    { id: '', name: 'skip-me' }
   ] }));
-  assert.deepEqual(opts, [{ id: 'L2', label: 'L2 · Vía aérea' }, { id: 'L3', label: 'Sueño' }]);
+  // Phase 37 release gate: never restore the deprecated short_name fallback.
+  assert.deepEqual(opts, [
+    { id: 'L2', label: 'L2 · Vía aérea' },
+    { id: 'L3', label: 'Sueño' },
+    { id: 'L4', label: 'L4 · Nombre institucional' }
+  ]);
   assert.deepEqual(await data.loadLineOptions(async () => 'nope'), []);
 });
 
