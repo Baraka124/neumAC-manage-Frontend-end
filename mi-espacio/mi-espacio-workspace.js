@@ -5,8 +5,8 @@
   else root.NeumMiEspacioWorkspace=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const WORKSPACES=Object.freeze(['profile','calendar','directory','digest','notifications','duties','communications']);
-  const DETAILS=Object.freeze(['date','research','publication','staff']);
+  const WORKSPACES=Object.freeze(['profile','calendar','directory','digest','notifications','duties','research','publications','communications']);
+  const DETAILS=Object.freeze(['date','research','publication','staff','duty']);
   const empty=()=>({view:'overview',workspace:null,detail:null,origin:null,dirty:false,revision:0});
   const validOrigin=x=>x&&typeof x==='object'?{
     focusId:typeof x.focusId==='string'?x.focusId.slice(0,160):null,
