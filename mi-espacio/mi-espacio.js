@@ -139,7 +139,8 @@
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
           if(workspaceNav) workspaceState.value=workspaceNav.reset();
-          ++calendarRequest; ++directoryRequest;
+          ++calendarRequest; ++directoryRequest; ++profileRequest;
+          profileBaseline.value=null;profileConfirm.value=false;profileNotice.value='';
           ++seq;
           if(controller)controller.abort();
           controller=null;
@@ -165,7 +166,13 @@
         // Exactly one secondary workspace at a time; core activity stays authoritative.
         const workspaceNav=root.NeumMiEspacioWorkspace?.create?.() || null;
         const workspaceState=Vue.ref(workspaceNav?.get() || {view:'overview',workspace:null,detail:null,origin:null});
-        let calendarRequest=0,directoryRequest=0;
+        let calendarRequest=0,directoryRequest=0,profileRequest=0;
+        const profileBaseline=Vue.ref(null);
+        const profileDirty=Vue.computed(()=>root.NeumMiEspacioData.profileChanged(state.profile.edit,profileBaseline.value));
+        const profileErrors=Vue.reactive({});
+        const profileConfirm=Vue.ref(false);
+        const profileNotice=Vue.ref('');
+        const profileActive=Vue.computed(()=>workspaceState.value.workspace==='profile'&&state.profile.open);
         function navigateWorkspace(e){const next=workspaceNav?.dispatch(e);if(next)workspaceState.value=next;return next;}
         const isContextWorkspace=Vue.computed(()=>workspaceState.value.view==='workspace' && ['calendar','directory'].includes(workspaceState.value.workspace));
         const selectedDate=Vue.computed(()=>workspaceState.value.workspace==='calendar'&&workspaceState.value.detail?.type==='date'?workspaceState.value.detail.id:'');
@@ -186,6 +193,11 @@
           const origin=contextual&&before.view==='overview' ? {
             focusId:document.activeElement?.id || fallback,scrollY:window.scrollY
           }:undefined;
+          if(before.workspace==='profile' && which!=='profile' && (profileDirty.value||state.profile.saving||state.profile.photoUploading)){
+            profileConfirm.value=true;
+            Vue.nextTick(()=>document.querySelector('.me-v26c-discard-title')?.focus({preventScroll:true}));
+            return false;
+          }
           const next=navigateWorkspace({type:'OPEN_WORKSPACE',workspace:which,origin});
           if(before.dirty&&next===before)return false;
           if(which!=='profile')state.profile.open=false;
@@ -235,58 +247,81 @@
           if(state.notifications.open){closeSecondary('notifications');return;}
           if(!activateSecondary('notifications'))return;state.notifications.open=true;
         }
+        function cancelDiscard(){profileConfirm.value=false;}
+        function discardProfile(){
+          if(state.profile.saving||state.profile.photoUploading)return;
+          profileConfirm.value=false;
+          profileBaseline.value=null;
+          state.profile.edit=null;
+          state.profile.open=false;
+          navigateWorkspace({type:'CLOSE',confirmDiscard:true});
+          Vue.nextTick(()=>document.getElementById('me-v26c-profile-trigger')?.focus({preventScroll:true}));
+        }
+        function requestCloseProfile(){
+          if(state.profile.saving||state.profile.photoUploading)return;
+          if(profileDirty.value){profileConfirm.value=true;return;}
+          state.profile.open=false;
+          navigateWorkspace({type:'CLOSE'});
+          Vue.nextTick(()=>document.getElementById('me-v26c-profile-trigger')?.focus({preventScroll:true}));
+        }
         async function openProfile(){
           if(state.profile.open && state.profile.data) return;
           if(!activateSecondary('profile'))return;
           state.profile.open=true;state.profile.busy=true;state.profile.error='';
-          const requestSeq=seq, identity=String(props.user?.id||'');
+          const ticket=++profileRequest,requestSeq=seq, identity=String(props.user?.id||'');
           try {
             const [profile, certs]=await Promise.all([
               root.NeumMiEspacioData.loadProfile((p,o)=>API.request(p,o),controller&&controller.signal),
               root.NeumMiEspacioData.loadMyCertificates((p,o)=>API.request(p,o),controller&&controller.signal)
             ]);
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(ticket!==profileRequest||requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity||!linked.value)return;
             state.profile.data=profile;
             state.profile.certificates=certs;
-            state.profile.edit={
-              mobile_phone:profile.mobilePhone,
-              public_bio:profile.publicBio,
-              orcid_id:profile.orcidId,
-              scholar_url:profile.scholarUrl,
-              researchgate_url:profile.researchgateUrl,
-              pubmed_query:profile.pubmedQuery,
-              is_public:profile.isPublic,
-              indexed_publications_count:profile.indexedPublicationsCount,
-              h_index:profile.hIndex
-            };
+            state.profile.edit=root.NeumMiEspacioData.profileDraft(profile);
+            profileBaseline.value=root.NeumMiEspacioData.profileDraft(profile);
+            profileNotice.value='';
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
             if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido cargar tu perfil.';
           } finally { if(requestSeq===seq) state.profile.busy=false; }
         }
-        function closeProfile(){ closeSecondary('profile'); }
+        function closeProfile(){requestCloseProfile();}
         async function saveProfile(){
-          if(!state.profile.edit || !state.profile.data?.id) return;
-          state.profile.saving=true;state.profile.error='';
-          const requestSeq=seq, identity=String(props.user?.id||'');
-          try {
-            await root.NeumMiEspacioData.updateProfile(
-              (p,o)=>API.request(p,o), state.profile.edit, state.profile.data.id, controller&&controller.signal);
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
-            // Reload profile to get fresh data
-            const profile=await root.NeumMiEspacioData.loadProfile((p,o)=>API.request(p,o),controller&&controller.signal);
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
-            state.profile.data=profile;
-            state.profile.edit={
-              mobile_phone:profile.mobilePhone,
-              public_bio:profile.publicBio,orcid_id:profile.orcidId,scholar_url:profile.scholarUrl,
-              researchgate_url:profile.researchgateUrl,pubmed_query:profile.pubmedQuery,is_public:profile.isPublic,
-              indexed_publications_count:profile.indexedPublicationsCount,h_index:profile.hIndex
-            };
-          } catch(err){
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
-            if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido guardar.';
-          } finally { if(requestSeq===seq) state.profile.saving=false; }
+          if(!linked.value||!state.profile.edit||!state.profile.data?.id||state.profile.saving)return;
+          Object.keys(profileErrors).forEach(k=>delete profileErrors[k]);
+          const validation=root.NeumMiEspacioData.validateProfileDraft(state.profile.edit);
+          if(!validation.valid){
+            Object.assign(profileErrors,validation.errors);
+            state.profile.error='Revisa los campos señalados.';
+            Vue.nextTick(()=>document.querySelector('.me-v26c-profile .me-field [aria-invalid="true"]')?.focus());
+            return;
+          }
+          if(!profileDirty.value){profileNotice.value='No hay cambios pendientes.';return;}
+          const ticket=++profileRequest,requestSeq=seq,identity=String(props.user?.id||'');
+          const same=()=>ticket===profileRequest&&requestSeq===seq&&props.active&&linked.value&&
+            String(props.user?.id||'')===identity&&profileActive.value;
+          const submitted={...validation.fields};
+          state.profile.saving=true;state.profile.error='';profileNotice.value='';
+          try{
+            await root.NeumMiEspacioData.updateProfile((p,o)=>API.request(p,o),submitted,state.profile.data.id,controller&&controller.signal);
+            if(!same())return;
+            // A committed write must not be repeated if the follow-up read fails.
+            profileBaseline.value={...submitted};
+            state.profile.edit={...submitted};
+            navigateWorkspace({type:'SAVE_SUCCESS'});
+            try{
+              const profile=await root.NeumMiEspacioData.loadProfile((p,o)=>API.request(p,o),controller&&controller.signal);
+              if(!same())return;
+              state.profile.data=profile;
+              state.profile.edit=root.NeumMiEspacioData.profileDraft(profile);
+              profileBaseline.value=root.NeumMiEspacioData.profileDraft(profile);
+              profileNotice.value='Cambios guardados y perfil actualizado.';
+            }catch(readErr){
+              if(same())profileNotice.value='Cambios guardados. No se pudo actualizar la vista; vuelve a cargar el perfil.';
+            }
+          }catch(err){
+            if(same()&&err?.name!=='AbortError')state.profile.error=err?.message||'No se ha podido guardar.';
+          }finally{if(same())state.profile.saving=false;}
         }
         async function onPhotoSelect(event){
           const file=event?.target?.files?.[0];
@@ -949,6 +984,7 @@
           // Only nested personal disclosures; keep global shell shortcuts untouched.
           const target=event.target;
           if(!target || typeof target.closest!=='function')return;
+          if(profileConfirm.value && target.closest('.me-v26c-confirm')){cancelDiscard();event.stopPropagation();return;}
           if(isContextWorkspace.value&&workspaceState.value.detail&&target.closest('.me-v26b-workspace')){
             backContextDetail();event.stopPropagation();return;
           }
@@ -960,6 +996,7 @@
           state,linked,initials,can,refresh:load,selectedDuty,
           professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
+          profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,
           researchSummary,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
           toggleNotifPref,leadershipRoles,publicPreview,
           missingFields,completenessHint,scrollToField,
@@ -1025,16 +1062,17 @@
               </div>
             </div>
             <div class="me-v22-identity-footer">
-              <button v-if="linked && !state.profile.open" type="button" class="me-v15-profile-link me-v22-profile-link" @click="openProfile">Mi perfil completo <span aria-hidden="true">→</span></button>
+              <button v-if="linked && !state.profile.open" id="me-v26c-profile-trigger" type="button" class="me-v15-profile-link me-v22-profile-link" @click="openProfile">Mi perfil completo <span aria-hidden="true">→</span></button>
             </div>
           </section>
-          <section v-if="state.profile.open && linked" class="me-v15-profile-panel" aria-label="Mi perfil profesional">
+          <section v-if="profileActive && linked" class="me-v15-profile-panel me-v26c-profile" aria-label="Mi perfil profesional">
             <div class="me-v15-profile-head">
-              <h3>Mi perfil</h3>
-              <button type="button" class="me-v15-profile-close" @click="closeProfile" aria-label="Cerrar perfil">✕</button>
+              <div><p class="mi-espacio-eyebrow">MI ESPACIO / PERFIL PROFESIONAL</p><h3 class="me-v26c-title" tabindex="-1">Mi perfil profesional</h3><p>Datos institucionales verificados y contenido editable de tu perfil.</p></div>
+              <button type="button" class="me-v15-profile-close" @click="closeProfile" aria-label="Volver a Mi espacio">← Volver</button>
             </div>
             <p v-if="state.profile.busy" class="mi-espacio-state" role="status">Cargando perfil…</p>
-            <p v-else-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
+            <p v-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
+            <div v-if="profileConfirm" class="me-v26c-confirm" role="group" aria-labelledby="me-v26c-discard-title"><h4 id="me-v26c-discard-title" class="me-v26c-discard-title" tabindex="-1">Cambios sin guardar</h4><p>Si sales ahora, perderás los cambios del formulario.</p><button type="button" @click="cancelDiscard">Seguir editando</button><button type="button" @click="discardProfile">Descartar y salir</button></div>
             <template v-else-if="state.profile.data && state.profile.edit">
               <div class="me-v15-completeness me-v20-completeness" role="meter" :aria-valuenow="profileCompleteness" aria-valuemin="0" aria-valuemax="100" :aria-label="'Perfil completo al '+profileCompleteness+'%'">
                 <div class="me-v15-completeness-bar"><div class="me-v15-completeness-fill" :style="{width:profileCompleteness+'%'}" :class="{'me-v20-complete':profileCompleteness>=100}"></div></div>
@@ -1105,8 +1143,9 @@
                   <li v-for="(r,i) in leadershipRoles" :key="i"><span class="me-v19-role-badge">{{r.label}}</span> <span class="me-v19-role-name">{{r.name}}</span></li>
                 </ul>
               </div>
-              <form class="me-v15-edit-section" @submit.prevent="saveProfile">
+              <form class="me-v15-edit-section" @submit.prevent="saveProfile" :aria-busy="state.profile.saving">
                 <h4>Datos editables</h4>
+                <p class="me-v26c-edit-hint">Solo los campos de esta sección pueden modificarse desde Mi Espacio. El correo profesional es administrativo.</p>
                 <div class="me-field me-field-readonly"><label>Correo profesional</label><span class="me-readonly-value">{{state.profile.data?.professionalEmail || '—'}}</span><small class="me-readonly-hint">Solo modificable por administración</small></div>
                 <div class="me-field"><label for="me-profile-phone">Teléfono móvil</label><input id="me-profile-phone" type="tel" v-model="state.profile.edit.mobile_phone" maxlength="40"></div>
                 <div class="me-field me-field-wide"><label for="me-profile-bio">Biografía pública</label><textarea id="me-profile-bio" v-model="state.profile.edit.public_bio" rows="3" maxlength="2000" placeholder="Presentación profesional breve."></textarea></div>
@@ -1122,7 +1161,9 @@
                 </div>
                 <div class="me-field me-field-check"><label><input type="checkbox" v-model="state.profile.edit.is_public"> Visible en la web pública del equipo</label></div>
                 <p v-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
-                <div class="me-form-actions"><button type="submit" class="me-btn-primary" :disabled="state.profile.saving">{{state.profile.saving?'Guardando…':'Guardar cambios'}}</button></div>
+                <p v-if="profileNotice" class="me-v26c-notice" role="status">{{profileNotice}}</p>
+                <p v-if="profileDirty" class="me-v26c-dirty" role="status">Tienes cambios sin guardar.</p>
+                <div class="me-form-actions"><button type="button" @click="closeProfile" :disabled="state.profile.saving">Cancelar</button><button type="submit" class="me-btn-primary" :disabled="state.profile.saving || !profileDirty">{{state.profile.saving?'Guardando…':'Guardar cambios'}}</button></div>
               </form>
               <div v-if="state.profile.certificates.length" class="me-v15-certificates">
                 <h4>Mis certificados</h4>
@@ -1299,7 +1340,7 @@
           </section>
 
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
-          <template v-if="linked && !isContextWorkspace">
+          <template v-if="linked && !isContextWorkspace && !profileActive">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
               <span class="me-v10d-loading-label">Cargando actividad vinculada…</span>
               <div class="me-v10d-loading-grid" aria-hidden="true"><div class="me-v10d-loading-block"></div><div class="me-v10d-loading-block"></div></div>
