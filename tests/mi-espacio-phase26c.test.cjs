@@ -35,9 +35,9 @@ test('workspace protects dirty edits, refetches saved data and avoids duplicate 
  assert.match(src,/requestSeq===seq&&props.active&&linked.value/);
 });
 test('profile uses a single contextual surface, with deterministic cancel and responsive keyboard affordances',()=>{
- for(const s of ['class="me-v15-profile-panel me-v26c-profile"','v-if="profileActive && linked"',
+ for(const s of ['class="me-v15-profile-panel me-v26c-profile me-v28-inline-profile"','v-if="profileActive && linked"',
   'role="group" aria-labelledby="me-v26c-discard-title"', 'profileConfirm','discardProfile',
-  '<template v-if="linked && !isContextWorkspace && !profileActive">'])assert.ok(src.includes(s),s);
+  '<template v-if="linked && !isContextWorkspace">'])assert.ok(src.includes(s),s);
  assert.match(css,/\.me-v26c-profile/);assert.match(css,/@media\(max-width:640px\)/);
  const n=nav.create();n.dispatch({type:'OPEN_WORKSPACE',workspace:'profile'});n.dispatch({type:'SET_DIRTY',value:true});
  assert.equal(n.get().workspace,'profile');assert.equal(n.dispatch({type:'CLOSE'}).workspace,'profile');
