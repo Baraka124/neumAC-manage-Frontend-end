@@ -138,7 +138,8 @@
           (['head_of_department','department_head'].includes(state.context?.account?.role) || leadershipRoles.value.length>=2));
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
-          workspaceNav?.reset();
+          if(workspaceNav) workspaceState.value=workspaceNav.reset();
+          ++calendarRequest; ++directoryRequest;
           ++seq;
           if(controller)controller.abort();
           controller=null;
@@ -163,8 +164,16 @@
         const profilePhotoUrl=Vue.computed(()=>state.profile.data?.publicPhotoUrl || '');
         // Exactly one secondary workspace at a time; core activity stays authoritative.
         const workspaceNav=root.NeumMiEspacioWorkspace?.create?.() || null;
+        const workspaceState=Vue.ref(workspaceNav?.get() || {view:'overview',workspace:null,detail:null,origin:null});
+        let calendarRequest=0,directoryRequest=0;
+        function navigateWorkspace(e){const next=workspaceNav?.dispatch(e);if(next)workspaceState.value=next;return next;}
+        const isContextWorkspace=Vue.computed(()=>workspaceState.value.view==='workspace' && ['calendar','directory'].includes(workspaceState.value.workspace));
+        const selectedDate=Vue.computed(()=>workspaceState.value.workspace==='calendar'&&workspaceState.value.detail?.type==='date'?workspaceState.value.detail.id:'');
+        const selectedDayEvents=Vue.computed(()=>state.calendar.events.filter(e=>selectedDate.value&&e.date===selectedDate.value));
+        const selectedColleague=Vue.computed(()=>workspaceState.value.workspace==='directory'&&workspaceState.value.detail?.type==='staff' ?
+          state.colleagues.items.find(c=>c.id===workspaceState.value.detail.id)||null:null);
         function closeSecondary(which){
-          if(workspaceNav?.get().workspace===which)workspaceNav.dispatch({type:'CLOSE'});
+          if(workspaceState.value.workspace===which)navigateWorkspace({type:'CLOSE'});
           if(which==='profile')state.profile.open=false;
           else if(which==='directory')state.colleagues.open=false;
           else if(which==='calendar')state.calendar.open=false;
@@ -172,20 +181,54 @@
           else if(which==='notifications')state.notifications.open=false;
         }
         function activateSecondary(which){
-          const before=workspaceNav?.get();
-          const next=workspaceNav?.dispatch({type:'OPEN_WORKSPACE',workspace:which});
-          if(before?.dirty&&next===before)return false;
+          const before=workspaceState.value, contextual=['calendar','directory'].includes(which);
+          const fallback=which==='calendar'?'me-v26b-calendar-trigger':'me-v26b-directory-trigger';
+          const origin=contextual&&before.view==='overview' ? {
+            focusId:document.activeElement?.id || fallback,scrollY:window.scrollY
+          }:undefined;
+          const next=navigateWorkspace({type:'OPEN_WORKSPACE',workspace:which,origin});
+          if(before.dirty&&next===before)return false;
           if(which!=='profile')state.profile.open=false;
           if(which!=='directory')state.colleagues.open=false;
           if(which!=='calendar')state.calendar.open=false;
           if(which!=='digest')state.digest.open=false;
           if(which!=='notifications')state.notifications.open=false;
           Vue.nextTick(()=>{
-            const selector={profile:'.me-v15-profile-panel',directory:'.me-v20-colleagues',calendar:'.me-v21-calendar',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
-            const element=selector && document.querySelector('.mi-espacio '+selector);
-            if(element)element.scrollIntoView({behavior:'auto',block:'start'});
+            const selector=contextual?'.me-v26b-workspace-title':
+              {profile:'.me-v15-profile-panel',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
+            const el=selector&&document.querySelector('.mi-espacio '+selector);
+            if(el){el.scrollIntoView({behavior:'auto',block:'start'});if(contextual)el.focus({preventScroll:true});}
           });
           return true;
+        }
+        function returnToOverview(){
+          const origin=workspaceState.value.origin,which=workspaceState.value.workspace;
+          navigateWorkspace({type:'BACK'});
+          if(which==='calendar')state.calendar.open=false;
+          if(which==='directory')state.colleagues.open=false;
+          Vue.nextTick(()=>{
+            const fallback=which==='calendar'?'me-v26b-calendar-trigger':'me-v26b-directory-trigger';
+            const control=document.getElementById(origin?.focusId||'')||document.getElementById(fallback);
+            if(Number.isFinite(origin?.scrollY))window.scrollTo({top:origin.scrollY,behavior:'auto'});
+            control?.focus({preventScroll:true});
+          });
+        }
+        function backContextDetail(){
+          const detail=workspaceState.value.detail;if(!detail)return;
+          navigateWorkspace({type:'BACK'});
+          Vue.nextTick(()=>{
+            const id=(detail.type==='date'?'me-v26b-day-':'me-v26b-staff-')+detail.id;
+            (document.getElementById(id)||document.querySelector('.me-v26b-workspace-title'))?.focus({preventScroll:true});
+          });
+        }
+        function selectCalendarDate(date){
+          if(state.calendar.busy||!calendarDays.value.some(c=>c.day&&c.date===date))return;
+          navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'date',id:date}});
+        }
+        function selectColleague(person){
+          if(!person?.id||!state.colleagues.items.some(c=>c.id===person.id))return;
+          navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'staff',id:person.id}});
+          Vue.nextTick(()=>document.querySelector('.me-v26b-staff-detail h4')?.focus({preventScroll:true}));
         }
         function toggleNotifications(){
           if(state.notifications.open){closeSecondary('notifications');return;}
@@ -355,17 +398,20 @@
         // ── Phase 20: colleague directory ──
         async function loadColleagues(){
           if(!activateSecondary('directory'))return;
-          if(state.colleagues.items.length) { state.colleagues.open=true; return; }
+          if(state.colleagues.items.length){state.colleagues.open=true;return;}
           state.colleagues.open=true;state.colleagues.busy=true;state.colleagues.error='';
-          const requestSeq=seq, identity=String(props.user?.id||'');
-          try {
+          const ticket=++directoryRequest,requestSeq=seq,identity=String(props.user?.id||'');
+          const current=()=>ticket===directoryRequest&&requestSeq===seq&&props.active&&linked.value&&
+            String(props.user?.id||'')===identity&&workspaceState.value.workspace==='directory';
+          try{
             const items=await root.NeumMiEspacioData.loadColleagues((p,o)=>API.request(p,o),controller&&controller.signal);
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(!current())return;
             state.colleagues.items=items;
-          } catch(err){
-            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
-            if(err?.name!=='AbortError') state.colleagues.error=err?.message||'No se ha podido cargar el directorio.';
-          } finally { if(requestSeq===seq) state.colleagues.busy=false; }
+            if(workspaceState.value.detail?.type==='staff' &&
+              !items.some(c=>c.id===workspaceState.value.detail.id))navigateWorkspace({type:'BACK'});
+          }catch(err){
+            if(current()&&err?.name!=='AbortError')state.colleagues.error=err?.message||'No se ha podido cargar el directorio.';
+          }finally{if(ticket===directoryRequest&&requestSeq===seq)state.colleagues.busy=false;}
         }
         const filteredColleagues=Vue.computed(()=>{
           const q=state.colleagues.search.toLowerCase().trim();
@@ -438,13 +484,19 @@
         async function openCalendar(month){
           if(!state.calendar.open&&!activateSecondary('calendar'))return;
           const m=month||state.calendar.month||currentMonth();
-          state.calendar.open=true;state.calendar.busy=true;state.calendar.error='';state.calendar.month=m;
-          try {
+          if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(m))return;
+          if(selectedDate.value)navigateWorkspace({type:'BACK'});
+          state.calendar.open=true;state.calendar.busy=true;state.calendar.error='';
+          state.calendar.events=[];state.calendar.month=m;
+          const ticket=++calendarRequest,requestSeq=seq,identity=String(props.user?.id||'');
+          const current=()=>ticket===calendarRequest&&requestSeq===seq&&props.active&&linked.value&&
+            String(props.user?.id||'')===identity&&workspaceState.value.workspace==='calendar'&&state.calendar.month===m;
+          try{
             const result=await root.NeumMiEspacioData.loadCalendar((p,o)=>API.request(p,o),controller&&controller.signal,m);
-            state.calendar.events=result.events;
-          } catch(err){
-            if(err?.name!=='AbortError') state.calendar.error=err?.message||'Error cargando calendario.';
-          } finally { state.calendar.busy=false; }
+            if(current())state.calendar.events=result.events;
+          }catch(err){
+            if(current()&&err?.name!=='AbortError')state.calendar.error=err?.message||'Error cargando calendario.';
+          }finally{if(ticket===calendarRequest&&requestSeq===seq)state.calendar.busy=false;}
         }
         function calendarPrev(){ const [y,m]=state.calendar.month.split('-').map(Number); const pm=m===1?12:m-1; const py=m===1?y-1:y; openCalendar(py+'-'+String(pm).padStart(2,'0')); }
         function calendarNext(){ const [y,m]=state.calendar.month.split('-').map(Number); const nm=m===12?1:m+1; const ny=m===12?y+1:y; openCalendar(ny+'-'+String(nm).padStart(2,'0')); }
@@ -896,6 +948,9 @@
           // Only nested personal disclosures; keep global shell shortcuts untouched.
           const target=event.target;
           if(!target || typeof target.closest!=='function')return;
+          if(isContextWorkspace.value&&workspaceState.value.detail&&target.closest('.me-v26b-workspace')){
+            backContextDetail();event.stopPropagation();return;
+          }
           if(target.closest('.me-duty-list') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
           else if(target.closest('.me-publication-layout') && selectedPublication.value){closePublication();event.stopPropagation();}
           else if(target.closest('.me-portfolio:not(.me-publications)') && selectedResearch.value){closeResearch();event.stopPropagation();}
@@ -910,6 +965,8 @@
           TIMELINE_FILTERS,filteredTimeline,
           quickActionItems,doQuickAction,
           loadColleagues,filteredColleagues,toggleNotifications,closeSecondary,
+          workspaceState,isContextWorkspace,selectedDate,selectedDayEvents,selectedColleague,
+          selectCalendarDate,selectColleague,backContextDetail,returnToOverview,
           notificationBadge,upcomingEvents,showPhotoNudge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,localToday,
           openDigest,digestResourceLabel,exportCV,exportDossier,
           urgentCertificates,certUrgencyLabel,fmtRelative,
@@ -1102,7 +1159,7 @@
               </div>
             </template>
           </section>
-          <div v-if="linked && upcomingEvents.length && !state.profile.open" class="me-v23-upcoming" aria-label="Próximos 7 días">
+          <div v-if="linked && upcomingEvents.length && !state.profile.open && !isContextWorkspace" class="me-v23-upcoming" aria-label="Próximos 7 días">
             <div v-for="(ev,i) in upcomingEvents" :key="i" class="me-v23-event" :data-urgency="ev.urgency">
               <span class="me-v23-event-icon">{{ev.icon}}</span>
               <div class="me-v23-event-text"><span class="me-v23-event-title">{{ev.title}}</span><span class="me-v23-event-date">{{fmtDate(ev.date)}}</span></div>
@@ -1111,11 +1168,11 @@
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
             <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
             <button type="button" class="me-v21-notif-btn" @click="toggleNotifications" :aria-expanded="state.notifications.open" aria-label="Notificaciones">🔔<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
-            <button type="button" class="me-v20-directory-btn" @click="loadColleagues">Directorio</button>
-            <button type="button" class="me-v21-cal-btn" @click="openCalendar()">📅</button>
+            <button id="me-v26b-directory-trigger" type="button" class="me-v20-directory-btn" @click="loadColleagues" :aria-expanded="isContextWorkspace && workspaceState.workspace==='directory'" aria-controls="me-v26b-directory">Directorio</button>
+            <button id="me-v26b-calendar-trigger" type="button" class="me-v21-cal-btn" @click="openCalendar()" :aria-expanded="isContextWorkspace && workspaceState.workspace==='calendar'" aria-controls="me-v26b-calendar" aria-label="Abrir calendario">📅</button>
             <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">📄 {{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
           </div>
-          <div v-if="state.quickActions && linked" class="me-v20-quick-actions">
+          <div v-if="state.quickActions && linked && !isContextWorkspace" class="me-v20-quick-actions">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
           </div>
           <!-- Secondary workspaces stay adjacent to their toolbar, not below the full activity page. -->
@@ -1236,7 +1293,7 @@
           </section>
 
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
-          <template v-if="linked">
+          <template v-if="linked && !isContextWorkspace">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
               <span class="me-v10d-loading-label">Cargando actividad vinculada…</span>
               <div class="me-v10d-loading-grid" aria-hidden="true"><div class="me-v10d-loading-block"></div><div class="me-v10d-loading-block"></div></div>
