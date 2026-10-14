@@ -70,7 +70,7 @@ for(const [name,scenario] of Object.entries(cases)){
      const list=page.locator('#me-v28d-rotations');
      await expect(page.locator('.me-v10-rotation-feature')).toContainText('UCI');
      await expect(list.locator('li')).toHaveCount(1);
-     const disclosure=page.getByRole('button',{name:/Mis rotaciones/});
+     const disclosure=page.getByRole('button',{name:/Rotaciones/});
      await expect(disclosure).toHaveAttribute('aria-expanded','false');
      await disclosure.click();
      await expect(disclosure).toHaveAttribute('aria-expanded','true');
@@ -139,7 +139,7 @@ for(const [name,scenario] of Object.entries(cases)){
    }
    if(name==='head' || name==='clinician'){
      const app=page.locator('.mi-espacio');
-     await page.getByRole('button',{name:/Mi perfil completo/}).click();
+     await page.getByRole('button',{name:/Perfil profesional/}).click();
      await expect(app.locator('.me-v26c-profile')).toBeVisible();
      await expect(app.locator('.me-v9-overview')).toBeVisible();
      await expect(app.locator('.me-v28-profile-toggle')).toHaveAttribute('aria-expanded','true');
