@@ -89,7 +89,7 @@ test('403 Calendar and Directory stay denied, never display fabricated records',
  await expect(app.locator('.me-v21-calendar')).toContainText('Acceso denegado por el servidor');
  await expect(app.locator('.me-v26b-day')).toHaveCount(0);
  await app.getByRole('button',{name:'Directorio',exact:true}).click();
- await expect(app.locator('.me-v26b-directory')).toContainText('Acceso denegado por el servidor');
+ await expect(app.locator('#me-v26b-directory')).toContainText('Acceso denegado por el servidor');
  await expect(app.locator('.me-v20-colleague-card')).toHaveCount(0);
  expect(await page.evaluate(()=>window.__errors)).toEqual([]);
 });
