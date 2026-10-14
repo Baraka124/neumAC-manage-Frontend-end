@@ -1713,3 +1713,36 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio .me-v35-history-toggle[aria-expanded=true] .me-v28-chevron{transform:rotate(180deg)}
 .mi-espacio .me-v35-history-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.mi-espacio .me-v35-history-toggle .me-v28-chevron{transition:none!important}}
+
+/* Phase 38 · a single, quiet reading grammar across professional workspaces. */
+.mi-espacio--v9 :is(.me-v9-overview,.me-v9-lower-grid,.me-v26d-workspace,.me-v26b-workspace){min-width:0}
+.mi-espacio--v9 :is(.me-v9-panel,.me-v9-publications,.me-v9-services){min-width:0;overflow-wrap:anywhere}
+.mi-espacio--v9 :is(.me-v9-panel-heading h3,.me-v26d-title,.me-v35-heading h4){font-family:inherit;letter-spacing:-.017em}
+.mi-espacio--v9 .me-v22-identity-top{padding-block:clamp(14px,1.7vw,21px)}
+.mi-espacio--v9 .me-v22-identity-meta{margin-top:0}
+.mi-espacio--v9 .me-v9-overview{align-items:start;gap:clamp(20px,2.2vw,32px)}
+.mi-espacio--v9 .me-v9-overview.me-v12-research-priority{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.mi-espacio--v9 .me-v9-overview.me-v12-research-priority>.me-v8-research{grid-column:2;grid-row:1}
+.mi-espacio--v9 .me-v9-overview.me-v12-research-priority>.me-v8-agenda{grid-column:1;grid-row:1}
+.mi-espacio--v9 .me-v15-profile-panel .me-v15-photo-section{margin-bottom:12px}
+.mi-espacio--v9 .me-v35-participation{border-top:0;padding-top:12px}
+.mi-espacio--v9 .me-v26c-profile .me-v20-completeness{margin-top:18px}
+.mi-espacio--v9 .me-v26c-profile .me-v15-edit-section{scroll-margin-top:100px}
+.mi-espacio--v9 .me-v38-research-list>li{padding-block:0;display:block}
+.mi-espacio--v9 .me-v38-research-disclosure{width:100%;min-width:0}
+.mi-espacio--v9 .me-v38-research-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;padding:12px 0;list-style:none;cursor:pointer}
+.mi-espacio--v9 .me-v38-research-summary::-webkit-details-marker{display:none}
+.mi-espacio--v9 .me-v38-research-summary-text{display:flex;flex-direction:column;gap:5px;min-width:0}
+.mi-espacio--v9 .me-v38-research-summary-text strong{font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+.mi-espacio--v9 .me-v38-research-summary-text span{color:var(--me30-secondary,#566f73);font-size:13px}
+.mi-espacio--v9 .me-v38-research-summary .me-v28-chevron{flex-shrink:0;color:#477e78;transition:transform .18s ease}
+.mi-espacio--v9 .me-v38-research-disclosure[open] .me-v28-chevron{transform:rotate(180deg)}
+.mi-espacio--v9 .me-v38-research-meta{font-size:13px;line-height:1.6;color:var(--me30-secondary,#566f73);padding:0 0 16px;margin:0}
+.mi-espacio--v9 .me-v38-research-summary:focus-visible{outline:3px solid #158a89;outline-offset:3px}
+.mi-espacio--v9 .me-activity-placeholder{min-height:210px}
+@media(max-width:850px){
+ .mi-espacio--v9 .me-v9-overview.me-v12-research-priority{grid-template-columns:minmax(0,1fr)}
+ .mi-espacio--v9 .me-v9-overview.me-v12-research-priority>.me-v8-research,
+ .mi-espacio--v9 .me-v9-overview.me-v12-research-priority>.me-v8-agenda{grid-column:auto;grid-row:auto}
+}
+@media(prefers-reduced-motion:reduce){.mi-espacio--v9 .me-v38-research-summary .me-v28-chevron{transition:none!important}}
