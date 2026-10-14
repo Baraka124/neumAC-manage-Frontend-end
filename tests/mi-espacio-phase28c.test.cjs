@@ -11,5 +11,5 @@ test('on-call date label never claims active shift or inferred availability',()=
  assert.ok(s.includes("upcomingGuardias[0].date===localToday"));
  assert.ok(s.includes("GUARDIA REGISTRADA HOY"));
  assert.ok(s.includes("PRÓXIMA GUARDIA"));
- assert.ok(s.includes("state.operationsOpen={guardias:false,absences:false,supervision:false}"));
+ assert.ok(s.includes("state.operationsOpen={guardias:false,absences:false,supervision:false,rotations:false,otherRotations:false}"));
 });
