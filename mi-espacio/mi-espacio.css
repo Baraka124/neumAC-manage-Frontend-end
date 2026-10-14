@@ -937,3 +937,23 @@
 @media(max-width:760px){.mi-espacio .me-v26b-split{grid-template-columns:minmax(0,1fr)}.mi-espacio .me-v26b-detail{border-left:0;border-top:1px solid #dfe8e5;padding:19px 0 4px}.mi-espacio .me-v26b-day{min-height:49px}.mi-espacio .me-v26b-day .me-v26b-count{font-size:9px}.mi-espacio .me-v26b-topline{flex-wrap:wrap}}
 @media(max-width:430px){.mi-espacio .me-v26b-workspace{padding:16px}.mi-espacio .me-v26b-day{min-height:42px;padding:1px}.mi-espacio .me-v26b-day .me-v26b-count{font-size:8px}.mi-espacio .me-v26b-workspace .me-v21-cal-grid{gap:0}}
 @media(prefers-reduced-motion:reduce){.mi-espacio .me-v26b-workspace *{scroll-behavior:auto;transition:none}}
+
+/* Phase 26C — Profile as a stable, scrollable professional workspace. */
+.mi-espacio .me-v26c-profile{padding:clamp(20px,2.8vw,36px);border-color:#dae4e2;border-radius:10px;scroll-margin-top:90px}
+.mi-espacio .me-v26c-profile .me-v15-profile-head{align-items:flex-start;gap:20px;border-bottom:1px solid #e1e9e6;padding-bottom:22px;margin-bottom:22px}
+.mi-espacio .me-v26c-profile .me-v26c-title{font-size:clamp(22px,2.4vw,31px);line-height:1.2;font-weight:680;color:var(--me-ink);outline-offset:4px}
+.mi-espacio .me-v26c-profile .me-v15-profile-head p:last-child{font-size:14px;line-height:1.6;color:var(--me-muted);margin:8px 0 0}
+.mi-espacio .me-v26c-profile .me-v15-readonly-section{padding-block:12px 6px;border-bottom:1px solid #edf1f0}
+.mi-espacio .me-v26c-profile .me-v15-edit-section{padding-top:24px;max-width:860px}
+.mi-espacio .me-v26c-profile .me-v15-edit-section :is(input,textarea):focus-visible{outline:3px solid #158a89;outline-offset:2px}
+.mi-espacio .me-v26c-edit-hint{font-size:13px;line-height:1.6;color:var(--me-muted)}
+.mi-espacio .me-v26c-confirm{padding:18px 20px;margin:16px 0;border:1px solid #a16b30;border-radius:8px;background:#fffaf2}
+.mi-espacio .me-v26c-confirm h4{font-size:16px;margin:0 0 8px;color:var(--me-ink)}
+.mi-espacio .me-v26c-confirm p{font-size:13px;margin:0 0 12px}
+.mi-espacio .me-v26c-confirm button{padding:10px 13px;margin:3px 8px 3px 0;min-height:42px;border:1px solid #a1adaa;background:white;border-radius:6px;cursor:pointer}
+.mi-espacio .me-v26c-notice{font-size:13px;color:#17654e}
+.mi-espacio .me-v26c-dirty{font-size:13px;color:#81551f}
+.mi-espacio .me-v26c-profile .me-form-actions button{min-height:44px}
+.mi-espacio .me-v26c-profile :is(button,input,textarea):focus-visible{outline:3px solid #158a89;outline-offset:2px}
+@media(max-width:640px){.mi-espacio .me-v26c-profile .me-v15-profile-head{flex-direction:column;align-items:flex-start}.mi-espacio .me-v26c-profile{padding:16px}.mi-espacio .me-v26c-profile .me-v15-edit-section{max-width:100%}}
+@media(prefers-reduced-motion:reduce){.mi-espacio .me-v26c-profile *{transition:none!important;scroll-behavior:auto!important}}
