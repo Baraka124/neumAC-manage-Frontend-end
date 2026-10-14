@@ -1001,6 +1001,20 @@
           navigateWorkspace({type:'BACK'});
           Vue.nextTick(()=>document.getElementById(which==='research'?'me-v26d-research-trigger':'me-v26d-publications-trigger')?.focus({preventScroll:true}));
         }
+        // Phase 28E: preserve the clicked disclosure's viewport position after Vue patches.
+        // Read-only presentation behavior only; no data, navigation or authorization changes.
+        function anchorInlineDisclosure(event){
+          const target=event.target;
+          const control=target?.closest?.('.me-v28-disclosure-toggle,.me-v28-profile-toggle');
+          if(!control||!event.currentTarget?.contains(control))return;
+          const before=control.getBoundingClientRect().top;
+          // A microtask lets the bubble handler schedule Vue's render before nextTick.
+          Promise.resolve().then(()=>Vue.nextTick(()=>{
+            if(!control.isConnected)return;
+            const delta=control.getBoundingClientRect().top-before;
+            if(Math.abs(delta)>1)window.scrollBy({top:delta,behavior:'auto'});
+          }));
+        }
         function onEscape(event){
           // Only nested personal disclosures; keep global shell shortcuts untouched.
           const target=event.target;
@@ -1034,7 +1048,7 @@
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
           researchRecordTitle,researchRecordMeta,researchRecordRole,
-          changeResearchGroup,selectResearch,closeResearch,selectPublication,closePublication,onEscape,
+          changeResearchGroup,selectResearch,closeResearch,selectPublication,closePublication,onEscape,anchorInlineDisclosure,
           navigate:view=>can(view)&&emit('navigate',view),
           fmtDate,
           guardiaRole:k=>label(GUARDIA,k), rotationRole:k=>label(ROTATION,k),
@@ -1048,7 +1062,7 @@
         };
       },
       template: `
-      <section class="mi-espacio mi-espacio--v8 mi-espacio--v9" :class="{'me-v25-leadership':leadershipFocus}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape">
+      <section class="mi-espacio mi-espacio--v8 mi-espacio--v9" :class="{'me-v25-leadership':leadershipFocus}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape" @click.capture="anchorInlineDisclosure">
         <header class="mi-espacio-head me-v9-accessible-head"><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
@@ -1437,7 +1451,7 @@
                   <div v-if="upcomingGuardias.length" class="me-v8-commitments">
                     <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">{{upcomingGuardias[0].date===localToday?'GUARDIA REGISTRADA HOY':'PRÓXIMA GUARDIA'}}</span><strong>{{fmtDutyDate(upcomingGuardias[0].date)}}</strong><span>{{dutyShift(upcomingGuardias[0].shift)}} · {{guardiaRole(upcomingGuardias[0].role)}}</span></div>
                     <ol v-if="upcomingGuardias.length>1" id="me-v28c-guardias" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in upcomingGuardias.slice(1,state.operationsOpen.guardias?upcomingGuardias.length:3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
-                    <button v-if="upcomingGuardias.length>3" type="button" class="me-v28-disclosure-toggle" aria-controls="me-v28c-guardias" :aria-expanded="state.operationsOpen.guardias" @click="state.operationsOpen.guardias=!state.operationsOpen.guardias"><span>{{state.operationsOpen.guardias?'Mostrar menos guardias':'Mostrar próximas guardias'}}</span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                    <button v-if="upcomingGuardias.length>3" type="button" class="me-v28-disclosure-toggle" aria-controls="me-v28c-guardias" :aria-expanded="state.operationsOpen.guardias" @click="state.operationsOpen.guardias=!state.operationsOpen.guardias"><span>{{state.operationsOpen.guardias?'Mostrar menos guardias':'Mostrar próximas guardias'}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="state.activity.agenda.guardias.length && !personalRotations.length && !supervisedRotations.length" class="me-v8-commitments">
@@ -1463,7 +1477,7 @@
                       <button v-if="personalRotations.length>(state.activity.agenda.guardias.length?1:2)" type="button"
                         class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.rotations"
                         aria-controls="me-v28d-rotations" @click="state.operationsOpen.rotations=!state.operationsOpen.rotations">
-                        <span>Mis rotaciones <small>{{personalRotations.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span>
+                        <span>Mis rotaciones <small>{{personalRotations.length}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                       </button>
                       <h4 v-else class="me-v28d-static-title">Mis rotaciones <small>{{personalRotations.length}}</small></h4>
                       <ul id="me-v28d-rotations" class="me-v28d-rotation-list">
@@ -1475,14 +1489,14 @@
                       </ul>
                     </div>
                     <div v-if="supervisedRotations.length> (state.activity.agenda.guardias.length||personalRotations.length?0:1)" class="me-v28-disclosure">
-                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.supervision" aria-controls="me-v28c-supervision" @click="state.operationsOpen.supervision=!state.operationsOpen.supervision"><span>Rotaciones que superviso <small>{{supervisedRotations.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.supervision" aria-controls="me-v28c-supervision" @click="state.operationsOpen.supervision=!state.operationsOpen.supervision"><span>Rotaciones que superviso <small>{{supervisedRotations.length}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                       <ul id="me-v28c-supervision"><li v-for="r in supervisedRotations.slice(state.activity.agenda.guardias.length||personalRotations.length?0:1,state.operationsOpen.supervision?supervisedRotations.length:(state.activity.agenda.guardias.length||personalRotations.length?1:2))" :key="r.id">{{r.resident||r.unit||'Rotación supervisada'}} <small>{{r.resident&&r.unit?r.unit+' · ':''}}{{fmtPeriod(r.start,r.end)}}</small></li></ul>
                     </div>
                     <div v-if="otherRotations.length" class="me-v28-disclosure me-v28d-other-rotations">
                       <button v-if="otherRotations.length>1" type="button" class="me-v28-disclosure-toggle"
                         :aria-expanded="state.operationsOpen.otherRotations" aria-controls="me-v28d-other-rotations"
                         @click="state.operationsOpen.otherRotations=!state.operationsOpen.otherRotations">
-                        <span>Otras rotaciones vinculadas <small>{{otherRotations.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span>
+                        <span>Otras rotaciones vinculadas <small>{{otherRotations.length}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                       </button>
                       <h4 v-else class="me-v28d-static-title">Otras rotaciones vinculadas</h4>
                       <ul id="me-v28d-other-rotations" class="me-v28d-rotation-list">
@@ -1493,22 +1507,22 @@
                         </li>
                       </ul>
                     </div>
-                    <div v-if="state.activity.agenda.absences.length" class="me-v28-disclosure"><button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.absences" aria-controls="me-v28c-absences" @click="state.operationsOpen.absences=!state.operationsOpen.absences"><span>Ausencias <small>{{state.activity.agenda.absences.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button><ul id="me-v28c-absences" class="me-v19-absence-list"><li v-for="a in state.activity.agenda.absences.slice(0,state.operationsOpen.absences?state.activity.agenda.absences.length:1)" :key="a.id" class="me-v19-absence-item"><span class="me-v19-absence-reason">{{absenceReasonLabel(a.reason)||a.type||'Ausencia'}}</span><span class="me-v19-absence-dates">{{fmtPeriod(a.start,a.end)}}<template v-if="a.days"> · {{a.days}} día{{a.days!==1?'s':''}}</template></span><span class="me-chip me-v19-absence-status" :data-tone="a.status">{{absenceStatusLabel(a.status)}}</span></li></ul></div>
+                    <div v-if="state.activity.agenda.absences.length" class="me-v28-disclosure"><button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.absences" aria-controls="me-v28c-absences" @click="state.operationsOpen.absences=!state.operationsOpen.absences"><span>Ausencias <small>{{state.activity.agenda.absences.length}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><ul id="me-v28c-absences" class="me-v19-absence-list"><li v-for="a in state.activity.agenda.absences.slice(0,state.operationsOpen.absences?state.activity.agenda.absences.length:1)" :key="a.id" class="me-v19-absence-item"><span class="me-v19-absence-reason">{{absenceReasonLabel(a.reason)||a.type||'Ausencia'}}</span><span class="me-v19-absence-dates">{{fmtPeriod(a.start,a.end)}}<template v-if="a.days"> · {{a.days}} día{{a.days!==1?'s':''}}</template></span><span class="me-chip me-v19-absence-status" :data-tone="a.status">{{absenceStatusLabel(a.status)}}</span></li></ul></div>
                   </div>
                 </section>
                 <section v-if="hasResearch" class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PARTICIPACIÓN VERIFICADA</p><h3 id="me-v9-research-title">Mi investigación</h3></div></div>
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
                     <div v-if="state.activity.research.lines.length" class="me-v28-disclosure">
-                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.lines" aria-controls="me-v28-lines" @click="state.researchOpen.lines=!state.researchOpen.lines"><span>Líneas de investigación <small>{{state.activity.counts.lines}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.lines" aria-controls="me-v28-lines" @click="state.researchOpen.lines=!state.researchOpen.lines"><span>Líneas de investigación <small>{{state.activity.counts.lines}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                       <ul id="me-v28-lines"><li v-for="l in state.activity.research.lines.slice(0,state.researchOpen.lines?state.activity.research.lines.length:2)" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul>
                     </div>
                     <div v-if="state.activity.research.studies.length" class="me-v28-disclosure">
-                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.researchOpen.studies=!state.researchOpen.studies"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.researchOpen.studies=!state.researchOpen.studies"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                       <ul id="me-v28-studies"><li v-for="st in state.activity.research.studies.slice(0,state.researchOpen.studies?state.activity.research.studies.length:2)" :key="st.id"><span>{{st.title}}</span><small>{{studyRole(st.role)}}<template v-if="st.code"> · {{st.code}}</template></small></li></ul>
                     </div>
                     <div v-if="state.activity.research.projects.length" class="me-v28-disclosure">
-                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.researchOpen.projects=!state.researchOpen.projects"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.researchOpen.projects=!state.researchOpen.projects"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                       <ul id="me-v28-projects"><li v-for="p in state.activity.research.projects.slice(0,state.researchOpen.projects?state.activity.research.projects.length:2)" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul>
                     </div>
                   </div>
@@ -1529,7 +1543,7 @@
                   <p v-if="!state.activity.publications.items.length && !state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p>
                   <p v-else-if="!state.activity.publications.items.length" class="me-v8-quiet">No hay publicaciones vinculadas a tu perfil.</p>
                   <button v-if="state.activity.publications.items.length" id="me-v26d-publications-trigger" type="button" @click="openPortfolio('publications')">Explorar mis publicaciones →</button>
-                   <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle me-v28-disclosure-toggle" :aria-expanded="state.publicationsExpanded" aria-controls="me-v28-publications" @click="state.publicationsExpanded=!state.publicationsExpanded"><span>{{state.publicationsExpanded?'Mostrar menos publicaciones':'Mostrar todas las publicaciones'}}</span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                   <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle me-v28-disclosure-toggle" :aria-expanded="state.publicationsExpanded" aria-controls="me-v28-publications" @click="state.publicationsExpanded=!state.publicationsExpanded"><span>{{state.publicationsExpanded?'Mostrar menos publicaciones':'Mostrar todas las publicaciones'}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </section>
                 <section class="me-v9-services" aria-label="Comunicaciones y gestiones">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">GESTIÓN PERSONAL</p><h3>Comunicaciones</h3></div></div>
