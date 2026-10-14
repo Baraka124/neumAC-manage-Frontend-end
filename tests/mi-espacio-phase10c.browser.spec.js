@@ -22,6 +22,7 @@ async function mount(page,kind){
  await page.addStyleTag({content:read('mi-espacio/mi-espacio.css')});
  await page.addScriptTag({content:vue});
  await page.addScriptTag({content:read('mi-espacio/mi-espacio-data.js')});
+ await page.addScriptTag({content:read('mi-espacio/mi-espacio-workspace.js')});
  await page.addScriptTag({content:read('mi-espacio/mi-espacio.js')});
  await page.evaluate(({a,staffType})=>{
   const context={id:'test-user',account_status:'active',full_name:'Persona de Prueba',email:'test@example.invalid',medical_staff_id:'staff-1',linked_staff:{id:'staff-1',full_name:'Persona de Prueba',staff_type:staffType}};
@@ -29,6 +30,12 @@ async function mount(page,kind){
    if(endpoint==='/api/auth/me')return Promise.resolve(context);
    if(endpoint==='/api/me/context')return Promise.resolve(a);
    if(endpoint==='/api/me/discrepancies')return Promise.resolve([]);
+   if(endpoint.startsWith('/api/me/calendar')){
+     const month=new URL('https://test.invalid'+endpoint).searchParams.get('month') ||
+       new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+     return Promise.resolve({month,events:[{id:'c-1',date:month+'-14',title:'Guardia verificada',type:'guardia',status:'confirmada'}]});
+   }
+   if(endpoint==='/api/me/colleagues')return Promise.resolve([{id:'staff-2',name:'Profesional Visible',title:'Neumología',department:'Servicio autorizado',bio:'Información profesional pública'}]);
    if(endpoint.startsWith('/api/discrepancies?'))return Promise.resolve([]);
    throw new Error('Unexpected endpoint '+endpoint);
   };
@@ -87,19 +94,28 @@ for(const [name,scenario] of Object.entries(cases)){
    }
    if(name==='head' || name==='clinician'){
      const app=page.locator('.mi-espacio');
-     await page.getByRole('button',{name:'📅'}).click();
-     await expect(app.locator('.me-v21-calendar')).toBeVisible();
-     const placement=await app.evaluate(el=>{
-       const toolbar=el.querySelector('.me-v20-quick-bar'),panel=el.querySelector('.me-v21-calendar'),agenda=el.querySelector('.me-v9-overview');
-       return !!(toolbar && panel && agenda && (toolbar.compareDocumentPosition(panel)&Node.DOCUMENT_POSITION_FOLLOWING) && (panel.compareDocumentPosition(agenda)&Node.DOCUMENT_POSITION_FOLLOWING));
-     });
-     expect(placement).toBe(true);
+     await page.getByRole('button',{name:'Abrir calendario'}).click();
+     await expect(app.locator('.me-v21-calendar.me-v26b-workspace')).toBeVisible();
+     await expect(app.locator('.me-v9-overview')).toHaveCount(0);
+     await expect(app.locator('.me-v26b-workspace-title')).toBeFocused();
+     // Selecting a verified day opens a contextual detail without reopening the overview.
+     const withEvent=app.locator('.me-v26b-day').filter({hasText:'eventos'}).first();
+     await withEvent.click();
+     await expect(app.locator('.me-v26b-detail')).toContainText('Guardia verificada');
+     await page.keyboard.press('Escape');
+     await expect(app.locator('.me-v26b-detail')).toContainText('Selecciona un día');
      await page.getByRole('button',{name:'Directorio',exact:true}).click();
-     await expect(app.locator('.me-v20-colleagues')).toBeVisible();
+     await expect(app.locator('.me-v20-colleagues.me-v26b-workspace')).toBeVisible();
      await expect(app.locator('.me-v21-calendar')).toHaveCount(0);
+     await expect(app.locator('.me-v9-overview')).toHaveCount(0);
+     await app.getByRole('button',{name:/Profesional Visible/}).click();
+     await expect(app.locator('.me-v26b-staff-detail')).toContainText('Información profesional pública');
+     await app.getByRole('button',{name:'← Volver a resultados'}).click();
+     await expect(app.locator('.me-v26b-staff-detail')).toContainText('Selecciona un profesional');
      await page.getByRole('button',{name:'Notificaciones'}).click();
      await expect(app.locator('.me-v21-notifications')).toBeVisible();
      await expect(app.locator('.me-v20-colleagues')).toHaveCount(0);
+     await expect(app.locator('.me-v9-overview')).toBeVisible();
    }
    if(name==='head' && viewport.width>850){
      await expect(page.locator('.mi-espacio')).toHaveClass(/me-v25-leadership/);
