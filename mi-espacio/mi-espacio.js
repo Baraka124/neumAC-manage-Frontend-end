@@ -239,11 +239,12 @@
         function selectCalendarDate(date){
           if(state.calendar.busy||!calendarDays.value.some(c=>c.day&&c.date===date))return;
           navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'date',id:date}});
+          Vue.nextTick(()=>document.querySelector('.mi-espacio .me-v26b-calendar-detail-title')?.focus({preventScroll:true}));
         }
         function selectColleague(person){
           if(!person?.id||!state.colleagues.items.some(c=>c.id===person.id))return;
           navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'staff',id:person.id}});
-          Vue.nextTick(()=>document.querySelector('.me-v26b-staff-detail h4')?.focus({preventScroll:true}));
+          Vue.nextTick(()=>document.querySelector('.mi-espacio .me-v26b-staff-detail-title')?.focus({preventScroll:true}));
         }
         function toggleNotifications(){
           if(state.notifications.open){closeSecondary('notifications');return;}
@@ -999,8 +1000,7 @@
         function closePortfolio(){
           const which=workspaceState.value.workspace;
           if(!['research','publications'].includes(which))return;
-          navigateWorkspace({type:'BACK'});
-          Vue.nextTick(()=>document.getElementById(which==='research'?'me-v26d-research-trigger':'me-v26d-publications-trigger')?.focus({preventScroll:true}));
+          returnToOverview();
         }
         // Phase 28E: preserve the clicked disclosure's viewport position after Vue patches.
         // Read-only presentation behavior only; no data, navigation or authorization changes.
@@ -1285,7 +1285,7 @@
               <aside class="me-v26b-detail me-v26b-staff-detail" aria-label="Vista previa profesional">
                 <template v-if="selectedColleague">
                   <button type="button" @click="backContextDetail">← Volver a resultados</button>
-                  <h4 tabindex="-1">{{selectedColleague.name}}</h4>
+                  <h4 class="me-v26b-staff-detail-title" tabindex="-1">{{selectedColleague.name}}</h4>
                   <p v-if="selectedColleague.title || selectedColleague.specialization">{{selectedColleague.title || selectedColleague.specialization}}</p>
                   <p v-if="selectedColleague.department">{{selectedColleague.department}}</p>
                   <p v-if="selectedColleague.bio">{{selectedColleague.bio}}</p>
@@ -1339,7 +1339,7 @@
               </div>
               <aside class="me-v26b-detail" aria-label="Agenda del día">
                 <template v-if="selectedDate">
-                  <button type="button" @click="backContextDetail">← Volver al mes</button><h4>{{fmtDate(selectedDate)}}</h4>
+                  <button type="button" @click="backContextDetail">← Volver al mes</button><h4 class="me-v26b-calendar-detail-title" tabindex="-1">{{fmtDate(selectedDate)}}</h4>
                   <p>{{selectedDayEvents.length}} eventos registrados</p>
                   <ul v-if="selectedDayEvents.length"><li v-for="(ev,i) in selectedDayEvents" :key="ev.id||i"><strong>{{ev.title}}</strong><span v-if="ev.type"> · {{ev.type}}</span><span v-if="ev.status"> · Estado: {{ev.status}}</span></li></ul>
                   <p v-else class="me-v8-quiet">No hay eventos registrados para esta fecha. Esto no confirma disponibilidad.</p>
