@@ -1009,3 +1009,15 @@
   .mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace) *,
   .mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace){animation-duration:0.01ms!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
 }
+
+/* Phase 26G: read-only personal guardia detail with predictable focus and short viewport layout */
+.mi-espacio .me-v26g-duties{scroll-margin-top:90px}
+.mi-espacio .me-v26g-duty-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:20px;align-items:start;margin-top:18px}
+.mi-espacio .me-v26g-duty-entries{padding:0;margin:0;list-style:none;display:grid;gap:8px}
+.mi-espacio .me-v26g-duty-row{width:100%}
+.mi-espacio .me-v26g-duty-row[aria-pressed=true]{background:#eef6f3;border-color:#7aada6}
+.mi-espacio .me-v26g-duty-detail{min-width:0}
+.mi-espacio .me-v26g-duty-title{scroll-margin-top:90px}
+.mi-espacio .me-v26g-duties :is(button,h3,h4):focus-visible{outline:3px solid #158a89;outline-offset:3px}
+@media(max-width:800px){.mi-espacio .me-v26g-duty-layout{grid-template-columns:minmax(0,1fr)}.mi-espacio .me-v26g-duty-layout.has-selection .me-v26g-duty-list{display:none}.mi-espacio .me-v26g-duty-layout:not(.has-selection) .me-v26g-duty-detail{display:none}}
+@media(prefers-reduced-motion:reduce){.mi-espacio .me-v26g-duties *{scroll-behavior:auto!important;transition:none!important}}
