@@ -70,7 +70,8 @@
       id: id(l && l.id), number: num(l && l.line_number), name: safe(l && l.name), role: safe(l && l.role)
     }));
     const studies = arr(research.studies).map(s => ({
-      id: id(s && s.id), title: safe(s && s.title), code: safe(s && s.protocol_id), status: safe(s && s.status), role: safe(s && s.role)
+      id: id(s && s.id), title: safe(s && s.title), code: safe(s && s.protocol_id), status: safe(s && s.status), role: safe(s && s.role),
+      studyType: safe(s && (s.study_type || s.studyType))
     }));
     const projects = arr(research.projects).map(p => ({
       id: id(p && p.id), title: safe(p && p.title), stage: safe(p && p.stage), category: safe(p && p.category), role: safe(p && p.role)
@@ -89,6 +90,83 @@
         guardias: guardias.length, rotations: rotations.length, absences: absences.length,
         lines: lines.length, studies: studies.length, projects: projects.length, publications: publications.length
       })
+    });
+  }
+
+  // Phase 35 — read-only participation from an already authorized /api/me/context
+  // response. No extra staff-wide lookups, inferred roles, or synthetic statuses.
+  // Co-IP is NOT the same role as co-investigator.
+  const participationKey = value => safe(value).toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  const PARTICIPATION_ROLES = Object.freeze({
+    pi:'Investigador/a principal (IP)', principal_investigator:'Investigador/a principal (IP)',
+    ip:'Investigador/a principal (IP)', investigador_principal:'Investigador/a principal (IP)',
+    co_pi:'Coinvestigador/a principal (Co-IP)', copi:'Coinvestigador/a principal (Co-IP)',
+    co_principal_investigator:'Coinvestigador/a principal (Co-IP)',
+    co_investigator:'Coinvestigador/a', coinvestigator:'Coinvestigador/a',
+    co_investigador:'Coinvestigador/a', sub_investigator:'Subinvestigador/a',
+    subinvestigator:'Subinvestigador/a', collaborator:'Colaborador/a',
+    colaborador:'Colaborador/a', contributor:'Colaborador/a', contribuidor:'Colaborador/a',
+    member:'Miembro', miembro:'Miembro', participant:'Participante',
+    lead:'Responsable', responsible:'Responsable', coordinator:'Coordinación'
+  });
+  const PARTICIPATION_STATES = Object.freeze({
+    active:'Activo', ongoing:'En curso', in_progress:'En desarrollo',
+    development:'En desarrollo', recruiting:'En reclutamiento',
+    recruitment:'En reclutamiento', enrollment_open:'Reclutamiento abierto',
+    planned:'Planificado', planning:'En planificación', draft:'Borrador',
+    submitted:'Presentado', pending:'Pendiente',
+    approved:'Aprobado', pilot:'Piloto', execution:'En ejecución',
+    completed:'Finalizado', finished:'Finalizado', finalized:'Finalizado',
+    closed:'Cerrado', archived:'Archivado',
+    cancelled:'Cancelado', canceled:'Cancelado', suspended:'Suspendido'
+  });
+  const INACTIVE_STATES = new Set(['completed','finished','finalized','closed','archived','cancelled','canceled']);
+  const PLANNED_STATES = new Set(['planned','planning','draft','submitted','pending','approved']);
+  const TRIAL_TYPES = new Set(['clinical_trial','ensayo_clinico']);
+  const participationRole = raw => PARTICIPATION_ROLES[participationKey(raw)] ||
+    (safe(raw) ? safe(raw) : 'Rol no registrado');
+  const participationStatus = raw => PARTICIPATION_STATES[participationKey(raw)] ||
+    (safe(raw) ? safe(raw) : 'Estado no registrado');
+  function buildScientificParticipation(activity) {
+    const studies = arr(activity?.research?.studies);
+    const projects = arr(activity?.research?.projects);
+    const rows = [];
+    for (const item of studies) {
+      const title = safe(item?.title);
+      if (!title) continue;
+      const type = participationKey(item?.studyType);
+      const rawStatus = safe(item?.status);
+      rows.push(Object.freeze({
+        key: 'study:'+id(item?.id)+':'+rows.length, title,
+        kind: TRIAL_TYPES.has(type) ? 'Ensayo clínico' : 'Estudio',
+        role: participationRole(item?.role), status: participationStatus(rawStatus),
+        statusRecorded: Boolean(rawStatus),
+        protocol: safe(item?.code), closed: INACTIVE_STATES.has(participationKey(rawStatus)),
+        planned: PLANNED_STATES.has(participationKey(rawStatus))
+      }));
+    }
+    for (const item of projects) {
+      const title = safe(item?.title);
+      if (!title) continue;
+      const rawStage = safe(item?.stage);
+      rows.push(Object.freeze({
+        key: 'project:'+id(item?.id)+':'+rows.length, title,
+        kind:'Proyecto', role: participationRole(item?.role),
+        status: participationStatus(rawStage), statusRecorded: Boolean(rawStage),
+        protocol:'', closed: INACTIVE_STATES.has(participationKey(rawStage)),
+        planned: PLANNED_STATES.has(participationKey(rawStage))
+      }));
+    }
+    // Stable presentation: recorded current work, planned work, unspecified,
+    // then closed/history. No chronology or outcome inferred from a title.
+    const current = rows.filter(x=>!x.closed);
+    const history = rows.filter(x=>x.closed);
+    const rank = x => !x.statusRecorded ? 2 : x.planned ? 1 : 0;
+    current.sort((a,b)=>rank(a)-rank(b));
+    return Object.freeze({
+      current:Object.freeze(current),history:Object.freeze(history),
+      total:rows.length
     });
   }
 
@@ -510,7 +588,7 @@
   }
 
   return Object.freeze({
-    normalizeContext, loadContext, normalizeActivity, loadActivity, formatDutyShift,
+    normalizeContext, loadContext, normalizeActivity, loadActivity, buildScientificParticipation, formatDutyShift,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
     loadLineOptions, loadPublicationOptions,
