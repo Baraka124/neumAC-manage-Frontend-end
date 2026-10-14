@@ -1328,3 +1328,248 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 @media(prefers-reduced-motion:reduce){
   .mi-espacio .me-v20-quick-bar>button{transition:none!important}
 }
+
+
+/* Phase 31B1 — real-screen depth refinement (14 October desktop recording).
+   Presentational only: no changes to data, authority, navigation or form state. */
+
+/* At zoomed / intermediate desktop widths, five adjacent quick tools
+   create compressed targets despite a physically large recorded screenshot. */
+@media(min-width:851px) and (max-width:1120px){
+  .mi-espacio .me-v20-quick-bar{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+/* Professional identity remains a quiet introduction, while profile details
+   form one integrated editorial document instead of more nested cards. */
+.mi-espacio .me-v28-inline-profile{
+  margin:0 14px 14px;
+  border:0;
+  border-top:1px solid var(--me30-line,#dfe8e5);
+  border-radius:0;
+  background:transparent;
+  padding:clamp(16px,2vw,26px) clamp(12px,1.8vw,26px) 24px;
+}
+.mi-espacio .me-v26c-profile .me-v15-profile-head{
+  gap:16px;
+  margin-bottom:20px;
+  padding-bottom:16px;
+}
+.mi-espacio .me-v26c-profile .me-v15-profile-head p:last-child{
+  max-width:65ch;
+  font-size:14px;
+  line-height:1.55;
+}
+.mi-espacio .me-v26c-profile .me-v15-readonly-section{
+  border-color:var(--me30-line,#dfe8e5);
+  padding-block:14px 12px;
+  margin-bottom:6px;
+}
+.mi-espacio .me-v26c-profile :is(.me-v15-readonly-section,.me-v15-edit-section,.me-v15-certificates) h4{
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:0;
+  line-height:1.45;
+  text-transform:none;
+  color:var(--me30-reading,#26444a);
+  margin:0 0 12px;
+}
+.mi-espacio .me-v26c-profile .me-v15-dl{
+  max-width:78ch;
+  gap:9px;
+}
+.mi-espacio .me-v26c-profile .me-v15-dl>div{
+  display:grid;
+  grid-template-columns:minmax(130px,.29fr) minmax(0,1fr);
+  align-items:baseline;
+  gap:12px;
+  font-size:14px;
+  line-height:1.6;
+}
+.mi-espacio .me-v26c-profile .me-v15-dl :is(dt,dd){
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+}
+.mi-espacio .me-v26c-profile .me-v15-dl dt{font-weight:550}
+.mi-espacio .me-v26c-profile .me-v15-dl dd{color:var(--me30-secondary,#566f73)}
+
+/* Editing retains the same single server-backed form and save/cancel actions.
+   Two orderly reading columns reduce excessive vertical travel on desktop. */
+@media(min-width:800px){
+  .mi-espacio .me-v26c-profile .me-v15-edit-section{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    column-gap:clamp(16px,2.6vw,30px);
+    row-gap:4px;
+    max-width:100%;
+  }
+  .mi-espacio .me-v26c-profile .me-v15-edit-section> :is(h4,p,.me-field-wide,.me-v18-metrics-row,.me-field-readonly,.me-field-check,.me-form-error,.me-v26c-notice,.me-v26c-dirty,.me-form-actions){
+    grid-column:1/-1;
+  }
+}
+.mi-espacio .me-v26c-profile .me-v15-edit-section h4{
+  margin-top:20px;
+  border-bottom:1px solid var(--me30-line,#dfe8e5);
+  padding-bottom:10px;
+}
+.mi-espacio .me-v26c-profile .me-v15-edit-section .me-field{
+  min-width:0;
+  margin-bottom:14px;
+}
+.mi-espacio .me-v26c-profile .me-v15-edit-section .me-field label{
+  margin-bottom:8px;
+  font-size:14px;
+  font-weight:500;
+  color:var(--me30-reading,#26444a);
+}
+.mi-espacio .me-v26c-profile .me-v15-edit-section :is(input[type="tel"],input[type="text"],input[type="url"],input[type="number"],textarea){
+  min-width:0;
+  max-width:100%;
+  min-height:44px;
+  font-size:15px;
+  line-height:1.5;
+  border-color:#cedbd6;
+  background:#fff;
+}
+.mi-espacio .me-v26c-profile .me-v15-edit-section textarea{
+  min-height:108px;
+  resize:vertical;
+}
+.mi-espacio .me-v26c-profile .me-form-actions{
+  display:flex;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:12px;
+}
+.mi-espacio .me-v26c-profile .me-form-actions button{min-height:44px}
+.mi-espacio .me-v26c-profile .me-v20-missing-tags{gap:6px 10px}
+.mi-espacio .me-v26c-profile .me-v20-missing-tag{
+  font-size:13px;
+  font-weight:500;
+  line-height:1.5;
+  min-height:40px;
+  background:transparent;
+  border-color:var(--me30-line,#dfe8e5);
+}
+.mi-espacio .me-v26c-profile .me-v19-public-preview{
+  max-width:78ch;
+}
+
+/* The directory is a professional reader, not a stack of cards within a card. */
+.mi-espacio .me-v26b-workspace.me-v20-colleagues{
+  border-color:var(--me30-line,#dfe8e5);
+  border-radius:9px;
+  padding:clamp(18px,2.5vw,30px);
+  box-shadow:none;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-topline{margin-bottom:17px}
+.mi-espacio .me-v26b-workspace .me-v20-colleagues-search{
+  font-family:inherit;
+  font-size:15px;
+  min-height:44px;
+  background:#fff;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-split{
+  grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
+  gap:clamp(16px,2.5vw,30px);
+}
+.mi-espacio .me-v26b-workspace .me-v20-colleagues-list{
+  gap:0;
+  max-height:min(62vh,590px);
+}
+.mi-espacio .me-v26b-workspace .me-v20-colleague-card{
+  display:block;
+  padding:3px 0;
+  margin:0;
+  border:0;
+  border-bottom:1px solid var(--me30-line,#dfe8e5);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-person{
+  width:100%;
+  min-height:60px;
+  padding:10px 12px;
+  border:0;
+  border-left:2px solid transparent;
+  border-radius:4px;
+  transition:background 120ms ease;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-person[aria-pressed=true]{
+  border-left-color:#27857c;
+  background:#eef6f3;
+}
+.mi-espacio .me-v26b-workspace .me-v20-colleague-info strong{
+  font-size:15px;
+  line-height:1.45;
+  font-weight:600;
+  color:var(--me30-reading,#26444a);
+  overflow-wrap:anywhere;
+}
+.mi-espacio .me-v26b-workspace :is(.me-v20-colleague-role,.me-v20-colleague-dept){
+  font-size:13px;
+  line-height:1.5;
+  color:var(--me30-secondary,#566f73);
+}
+.mi-espacio .me-v26b-workspace .me-v26b-detail{
+  padding-left:clamp(16px,2vw,26px);
+}
+.mi-espacio .me-v26b-workspace .me-v26b-detail h4{
+  font-size:clamp(19px,2vw,24px);
+  font-weight:600;
+  letter-spacing:-.012em;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-detail :is(p,li,dd){
+  font-size:14px;
+  line-height:1.65;
+  overflow-wrap:anywhere;
+}
+.mi-espacio .me-v26b-workspace .me-v26b-detail .me-v26b-note{
+  font-size:12px;
+  color:var(--me30-secondary,#566f73);
+}
+.mi-espacio .me-v26b-workspace :is(.me-v26b-person,.me-v26b-day):focus-visible{
+  outline:3px solid #158a89;
+  outline-offset:2px;
+}
+
+/* The calendar reuses the reader's measure; events still come exclusively from
+   authorized personal calendar responses, not a department-wide fallback. */
+.mi-espacio .me-v21-calendar.me-v26b-workspace .me-v21-cal-month{
+  font-size:16px;
+  font-weight:600;
+}
+.mi-espacio .me-v21-calendar.me-v26b-workspace .me-v21-cal-weekdays{
+  font-size:13px;
+  font-weight:500;
+  line-height:1.5;
+}
+.mi-espacio .me-v21-calendar.me-v26b-workspace .me-v21-cal-day{
+  font-size:14px;
+}
+
+/* Responsive reading modes. Do not allow the two-column profile or directory
+   to persist into true tablet/phone layouts. */
+@media(max-width:799px){
+  .mi-espacio .me-v26c-profile .me-v15-dl>div{grid-template-columns:minmax(0,1fr);gap:2px}
+  .mi-espacio .me-v26c-profile .me-v15-edit-section{display:block}
+  .mi-espacio .me-v26b-workspace .me-v26b-split{grid-template-columns:minmax(0,1fr)}
+  .mi-espacio .me-v26b-workspace .me-v26b-detail{
+    border-left:0;
+    border-top:1px solid var(--me30-line,#dfe8e5);
+    padding:18px 0 4px;
+  }
+}
+@media(max-width:480px){
+  .mi-espacio .me-v28-inline-profile{margin:0 10px 10px;padding:15px 10px 18px}
+  .mi-espacio .me-v26c-profile .me-form-actions{justify-content:stretch}
+  .mi-espacio .me-v26c-profile .me-form-actions button{flex:1 1 auto}
+  .mi-espacio .me-v26b-workspace.me-v20-colleagues{padding:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mi-espacio .me-v26b-workspace .me-v26b-person{transition:none!important}
+}
