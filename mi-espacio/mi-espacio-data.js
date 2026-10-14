@@ -588,7 +588,7 @@
   }
 
   return Object.freeze({
-    normalizeContext, loadContext, normalizeActivity, loadActivity, buildScientificParticipation, formatDutyShift,
+    normalizeContext, loadContext, normalizeActivity, loadActivity, buildScientificParticipation, participationStatus, formatDutyShift,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
     loadLineOptions, loadPublicationOptions,
