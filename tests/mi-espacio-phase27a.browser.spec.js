@@ -50,6 +50,7 @@ for(const kind of Object.keys(cases)){
    if(kind==='head'||kind==='engineer'){
      await expect(app.locator('.me-v8-research')).toBeVisible();
      await app.getByRole('button',{name:/Explorar mi investigación/}).click();
+     await app.getByRole('button',{name:'Estudios',exact:true}).click();
      await expect(app.locator('.me-v26d-workspace')).toContainText(kind==='head'?'Estudio verificado por liderazgo':'Estudio de ingeniería verificado');
      await expect(app.locator('.me-v9-overview')).toHaveCount(0);
      await expect(app.getByRole('button',{name:/Ir al módulo de investigación/})).toHaveCount(0);
