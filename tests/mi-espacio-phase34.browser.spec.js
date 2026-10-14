@@ -9,7 +9,7 @@ for(const width of [390,768,1366])for(const role of Object.keys(fixtures)){
  test('Phase 34 adaptive authenticated-shape presentation '+role+' '+width,async({page})=>{
   await page.setViewportSize({width,height:850});await page.emulateMedia({reducedMotion:'reduce'});
   await page.setContent('<!doctype html><html lang="es"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><main id="app"></main></body></html>');
-  for(const m of read('index.html').matchAll(/<link[^>]+href="([^"]+\\.css)(?:\\?[^"]*)?"/g))if(!m[1].startsWith('http'))await page.addStyleTag({content:read(m[1])});
+  for(const m of read('index.html').matchAll(/<link[^>]+href="([^"]+\.css)(?:\?[^"]*)?"/g))if(!m[1].startsWith('http'))await page.addStyleTag({content:read(m[1])});
   for(const code of [vue,read('mi-espacio/mi-espacio-data.js'),read('mi-espacio/mi-espacio-workspace.js'),read('mi-espacio/mi-espacio.js')])await page.addScriptTag({content:code});
   await page.evaluate(({role,activity})=>{
    const context={id:'test',account_status:'active',full_name:'Persona de prueba',email:'test@example.invalid',medical_staff_id:'staff1',linked_staff:{id:'staff1',full_name:'Persona de prueba',staff_type:role==='clinical'?'clinician':'biomedical_engineer'}};
