@@ -33,7 +33,8 @@ for(const width of [390,1366]){
   await expect(panel.locator('.me-v35-records').first()).toContainText('Coinvestigador/a');
   await expect(panel.locator('.me-v35-records').first()).toContainText('En reclutamiento');
   await expect(panel.locator('.me-v35-records').first()).toContainText('Co-IP');
-  await expect(panel).not.toContainText('Estudio finalizado');
+  await expect(panel.locator('#me-v35-history-records')).toHaveCount(0);
+  await expect(panel.locator('.me-v19-leadership-list')).not.toContainText('Estudio clínico verificado');
   await panel.getByRole('button',{name:/Participación finalizada/}).click();
   await expect(panel.locator('#me-v35-history-records')).toContainText('Estudio finalizado');
   const errors=await page.evaluate(()=>({errors:window.__errors,requests:window.__requests}));
