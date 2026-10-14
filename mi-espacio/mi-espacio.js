@@ -203,6 +203,7 @@
         }
         function returnToOverview(){
           const origin=workspaceState.value.origin,which=workspaceState.value.workspace;
+          if(workspaceState.value.detail)navigateWorkspace({type:'BACK'});
           navigateWorkspace({type:'BACK'});
           if(which==='calendar')state.calendar.open=false;
           if(which==='directory')state.colleagues.open=false;
