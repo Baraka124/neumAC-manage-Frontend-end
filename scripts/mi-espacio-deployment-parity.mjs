@@ -53,7 +53,7 @@ async function checkLive(urlArg) {
     throw new Error('Use a public origin URL without credentials, parameters or fragments');
   }
   console.log('Checking public frontend asset parity (no login or personal data).');
-  const repoRoot = resolve(import.meta.dirname || new URL('..', import.meta.url).pathname, '..');
+  const repoRoot = resolve(new URL('..', import.meta.url).pathname);
   const localHtml = await readFile(resolve(repoRoot, 'index.html'), 'utf8');
   const response = await fetch(base, {signal: AbortSignal.timeout(15000), headers: {'Accept':'text/html'}});
   if (!response.ok) throw new Error('Frontend returned HTTP '+response.status);
