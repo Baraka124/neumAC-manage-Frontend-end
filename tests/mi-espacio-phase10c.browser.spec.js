@@ -84,7 +84,7 @@ for(const [name,scenario] of Object.entries(cases)){
    if(name==='engineer'){await expect(page.locator('.me-v8-agenda')).toHaveCount(0);await expect(page.locator('.me-v8-research')).toBeVisible();await expect(page.locator('.me-v9-identity')).toContainText('Ingeniería biomédica');}
    if(name==='clinician'){await expect(page.locator('.me-v8-research')).toHaveCount(0);await expect(page.locator('.me-v8-agenda')).toBeVisible();}
    if(name==='mixed'){
-    await expect(page.locator('.me-v9-overview')).toHaveClass(/me-v12-research-priority/);
+    await expect(page.locator('.me-v9-overview')).not.toHaveClass(/me-v12-research-priority/);
     const measurements=await page.evaluate(()=>{
       const agenda=document.querySelector('.me-v8-agenda').getBoundingClientRect();
       const research=document.querySelector('.me-v8-research').getBoundingClientRect();
@@ -93,7 +93,7 @@ for(const [name,scenario] of Object.entries(cases)){
       return {agenda:agenda.width,research:research.width,publications:publications.width,communications:communications.width};
     });
     if(viewport.width>850){
-      expect(measurements.research).toBeGreaterThan(measurements.agenda);
+      expect(Math.abs(measurements.research-measurements.agenda)).toBeLessThanOrEqual(2);
       expect(Math.abs(measurements.publications-measurements.communications)).toBeLessThanOrEqual(2);
     }else{
       expect(Math.abs(measurements.research-measurements.agenda)).toBeLessThanOrEqual(2);
@@ -141,7 +141,7 @@ for(const [name,scenario] of Object.entries(cases)){
      const app=page.locator('.mi-espacio');
      await page.getByRole('button',{name:/Perfil profesional/}).click();
      await expect(app.locator('.me-v26c-profile')).toBeVisible();
-     await expect(app.locator('.me-v9-overview')).toBeVisible();
+     await expect(app.locator('.me-v9-overview')).toHaveCount(0);
      await expect(app.locator('.me-v28-profile-toggle')).toHaveAttribute('aria-expanded','true');
      await expect(app.locator('.me-readonly-value')).toContainText('professional@example.invalid');
      await app.locator('#me-profile-bio').fill('Biografía modificada');

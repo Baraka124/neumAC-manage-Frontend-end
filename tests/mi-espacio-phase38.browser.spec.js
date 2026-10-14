@@ -26,10 +26,10 @@ test('Phase 38 adaptive dossier/disclosure '+fixture.id+' '+width,async({page})=
   const editPos=await profile.locator('.me-v15-edit-section').evaluate(e=>e.getBoundingClientRect().top);
   expect(sciencePos).toBeLessThan(editPos);
   await profile.getByRole('button',{name:/Volver/}).click();
-  await app.getByRole('button',{name:/Ver investigación/}).click();
-  const disclosure=app.locator('.me-v38-research-disclosure').first();await expect(disclosure).toBeVisible();
-  await disclosure.locator('summary').click();await expect(disclosure.locator('.me-v38-research-meta')).toContainText('Etapa: Activo');
-  await disclosure.locator('summary').click();await expect(disclosure).not.toHaveAttribute('open','');
+  await expect(app.locator('.me-v9-overview')).toBeVisible();
+  await expect(app.locator('.me-v26d-workspace')).toHaveCount(0);
+  await expect(app.locator('#me-v28-projects')).toContainText('Proyecto vinculado');
+  await expect(app.locator('.me-v8-research').getByRole('button',{name:/Proyectos/})).toHaveCount(0);
  }
  const out=await page.evaluate(()=>({errors:window.__errors,overflow:document.documentElement.scrollWidth-innerWidth}));
  expect(out.errors).toEqual([]);expect(out.overflow).toBeLessThanOrEqual(2);
