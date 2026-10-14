@@ -64,7 +64,8 @@
       start: safe(r && r.start), end: safe(r && r.end), status: safe(r && r.status), role: safe(r && r.role)
     }));
     const absences = arr(agenda.absences).map(a => ({
-      id: id(a && a.id), type: safe(a && a.type), reason: safe(a && a.reason), start: safe(a && a.start), end: safe(a && a.end), status: safe(a && a.status), days: num(a && a.days)
+      id: id(a && a.id), type: safe(a && a.type), reason: safe(a && a.reason), start: safe(a && a.start), end: safe(a && a.end), status: safe(a && a.status), days: num(a && a.days),
+      daysAhead: num(a && a.days_ahead), current: !!(a && a.current)
     }));
     const lines = arr(research.lines).map(l => ({
       id: id(l && l.id), number: num(l && l.line_number), name: safe(l && l.name), role: safe(l && l.role)
@@ -422,7 +423,7 @@
       totalCertificates: num(d.totalCertificates) ?? 0,
       expiredCertificates: num(d.expiredCertificates) ?? 0,
       expiringCertificates: num(d.expiringCertificates) ?? 0,
-      absenceDaysThisYear: num(d.absenceDaysThisYear) ?? 0,
+      upcomingAbsenceDays: num(d.upcomingAbsenceDays) ?? 0,
       piStudies: num(d.piStudies) ?? 0,
       piProjects: num(d.piProjects) ?? 0,
       hIndex: num(d.hIndex),

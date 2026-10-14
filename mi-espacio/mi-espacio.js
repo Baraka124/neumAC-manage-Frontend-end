@@ -33,7 +33,7 @@
     training:'Formación', personal:'Personal', other:'Otro'
   });
   const ABSENCE_STATUS = Object.freeze({
-    pending:'Pendiente', active:'En curso', approved:'Aprobada'
+    planned_leave:'Programada', currently_absent:'Ausente ahora', returned_to_duty:'Finalizada', cancelled:'Cancelada'
   });
   function employmentLabel(v){return EMPLOYMENT_STATUS[v]||v||'';}
   function affiliationLabel(v){return AFFILIATION_TYPE[v]||v||'';}
@@ -60,7 +60,7 @@
   const STUDY = { PI:'IP', 'co-investigator':'Co-investigador', 'sub-investigator':'Sub-investigador' };
   const LINE = { coordinator:'Coordinación', member:'Miembro' };
   const PROJECT = { lead:'Responsable', 'co-investigator':'Co-investigador' };
-  const ABSENCE = { pending:'Pendiente', active:'En curso', approved:'Aprobada' };
+  const ABSENCE = { planned_leave:'Programada', currently_absent:'Ausente ahora', returned_to_duty:'Finalizada', cancelled:'Cancelada' };
   const SUBJECT_LABELS = { guardia:'Guardia', rotation:'Rotación', absence:'Ausencia', line:'Línea', study:'Estudio', project:'Proyecto', publication:'Publicación', profile:'Perfil', other:'Otro' };
   const KIND_LABELS = { missing:'Falta algo', incorrect:'Dato incorrecto', authorship:'Autoría', schedule:'Discrepancia de horario', other:'Otro' };
   const REPORT_STATUS = { open:'Abierta', in_review:'En revisión', accepted:'Aceptada', rejected:'Rechazada' };
@@ -111,6 +111,7 @@
         const personalRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role==='resident'));
         const supervisedRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role==='supervisor'));
         const otherRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role!=='resident'&&r.role!=='supervisor'));
+        const upcomingAbsenceDaysTotal=Vue.computed(()=>(state.activity?.agenda?.absences||[]).reduce((n,a)=>n+(a.daysAhead||0),0));
         const hasAgenda=Vue.computed(()=>!!((state.activity?.agenda?.guardias?.length||0)+(state.activity?.agenda?.rotations?.length||0)+(state.activity?.agenda?.absences?.length||0)));
         const hasResearch=Vue.computed(()=>!!((state.activity?.research?.lines?.length||0)+(state.activity?.research?.studies?.length||0)+(state.activity?.research?.projects?.length||0)));
         const hasPublicationOverflow=Vue.computed(()=>(state.activity?.publications?.items?.length||0)>3);
@@ -498,9 +499,10 @@
             events.push({icon:'🩺',title:'Guardia',date:guardias[0].date,urgency:guardias[0].date===today?'warning':''});
           }
           // Next absence
-          const absences=(state.activity?.agenda?.absences||[]).filter(a=>a.start&&a.start>=today&&a.start<=in7str).sort((a,b)=>a.start.localeCompare(b.start));
+          const absences=(state.activity?.agenda?.absences||[]).filter(a=>a.start&&a.end&&a.end>=today&&a.start<=in7str).sort((a,b)=>a.start.localeCompare(b.start));
           if(absences.length){
-            events.push({icon:'🏖️',title:absences[0].reason||'Ausencia',date:absences[0].start,urgency:''});
+            const a0=absences[0];
+            events.push({icon:'🏖️',title:a0.current?'Ausente ahora':(absenceReasonLabel(a0.reason)||'Ausencia'),date:a0.current?today:a0.start,urgency:''});
           }
           // Cert expiring soon (within 7 days)
           const urgentCerts=(state.notifications.items||[]).filter(n=>(n.type==='cert_expired'||n.type==='cert_expiring')&&n.date&&n.date>=today&&n.date<=in7str);
@@ -1049,7 +1051,7 @@
           professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,focusProfileEditor,
-          researchSummary,scientificParticipation,scientificHistoryOpen,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
+          researchSummary,scientificParticipation,scientificHistoryOpen,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,upcomingAbsenceDaysTotal,
           toggleNotifPref,leadershipRoles,publicPreview,
           missingFields,completenessHint,scrollToField,
           TIMELINE_FILTERS,filteredTimeline,
@@ -1541,7 +1543,7 @@
                         </li>
                       </ul>
                     </div>
-                    <div v-if="state.activity.agenda.absences.length" class="me-v28-disclosure"><button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.absences" aria-controls="me-v28c-absences" @click="state.operationsOpen.absences=!state.operationsOpen.absences"><span>Ausencias <small>{{state.activity.agenda.absences.length}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><ul id="me-v28c-absences" class="me-v19-absence-list"><li v-for="a in state.activity.agenda.absences.slice(0,state.operationsOpen.absences?state.activity.agenda.absences.length:1)" :key="a.id" class="me-v19-absence-item"><span class="me-v19-absence-reason">{{absenceReasonLabel(a.reason)||a.type||'Ausencia'}}</span><span class="me-v19-absence-dates">{{fmtPeriod(a.start,a.end)}}<template v-if="a.days"> · {{a.days}} día{{a.days!==1?'s':''}}</template></span><span class="me-chip me-v19-absence-status" :data-tone="a.status">{{absenceStatusLabel(a.status)}}</span></li></ul></div>
+                    <div v-if="state.activity.agenda.absences.length" class="me-v28-disclosure"><button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.absences" aria-controls="me-v28c-absences" @click="state.operationsOpen.absences=!state.operationsOpen.absences"><span>Próximas ausencias <small>{{upcomingAbsenceDaysTotal}} día{{upcomingAbsenceDaysTotal!==1?'s':''}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><ul id="me-v28c-absences" class="me-v19-absence-list"><li v-for="a in state.activity.agenda.absences.slice(0,state.operationsOpen.absences?state.activity.agenda.absences.length:1)" :key="a.id" class="me-v19-absence-item"><span class="me-v19-absence-reason">{{absenceReasonLabel(a.reason)||a.type||'Ausencia'}}</span><span class="me-v19-absence-dates">{{fmtPeriod(a.start,a.end)}}<template v-if="a.daysAhead"> · {{a.current?'quedan ':''}}{{a.daysAhead}} día{{a.daysAhead!==1?'s':''}}</template></span><span class="me-chip me-v19-absence-status" :data-tone="a.status">{{absenceStatusLabel(a.status)}}</span></li></ul></div>
                   </div>
                 </section>
                 <section v-if="hasResearch" class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
@@ -1605,7 +1607,7 @@
               <div class="me-v20-stat" v-if="state.dashboard.data.activeProjects"><span class="me-v20-stat-value">{{state.dashboard.data.activeProjects}}</span><span class="me-v20-stat-label">Proyectos</span></div>
               <div class="me-v20-stat" v-if="state.dashboard.data.publications"><span class="me-v20-stat-value">{{state.dashboard.data.publications}}</span><span class="me-v20-stat-label">Publicaciones</span></div>
               <div class="me-v20-stat" v-if="state.dashboard.data.totalCertificates"><span class="me-v20-stat-value" :class="{'me-v20-stat-warn':state.dashboard.data.expiredCertificates||state.dashboard.data.expiringCertificates}">{{state.dashboard.data.totalCertificates}}</span><span class="me-v20-stat-label">Certificados<template v-if="state.dashboard.data.expiredCertificates"> · {{state.dashboard.data.expiredCertificates}} cad.</template></span></div>
-              <div class="me-v20-stat" v-if="state.dashboard.data.absenceDaysThisYear"><span class="me-v20-stat-value">{{state.dashboard.data.absenceDaysThisYear}}</span><span class="me-v20-stat-label">Días ausencia {{new Date().getFullYear()}}</span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.upcomingAbsenceDays"><span class="me-v20-stat-value">{{state.dashboard.data.upcomingAbsenceDays}}</span><span class="me-v20-stat-label">Días de ausencia programados</span></div>
             </div>
           </div>
               <section v-if="state.dutyMode==='overview' && state.timeline.entries.length" class="me-v16-timeline" aria-label="Actividad reciente">

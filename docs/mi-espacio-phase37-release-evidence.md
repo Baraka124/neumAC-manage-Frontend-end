@@ -17,7 +17,7 @@ Inspected frontend `mi-espacio/mi-espacio-data.js` / `mi-espacio.js`, and backen
 | Innovation project | `development_stage || current_stage`, `category`, lead/co-investigator | Stage comes from recorded source; classifications, historical coverage and role mapping need governance review. |
 | Publication authorship | `publication_authors.staff_id` linked to permitted staff | Do not derive missing authorship from text names. |
 | Underlying queries | Multiple `supabase.from` reads in parallel | Some per-table query errors are not handled before mapping `data || []`; temporary backend failures may look like no personal record. **Separate backend fix** is needed. |
-| Upcoming absences | PR #148 is an independently developed frontend change depending on backend deployment | Do not modify or merge its branch as part of 37. Confirm backend/frontend version parity first. |
+| Upcoming absences | PR #148 is merged into main, adding upcoming absence fields | Preserve the merged change; independently verify deployed backend parity. |
 
 ## 37B · Narrow visual consolidation
 
