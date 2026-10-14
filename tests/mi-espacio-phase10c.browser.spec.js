@@ -30,6 +30,11 @@ async function mount(page,kind){
    if(endpoint==='/api/auth/me')return Promise.resolve(context);
    if(endpoint==='/api/me/context')return Promise.resolve(a);
    if(endpoint==='/api/me/discrepancies')return Promise.resolve([]);
+   if(endpoint==='/api/me/profile')return Promise.resolve({
+     id:'staff-1',full_name:'Persona de Prueba',professional_email:'professional@example.invalid',
+     public_bio:'Texto verificado',is_public:false,notification_prefs:{}
+   });
+   if(endpoint==='/api/me/certificates')return Promise.resolve([]);
    if(endpoint.startsWith('/api/me/calendar')){
      const month=new URL('https://test.invalid'+endpoint).searchParams.get('month') ||
        new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
@@ -115,6 +120,23 @@ for(const [name,scenario] of Object.entries(cases)){
      await page.getByRole('button',{name:'Notificaciones'}).click();
      await expect(app.locator('.me-v21-notifications')).toBeVisible();
      await expect(app.locator('.me-v20-colleagues')).toHaveCount(0);
+     await expect(app.locator('.me-v9-overview')).toBeVisible();
+   }
+   if(name==='head' || name==='clinician'){
+     const app=page.locator('.mi-espacio');
+     await page.getByRole('button',{name:/Mi perfil completo/}).click();
+     await expect(app.locator('.me-v26c-profile')).toBeVisible();
+     await expect(app.locator('.me-v9-overview')).toHaveCount(0);
+     await expect(app.locator('.me-readonly-value')).toContainText('professional@example.invalid');
+     await app.locator('#me-profile-bio').fill('Biografía modificada');
+     await expect(app.getByText('Tienes cambios sin guardar.')).toBeVisible();
+     await app.getByRole('button',{name:'Volver a Mi espacio'}).click();
+     await expect(app.getByText('Cambios sin guardar')).toBeVisible();
+     await app.getByRole('button',{name:'Seguir editando'}).click();
+     await expect(app.locator('#me-profile-bio')).toHaveValue('Biografía modificada');
+     await app.getByRole('button',{name:'Cancelar',exact:true}).click();
+     await app.getByRole('button',{name:'Descartar y salir'}).click();
+     await expect(app.locator('.me-v26c-profile')).toHaveCount(0);
      await expect(app.locator('.me-v9-overview')).toBeVisible();
    }
    if(name==='head' && viewport.width>850){
