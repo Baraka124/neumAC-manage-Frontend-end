@@ -957,3 +957,16 @@
 .mi-espacio .me-v26c-profile :is(button,input,textarea):focus-visible{outline:3px solid #158a89;outline-offset:2px}
 @media(max-width:640px){.mi-espacio .me-v26c-profile .me-v15-profile-head{flex-direction:column;align-items:flex-start}.mi-espacio .me-v26c-profile{padding:16px}.mi-espacio .me-v26c-profile .me-v15-edit-section{max-width:100%}}
 @media(prefers-reduced-motion:reduce){.mi-espacio .me-v26c-profile *{transition:none!important;scroll-behavior:auto!important}}
+
+/* Phase 26D: scoped personal portfolio task surface */
+.mi-espacio .me-v26d-workspace{padding:clamp(18px,2.8vw,30px);background:#fff;border:1px solid #dce7e3;border-radius:10px;scroll-margin-top:90px}
+.mi-espacio .me-v26d-title{font-size:clamp(23px,2.7vw,31px);margin:14px 0;outline-offset:4px}
+.mi-espacio .me-v26d-workspace>p{font-size:14px;line-height:1.65;color:var(--me-muted)}
+.mi-espacio .me-v26d-filters{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
+.mi-espacio .me-v26d-filters button[aria-pressed=true]{background:#e6f4f0;border-color:#74a99c}
+.mi-espacio .me-v26d-list{list-style:none;margin:15px 0;padding:0;display:grid;gap:0}
+.mi-espacio .me-v26d-list li{display:flex;flex-direction:column;gap:6px;border-top:1px solid #dce7e3;padding:15px 0;overflow-wrap:anywhere}
+.mi-espacio .me-v26d-list span,.mi-espacio .me-v26d-list small{color:var(--me-muted)}
+.mi-espacio .me-v26d-workspace button{cursor:pointer;min-height:42px}
+.mi-espacio .me-v26d-workspace button:focus-visible{outline:3px solid #158a89;outline-offset:3px}
+@media(max-width:640px){.mi-espacio .me-v26d-workspace{padding:16px}}
