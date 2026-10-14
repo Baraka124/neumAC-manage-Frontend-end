@@ -288,6 +288,14 @@
             if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido cargar tu perfil.';
           } finally { if(requestSeq===seq) state.profile.busy=false; }
         }
+        function focusProfileEditor(){
+          if(!profileActive.value||!state.profile.edit)return;
+          Vue.nextTick(()=>{
+            const el=document.querySelector('.mi-espacio .me-v34-edit-heading');
+            el?.scrollIntoView({behavior:'auto',block:'start'});
+            el?.focus({preventScroll:true});
+          });
+        }
         function closeProfile(){requestCloseProfile();}
         async function saveProfile(){
           if(!linked.value||!state.profile.edit||!state.profile.data?.id||state.profile.saving)return;
@@ -1033,7 +1041,7 @@
           state,linked,initials,can,refresh:load,selectedDuty,
           professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
-          profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,
+          profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,focusProfileEditor,
           researchSummary,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
           toggleNotifPref,leadershipRoles,publicPreview,
           missingFields,completenessHint,scrollToField,
@@ -1063,7 +1071,7 @@
         };
       },
       template: `
-      <section class="mi-espacio mi-espacio--v8 mi-espacio--v9" :class="{'me-v25-leadership':leadershipFocus}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape" @click.capture="anchorInlineDisclosure">
+      <section class="mi-espacio mi-espacio--v8 mi-espacio--v9" :class="{'me-v25-leadership':leadershipFocus,'me-v34-research-only':hasResearch && !showAgenda,'me-v34-clinical-first':hasAgenda && !hasResearch,'me-v34-mixed':hasAgenda && hasResearch,'me-v34-no-work':!hasAgenda && !hasResearch}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape" @click.capture="anchorInlineDisclosure">
         <header class="mi-espacio-head me-v9-accessible-head"><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
@@ -1105,7 +1113,7 @@
             <!-- Phase 28A: the authorized profile stays inside its identity surface. -->
             <section v-if="profileActive && linked" id="me-v28-profile-panel" class="me-v15-profile-panel me-v26c-profile me-v28-inline-profile" aria-label="Perfil profesional">
             <div class="me-v15-profile-head">
-              <div><h3 class="me-v26c-title" tabindex="-1">Perfil profesional</h3><p>Información profesional y datos de contacto.</p></div>
+              <div><h3 class="me-v26c-title" tabindex="-1">Perfil profesional</h3><p>Datos institucionales y presentación profesional.</p><button v-if="state.profile.edit && !state.profile.busy" type="button" class="me-v34-edit-shortcut" @click="focusProfileEditor">Editar información <span aria-hidden="true">↗</span></button></div>
               <button type="button" class="me-v15-profile-close" @click="closeProfile" aria-label="Volver a Mi espacio">← Volver</button>
             </div>
             <p v-if="state.profile.busy" class="mi-espacio-state" role="status">Cargando perfil…</p>
@@ -1138,8 +1146,8 @@
                   <small>JPEG, PNG, WEBP o GIF. Máx. 8 MB.</small>
                 </div>
               </div>
-              <div class="me-v15-readonly-section">
-                <h4>Datos institucionales</h4>
+              <details class="me-v15-readonly-section me-v34-institutional-details">
+                <summary class="me-v34-institutional-summary"><span>Datos institucionales</span><span class="me-v34-institutional-hint">Consultar información registrada</span><svg class="me-v28-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
                 <dl class="me-v15-dl">
                   <div><dt>Nombre</dt><dd>{{state.profile.data.fullName}}</dd></div>
                   <div v-if="state.profile.data.title"><dt>Título</dt><dd>{{state.profile.data.title}}</dd></div>
@@ -1160,7 +1168,7 @@
                   <div v-if="state.profile.data.affiliationType && state.profile.data.affiliationType !== 'primary'"><dt>Adscripción</dt><dd>{{affiliationLabel(state.profile.data.affiliationType)}}</dd></div>
                   <div v-if="state.profile.data.primaryDeptName"><dt>Servicio de origen</dt><dd>{{state.profile.data.primaryDeptName}}</dd></div>
                 </dl>
-              </div>
+              </details>
               <div v-if="state.profile.data.canBePi || state.profile.data.canBeCoi || state.profile.data.canSuperviseResidents" class="me-v15-readonly-section me-v18-capabilities">
                 <h4>Capacidades reconocidas</h4>
                 <ul class="me-v18-cap-list">
@@ -1181,8 +1189,8 @@
                   <li v-for="(r,i) in leadershipRoles" :key="i"><span class="me-v19-role-badge">{{r.label}}</span> <span class="me-v19-role-name">{{r.name}}</span></li>
                 </ul>
               </div>
-              <form class="me-v15-edit-section" @submit.prevent="saveProfile" :aria-busy="state.profile.saving">
-                <h4>Datos editables</h4>
+              <form id="me-v34-profile-edit" class="me-v15-edit-section" @submit.prevent="saveProfile" :aria-busy="state.profile.saving">
+                <h4 class="me-v34-edit-heading" tabindex="-1">Datos editables</h4>
                 <p class="me-v26c-edit-hint">Solo los campos de esta sección pueden modificarse desde Mi Espacio. El correo profesional es administrativo.</p>
                 <div class="me-field me-field-readonly"><label>Correo profesional</label><span class="me-readonly-value">{{state.profile.data?.professionalEmail || '—'}}</span><small class="me-readonly-hint">Solo modificable por administración</small></div>
                 <div class="me-field"><label for="me-profile-phone">Teléfono móvil</label><input id="me-profile-phone" type="tel" v-model="state.profile.edit.mobile_phone" maxlength="40"></div>
@@ -1304,10 +1312,10 @@
             </div>
             <p v-if="state.notifications.busy" class="mi-espacio-state" role="status">Cargando notificaciones…</p>
             <p v-else-if="state.notifications.error" class="me-form-error" role="alert">{{state.notifications.error}}</p>
-            <p v-else-if="!state.notifications.items.length" class="me-v8-quiet">Sin notificaciones pendientes — ¡todo en orden!</p>
+            <p v-else-if="!state.notifications.items.length" class="me-v8-quiet" role="status">No hay notificaciones pendientes.</p>
             <ul v-else class="me-v21-notif-list">
               <li v-for="n in state.notifications.items" :key="n.id" class="me-v21-notif-item" :class="'me-v21-sev-'+n.severity">
-                <span class="me-v21-notif-icon" aria-hidden="true">{{n.severity==='error'?'🔴':n.severity==='warning'?'🟡':n.severity==='success'?'🟢':'🔵'}}</span>
+                <span class="me-v21-notif-icon" aria-hidden="true">●</span>
                 <div class="me-v21-notif-body">
                   <strong>{{n.title}}</strong>
                   <span class="me-v21-notif-msg">{{n.message}}</span>
@@ -1537,7 +1545,7 @@
                 <button v-if="can('oncall_schedule')" type="button" class="me-duty-institutional" @click="navigate('oncall_schedule')">Abrir cuadrante departamental ↗</button>
               </section>
               <div v-if="state.dutyMode==='overview'" class="me-v9-lower-grid">
-                <section class="me-v9-publications" aria-label="Publicaciones">
+                <section class="me-v9-publications" :class="{'me-v34-empty-publications':!state.activity.publications.items.length}" aria-label="Publicaciones">
                   <div class="me-v9-panel-heading"><div><h3>Publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button></div>
                   <ol v-if="state.activity.publications.items.length" id="me-v28-publications" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,state.publicationsExpanded?state.activity.publications.items.length:3)" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
                   <p v-if="!state.activity.publications.items.length && !state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p>
