@@ -35,9 +35,8 @@ for(const width of [390,768,1366]){
   await expect(app.locator('.me-v26b-person').first()).toBeFocused();
   await app.getByRole('button',{name:/Volver a Mi espacio/}).first().click();
   await expect(app.locator('.me-v9-overview')).toBeVisible();
-  await app.getByRole('button',{name:/Ver investigación/}).click();
-  await expect(app.locator('.me-v26d-workspace')).toBeVisible();
-  await app.getByRole('button',{name:/Volver a Mi espacio/}).first().click();
+  await expect(app.locator('.me-v8-research')).toContainText('Proyecto');
+  await expect(app.locator('.me-v26d-workspace')).toHaveCount(0);
   await expect(app.locator('.me-v9-overview')).toBeVisible();
   const outcome=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,errors:window.__errors}));
   expect(outcome.errors).toEqual([]);expect(outcome.overflow).toBeLessThanOrEqual(2);
