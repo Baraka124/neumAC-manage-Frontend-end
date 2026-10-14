@@ -7,9 +7,12 @@ const css=fs.readFileSync('mi-espacio/mi-espacio.css','utf8');
 test('adaptive priority derives from verified activity, not role labels',()=>{
  assert.match(js,/const researchPriority=Vue\.computed/);
  assert.match(js,/hasResearch\.value && hasAgenda\.value/);
- assert.match(js,/counts\?\.guardias\|\|0/);
+ assert.match(js,/upcomingGuardias\.value\.length===0/);
+ assert.match(js,/personalRotations\.value\.length===0/);
+ assert.match(js,/supervisedRotations\.value\.length===0/);
  assert.match(js,/me-v12-research-priority/);
- assert.doesNotMatch(js.slice(js.indexOf('const researchPriority='),js.indexOf('const researchPriority=')+400),/staffType|professionalDesignation/);
+ const priorityRule=js.slice(js.indexOf('const researchPriority='),js.indexOf('function clear(){'));
+ assert.doesNotMatch(priorityRule,/staffType|professionalDesignation|counts\?\.guardias/);
 });
 test('desktop priority remains responsive and retains all sections',()=>{
  assert.match(css,/@media\(min-width:851px\)/);
