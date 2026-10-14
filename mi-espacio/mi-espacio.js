@@ -75,7 +75,7 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,researchOpen:{lines:false,studies:false,projects:false},operationsOpen:{guardias:false,absences:false,supervision:false},publicationsExpanded:false,
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,researchOpen:{lines:false,studies:false,projects:false},operationsOpen:{guardias:false,absences:false,supervision:false,rotations:false,otherRotations:false},publicationsExpanded:false,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}},
@@ -145,7 +145,7 @@
           if(controller)controller.abort();
           controller=null;
           state.context=null;state.error='';state.busy=false;
-          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.researchExpanded=false;state.researchOpen={lines:false,studies:false,projects:false};state.operationsOpen={guardias:false,absences:false,supervision:false};state.publicationsExpanded=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
+          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.researchExpanded=false;state.researchOpen={lines:false,studies:false,projects:false};state.operationsOpen={guardias:false,absences:false,supervision:false,rotations:false,otherRotations:false};state.publicationsExpanded=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
@@ -1447,7 +1447,8 @@
                   <div v-else-if="personalRotations.length" class="me-v8-upnext me-v9-feature me-v10-rotation-feature">
                     <span class="me-v8-kicker">MI ROTACIÓN REGISTRADA</span>
                     <strong>{{personalRotations[0].unit || 'Rotación asignada'}}</strong>
-                    <span v-if="fmtPeriod(personalRotations[0].start,personalRotations[0].end)">{{fmtPeriod(personalRotations[0].start,personalRotations[0].end)}}</span>
+                    <span v-if="personalRotations[0].start||personalRotations[0].end">{{fmtPeriod(personalRotations[0].start,personalRotations[0].end)}}</span>
+                    <small v-if="personalRotations[0].status" class="me-v28d-recorded-status">Estado registrado: {{personalRotations[0].status}}</small>
                   </div>
                   <div v-else-if="supervisedRotations.length" class="me-v8-upnext me-v9-feature me-v10-supervision-feature">
                     <span class="me-v8-kicker">ROTACIÓN BAJO MI SUPERVISIÓN</span>
@@ -1457,14 +1458,41 @@
                   </div>
                   <p v-else-if="!hasAgenda" class="me-v8-quiet me-v9-empty">No constan asignaciones próximas vinculadas a tu perfil.</p>
                   <div v-if="state.activity.agenda.rotations.length || state.activity.agenda.absences.length" class="me-v8-secondary-agenda">
-                    <div v-if="personalRotations.length> (state.activity.agenda.guardias.length?0:1)">
-                      <h4>Mis rotaciones</h4><ul><li v-for="r in personalRotations.slice(state.activity.agenda.guardias.length?0:1)" :key="r.id">{{r.unit||'Rotación asignada'}} <small>{{fmtPeriod(r.start,r.end)}}</small></li></ul>
+                    <!-- Phase 28D: use only existing, authorized resident rotations; no inferred supervisor name. -->
+                    <div v-if="personalRotations.length>(state.activity.agenda.guardias.length?0:1)" class="me-v28-disclosure me-v28d-rotations">
+                      <button v-if="personalRotations.length>(state.activity.agenda.guardias.length?1:2)" type="button"
+                        class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.rotations"
+                        aria-controls="me-v28d-rotations" @click="state.operationsOpen.rotations=!state.operationsOpen.rotations">
+                        <span>Mis rotaciones <small>{{personalRotations.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span>
+                      </button>
+                      <h4 v-else class="me-v28d-static-title">Mis rotaciones <small>{{personalRotations.length}}</small></h4>
+                      <ul id="me-v28d-rotations" class="me-v28d-rotation-list">
+                        <li v-for="(r,i) in personalRotations.slice(state.activity.agenda.guardias.length?0:1,state.operationsOpen.rotations?personalRotations.length:(state.activity.agenda.guardias.length?1:2))" :key="r.id||i">
+                          <strong>{{r.unit||'Rotación asignada'}}</strong>
+                          <small v-if="r.start||r.end">{{fmtPeriod(r.start,r.end)}}</small>
+                          <small v-if="r.status">Estado registrado: {{r.status}}</small>
+                        </li>
+                      </ul>
                     </div>
                     <div v-if="supervisedRotations.length> (state.activity.agenda.guardias.length||personalRotations.length?0:1)" class="me-v28-disclosure">
                       <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.supervision" aria-controls="me-v28c-supervision" @click="state.operationsOpen.supervision=!state.operationsOpen.supervision"><span>Rotaciones que superviso <small>{{supervisedRotations.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
                       <ul id="me-v28c-supervision"><li v-for="r in supervisedRotations.slice(state.activity.agenda.guardias.length||personalRotations.length?0:1,state.operationsOpen.supervision?supervisedRotations.length:(state.activity.agenda.guardias.length||personalRotations.length?1:2))" :key="r.id">{{r.resident||r.unit||'Rotación supervisada'}} <small>{{r.resident&&r.unit?r.unit+' · ':''}}{{fmtPeriod(r.start,r.end)}}</small></li></ul>
                     </div>
-                    <div v-if="otherRotations.length"><h4>Otras rotaciones vinculadas</h4><ul><li v-for="r in otherRotations" :key="r.id">{{r.unit||r.resident||'Rotación'}} <small>{{fmtPeriod(r.start,r.end)}}</small></li></ul></div>
+                    <div v-if="otherRotations.length" class="me-v28-disclosure me-v28d-other-rotations">
+                      <button v-if="otherRotations.length>1" type="button" class="me-v28-disclosure-toggle"
+                        :aria-expanded="state.operationsOpen.otherRotations" aria-controls="me-v28d-other-rotations"
+                        @click="state.operationsOpen.otherRotations=!state.operationsOpen.otherRotations">
+                        <span>Otras rotaciones vinculadas <small>{{otherRotations.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span>
+                      </button>
+                      <h4 v-else class="me-v28d-static-title">Otras rotaciones vinculadas</h4>
+                      <ul id="me-v28d-other-rotations" class="me-v28d-rotation-list">
+                        <li v-for="(r,i) in otherRotations.slice(0,state.operationsOpen.otherRotations?otherRotations.length:1)" :key="r.id||i">
+                          <strong>{{r.unit||r.resident||'Rotación'}}</strong>
+                          <small v-if="r.start||r.end">{{fmtPeriod(r.start,r.end)}}</small>
+                          <small v-if="r.status">Estado registrado: {{r.status}}</small>
+                        </li>
+                      </ul>
+                    </div>
                     <div v-if="state.activity.agenda.absences.length" class="me-v28-disclosure"><button type="button" class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.absences" aria-controls="me-v28c-absences" @click="state.operationsOpen.absences=!state.operationsOpen.absences"><span>Ausencias <small>{{state.activity.agenda.absences.length}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button><ul id="me-v28c-absences" class="me-v19-absence-list"><li v-for="a in state.activity.agenda.absences.slice(0,state.operationsOpen.absences?state.activity.agenda.absences.length:1)" :key="a.id" class="me-v19-absence-item"><span class="me-v19-absence-reason">{{absenceReasonLabel(a.reason)||a.type||'Ausencia'}}</span><span class="me-v19-absence-dates">{{fmtPeriod(a.start,a.end)}}<template v-if="a.days"> · {{a.days}} día{{a.days!==1?'s':''}}</template></span><span class="me-chip me-v19-absence-status" :data-tone="a.status">{{absenceStatusLabel(a.status)}}</span></li></ul></div>
                   </div>
                 </section>

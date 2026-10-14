@@ -1049,3 +1049,14 @@
 .mi-espacio .me-v28-disclosure-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
 .mi-espacio .me-v28-disclosure ul{margin:4px 0 0}
 @media(prefers-reduced-motion:reduce){.mi-espacio .me-v28-disclosure-toggle .me-v28-chevron{transition:none}}
+
+/* Phase 28D — inline verified rotation presentation, not a new data contract. */
+.mi-espacio .me-v28d-rotation-list{list-style:none;padding:0;margin:2px 0 0;display:grid;gap:0;min-width:0}
+.mi-espacio .me-v28d-rotation-list li{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:11px 0;border-bottom:1px solid #edf1ef;min-width:0;overflow-wrap:anywhere}
+.mi-espacio .me-v28d-rotation-list li:last-child{border-bottom:0}
+.mi-espacio .me-v28d-rotation-list strong{font-size:13px;font-weight:650;line-height:1.45;color:var(--me-ink)}
+.mi-espacio .me-v28d-rotation-list small,.mi-espacio .me-v28d-recorded-status{color:var(--me-muted);line-height:1.5;font-size:12px}
+.mi-espacio .me-v28d-static-title{font-size:13px;font-weight:650;line-height:1.5;margin:8px 0 2px}
+.mi-espacio .me-v28d-static-title small{font-size:12px;color:var(--me-muted);font-weight:500}
+.mi-espacio .me-v28d-rotations,.mi-espacio .me-v28d-other-rotations{min-width:0}
+@media(max-width:430px){.mi-espacio .me-v28d-rotation-list strong{overflow-wrap:anywhere}}

@@ -9,6 +9,7 @@ const pub=i=>({id:'p'+i,title:long+' · publicación '+i,byline:'García M, Fern
 const base=()=>({agenda:{guardias:[],rotations:[],absences:[]},research:{lines:[],studies:[],projects:[]},publications:{available:true,items:[]}});
 const cases={
  resident:()=>{const a=base();a.agenda.rotations=[{id:'r1',role:'resident',unit:'UCI',start:'2026-11-01',end:'2027-01-03'}];return {a,staffType:'medical_resident'};},
+ residentMulti:()=>{const a=base();a.agenda.rotations=[{id:'r1',role:'resident',unit:'UCI',start:'2026-11-01',end:'2027-01-03',status:'assigned'},{id:'r2',role:'resident',unit:'Neumología',start:'2027-01-04',end:'2027-02-28',status:'planned'},{id:'r3',role:'resident',unit:'Pruebas funcionales',start:'2027-03-01',end:'2027-04-15',status:'planned'}];return {a,staffType:'medical_resident'};},
  clinician:()=>({a:base(),staffType:'clinician'}),
  supervisor:()=>{const a=base();a.agenda.rotations=[{id:'r2',role:'supervisor',resident:'Persona residente',unit:'Neumología',start:'2026-11-01',end:'2026-11-01'}];return {a,staffType:'clinician'};},
  dutyOrder:()=>{const a=base();a.agenda.guardias=[{...duty(3)},{...duty(0)},{...duty(2)}];return {a,staffType:'clinician'};},
@@ -65,6 +66,20 @@ for(const [name,scenario] of Object.entries(cases)){
      await expect(page.locator('.me-v9-timeline li').first()).toContainText('20 de octubre de 2026');
    }
    if(name==='resident'){await expect(page.locator('.me-v10-rotation-feature')).toContainText('UCI');await expect(page.locator('.me-v9-identity')).toContainText('Médico/a residente');}
+   if(name==='residentMulti'){
+     const list=page.locator('#me-v28d-rotations');
+     await expect(page.locator('.me-v10-rotation-feature')).toContainText('UCI');
+     await expect(list.locator('li')).toHaveCount(1);
+     const disclosure=page.getByRole('button',{name:/Mis rotaciones/});
+     await expect(disclosure).toHaveAttribute('aria-expanded','false');
+     await disclosure.click();
+     await expect(disclosure).toHaveAttribute('aria-expanded','true');
+     await expect(list.locator('li')).toHaveCount(2);
+     await expect(list).toContainText('Pruebas funcionales');
+     await expect(list).toContainText('Estado registrado: planned');
+     await disclosure.click();
+     await expect(list.locator('li')).toHaveCount(1);
+   }
    if(name==='supervisor')await expect(page.locator('.me-v10-supervision-feature')).toContainText('Persona residente');
    if(name==='engineer'){await expect(page.locator('.me-v8-agenda')).toHaveCount(0);await expect(page.locator('.me-v8-research')).toBeVisible();await expect(page.locator('.me-v9-identity')).toContainText('Ingeniería biomédica');}
    if(name==='clinician'){await expect(page.locator('.me-v8-research')).toHaveCount(0);await expect(page.locator('.me-v8-agenda')).toBeVisible();}
