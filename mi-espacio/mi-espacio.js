@@ -362,17 +362,22 @@
           try { await root.NeumMiEspacioData.updateNotificationPrefs((p,o)=>API.request(p,o),{[apiKey]:newVal},controller&&controller.signal); }
           catch(err){ prefs[key]=!newVal; }
         }
-        // ── Phase 19: IP/leadership roles from research data ──
+        // Phase 35: leadership must only reflect an explicitly assigned PI,
+        // Co-PI, project lead or line coordinator. Co-investigator is distinct
+        // from Co-IP and must never be promoted by presentation logic.
+        const leadershipRoleKey=role=>String(role||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_');
         const leadershipRoles=Vue.computed(()=>{
           const roles=[];
           const a=state.activity;
           if(!a)return roles;
+          const isCoPi=r=>['co_pi','copi','co_principal_investigator'].includes(leadershipRoleKey(r));
           (a.research?.studies||[]).forEach(s=>{
-            if(s.role==='PI') roles.push({type:'study',label:'IP',name:s.title});
-            else if(s.role==='co-investigator') roles.push({type:'study',label:'Co-IP',name:s.title});
+            if(leadershipRoleKey(s.role)==='pi') roles.push({type:'study',label:'IP',name:s.title});
+            else if(isCoPi(s.role)) roles.push({type:'study',label:'Co-IP',name:s.title});
           });
           (a.research?.projects||[]).forEach(p=>{
-            if(p.role==='lead') roles.push({type:'project',label:'Responsable',name:p.title});
+            if(leadershipRoleKey(p.role)==='lead') roles.push({type:'project',label:'Responsable',name:p.title});
+            else if(isCoPi(p.role)) roles.push({type:'project',label:'Co-IP',name:p.title});
           });
           (a.research?.lines||[]).forEach(l=>{
             if(l.role==='coordinator') roles.push({type:'line',label:'Coordinador/a',name:l.name});
