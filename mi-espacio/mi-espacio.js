@@ -362,17 +362,22 @@
           try { await root.NeumMiEspacioData.updateNotificationPrefs((p,o)=>API.request(p,o),{[apiKey]:newVal},controller&&controller.signal); }
           catch(err){ prefs[key]=!newVal; }
         }
-        // ── Phase 19: IP/leadership roles from research data ──
+        // Phase 35: leadership must only reflect an explicitly assigned PI,
+        // Co-PI, project lead or line coordinator. Co-investigator is distinct
+        // from Co-IP and must never be promoted by presentation logic.
+        const leadershipRoleKey=role=>String(role||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_');
         const leadershipRoles=Vue.computed(()=>{
           const roles=[];
           const a=state.activity;
           if(!a)return roles;
+          const isCoPi=r=>['co_pi','copi','co_principal_investigator'].includes(leadershipRoleKey(r));
           (a.research?.studies||[]).forEach(s=>{
-            if(s.role==='PI') roles.push({type:'study',label:'IP',name:s.title});
-            else if(s.role==='co-investigator') roles.push({type:'study',label:'Co-IP',name:s.title});
+            if(leadershipRoleKey(s.role)==='pi') roles.push({type:'study',label:'IP',name:s.title});
+            else if(isCoPi(s.role)) roles.push({type:'study',label:'Co-IP',name:s.title});
           });
           (a.research?.projects||[]).forEach(p=>{
-            if(p.role==='lead') roles.push({type:'project',label:'Responsable',name:p.title});
+            if(leadershipRoleKey(p.role)==='lead') roles.push({type:'project',label:'Responsable',name:p.title});
+            else if(isCoPi(p.role)) roles.push({type:'project',label:'Co-IP',name:p.title});
           });
           (a.research?.lines||[]).forEach(l=>{
             if(l.role==='coordinator') roles.push({type:'line',label:'Coordinador/a',name:l.name});
@@ -732,6 +737,8 @@
           if(c.publications) items.push({label:'Publicaciones registradas',value:c.publications});
           return items;
         });
+        const scientificParticipation=Vue.computed(()=>root.NeumMiEspacioData.buildScientificParticipation(state.activity));
+        const scientificHistoryOpen=Vue.ref(false);
         // ── Phase 16: certificate urgency helpers ──
         const urgentCertificates=Vue.computed(()=>(state.profile.certificates||[]).filter(c=>c.urgency==='expired'||c.urgency==='expiring_soon'));
         const certUrgencyLabel=c=>{
@@ -1042,7 +1049,7 @@
           professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,focusProfileEditor,
-          researchSummary,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
+          researchSummary,scientificParticipation,scientificHistoryOpen,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
           toggleNotifPref,leadershipRoles,publicPreview,
           missingFields,completenessHint,scrollToField,
           TIMELINE_FILTERS,filteredTimeline,
@@ -1177,12 +1184,31 @@
                   <li v-if="state.profile.data.canSuperviseResidents"><span class="me-v18-cap-check" aria-hidden="true">✓</span> Puede supervisar residentes</li>
                 </ul>
               </div>
-              <div v-if="researchSummary.length" class="me-v15-readonly-section me-v18-research-summary">
-                <h4>Actividad investigadora vinculada</h4>
-                <dl class="me-v15-dl">
-                  <div v-for="item in researchSummary" :key="item.label"><dt>{{item.label}}</dt><dd>{{item.value}}</dd></div>
-                </dl>
-              </div>
+              <section v-if="scientificParticipation.total" class="me-v15-readonly-section me-v35-participation" aria-labelledby="me-v35-participation-title">
+                <div class="me-v35-heading"><h4 id="me-v35-participation-title">Actividad científica y clínica</h4><p>Participación vinculada a los registros autorizados del departamento.</p></div>
+                <ul v-if="scientificParticipation.current.length" class="me-v35-records">
+                  <li v-for="item in scientificParticipation.current" :key="item.key" class="me-v35-record">
+                    <span class="me-v35-kind">{{item.kind}}</span>
+                    <strong>{{item.title}}</strong>
+                    <span class="me-v35-record-meta">{{item.role}} <span aria-hidden="true">·</span> {{item.status}}</span>
+                    <small v-if="item.protocol">Protocolo: {{item.protocol}}</small>
+                  </li>
+                </ul>
+                <p v-else class="me-v8-quiet">No constan actividades en curso vinculadas a este perfil.</p>
+                <div v-if="scientificParticipation.history.length" class="me-v35-history">
+                  <button type="button" class="me-v35-history-toggle" :aria-expanded="scientificHistoryOpen" aria-controls="me-v35-history-records" @click="scientificHistoryOpen=!scientificHistoryOpen">
+                    <span>Participación finalizada <small>{{scientificParticipation.history.length}}</small></span>
+                    <svg class="me-v28-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <ul v-if="scientificHistoryOpen" id="me-v35-history-records" class="me-v35-records">
+                    <li v-for="item in scientificParticipation.history" :key="item.key" class="me-v35-record">
+                      <span class="me-v35-kind">{{item.kind}}</span><strong>{{item.title}}</strong>
+                      <span class="me-v35-record-meta">{{item.role}} <span aria-hidden="true">·</span> {{item.status}}</span>
+                      <small v-if="item.protocol">Protocolo: {{item.protocol}}</small>
+                    </li>
+                  </ul>
+                </div>
+              </section>
               <div v-if="leadershipRoles.length" class="me-v15-readonly-section me-v19-leadership">
                 <h4>Roles de liderazgo activos</h4>
                 <ul class="me-v19-leadership-list">
