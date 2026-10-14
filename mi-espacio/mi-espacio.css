@@ -1746,3 +1746,15 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
  .mi-espacio--v9 .me-v9-overview.me-v12-research-priority>.me-v8-agenda{grid-column:auto;grid-row:auto}
 }
 @media(prefers-reduced-motion:reduce){.mi-espacio--v9 .me-v38-research-summary .me-v28-chevron{transition:none!important}}
+
+/* Phase 38 · one visible identity, in-place professional work and shallow research. */
+.mi-espacio--v9 .me-v28-inline-profile{margin-block:14px 4px}
+.mi-espacio--v9 .me-v38-photo-tools{display:block;max-width:100%;margin:0 0 20px;padding:12px 0;border-bottom:1px solid var(--me30-line,#dfe8e5)}
+.mi-espacio--v9 .me-v38-photo-tools .me-v15-photo-actions{display:flex;flex-direction:row;align-items:center;gap:10px 16px;flex-wrap:wrap}
+.mi-espacio--v9 .me-v38-photo-label{color:var(--me30-reading,#26444a);font-weight:600;font-size:13px}
+.mi-espacio--v9 .me-v38-photo-tools small{flex-basis:100%;font-size:12px;color:var(--me30-secondary,#566f73)}
+.mi-espacio--v9 .me-v38-public-preview{border-top:1px solid var(--me30-line,#dfe8e5);margin-top:14px;padding:10px 0}
+.mi-espacio--v9 .me-v38-public-preview>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:14px;font-weight:600;color:var(--me30-reading,#26444a)}
+.mi-espacio--v9 .me-v38-public-preview>summary span{font-size:12px;font-weight:400;color:var(--me30-secondary,#566f73)}
+.mi-espacio--v9 .me-v38-public-preview>summary:focus-visible{outline:3px solid #158a89;outline-offset:3px}
+.mi-espacio--v9 .me-v38-research-guidance{margin:12px 0 0;color:var(--me30-secondary,#566f73);font-size:12px;line-height:1.5}
