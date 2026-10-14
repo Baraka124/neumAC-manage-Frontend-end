@@ -59,6 +59,8 @@ jobs:
         run: node --test tests/mi-espacio-phase26a.test.cjs
       - name: Mi espacio Phase 26B contextual workspace contract
         run: node --test tests/mi-espacio-phase26b.test.cjs
+      - name: Mi espacio Phase 26C professional profile workspace
+        run: node --test tests/mi-espacio-phase26c.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
