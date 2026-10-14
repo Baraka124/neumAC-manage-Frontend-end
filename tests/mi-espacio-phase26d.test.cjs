@@ -6,7 +6,13 @@ test('verified research and publications have one active contextual workspace',(
  for(const kind of ['research','publications']){
   const n=nav.create();n.dispatch({type:'OPEN_WORKSPACE',workspace:kind,origin:{focusId:'trigger',scrollY:123}});
   assert.equal(n.get().workspace,kind);assert.equal(n.dispatch({type:'BACK'}).view,'overview');
-  assert.match(src,new RegExp("openPortfolio\\('"+kind+"'\\)"));
+  if(kind==='publications')assert.match(src,/openPortfolio\('publications'\)/);
+  else {
+   assert.doesNotMatch(src,/id="me-v26d-research-trigger"/);
+   assert.match(src,/state\.activity\.research\.lines\.slice/);
+   assert.match(src,/state\.activity\.research\.studies\.slice/);
+   assert.match(src,/state\.activity\.research\.projects\.slice/);
+  }
  }
 });
 test('research handoff is permission-gated and payload comes from personal context',()=>{
