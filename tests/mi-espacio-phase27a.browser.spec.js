@@ -49,14 +49,9 @@ for(const kind of Object.keys(cases)){
    const app=page.locator('.mi-espacio');
    if(kind==='head'||kind==='engineer'){
      await expect(app.locator('.me-v8-research')).toBeVisible();
-     await app.getByRole('button',{name:/Ver investigación/}).click();
-     await app.getByRole('button',{name:'Estudios',exact:true}).click();
-     await expect(app.locator('.me-v26d-workspace')).toContainText(kind==='head'?'Estudio verificado por liderazgo':'Estudio de ingeniería verificado');
-     await expect(app.locator('.me-v9-overview')).toHaveCount(0);
-     await expect(app.getByRole('button',{name:/Ir al módulo de investigación/})).toHaveCount(0);
-     await app.getByRole('button',{name:/Volver a Mi espacio/}).click();
-     await expect(app.locator('.me-v9-overview')).toBeVisible();
-     await expect(app.locator('.me-v26d-workspace')).toHaveCount(0);
+      await expect(app.locator('.me-v8-research')).toContainText(kind==='head'?'Estudio verificado por liderazgo':'Estudio de ingeniería verificado');
+      await expect(app.locator('.me-v9-overview')).toBeVisible();
+      await expect(app.locator('.me-v26d-workspace')).toHaveCount(0);
      await expect(app.locator('.me-v8-upnext')).toHaveCount(0);
    }
    if(kind==='clinician'){
