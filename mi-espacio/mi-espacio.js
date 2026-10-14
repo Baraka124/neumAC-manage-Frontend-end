@@ -1247,14 +1247,18 @@
             </div>
           </div>
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
-            <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
+            <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions" aria-controls="me-v32-tool-details"><span>Acciones rápidas</span><svg class="me-v28-chevron me-v32-tool-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <button type="button" class="me-v21-notif-btn" @click="toggleNotifications" :aria-expanded="state.notifications.open" aria-label="Notificaciones">Notificaciones<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
             <button id="me-v26b-directory-trigger" type="button" class="me-v20-directory-btn" @click="loadColleagues" :aria-expanded="isContextWorkspace && workspaceState.workspace==='directory'" aria-controls="me-v26b-directory">Directorio</button>
             <button id="me-v26b-calendar-trigger" type="button" class="me-v21-cal-btn" @click="openCalendar()" :aria-expanded="isContextWorkspace && workspaceState.workspace==='calendar'" aria-controls="me-v26b-calendar" aria-label="Abrir calendario">Calendario</button>
             <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">{{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
           </div>
-          <div v-if="state.quickActions && linked && !isContextWorkspace" class="me-v20-quick-actions">
+          <div v-if="state.quickActions && linked && !isContextWorkspace" id="me-v32-tool-details" class="me-v20-quick-actions me-v32-tools-panel" aria-label="Herramientas adicionales">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
+            <div class="me-v21-extras-bar">
+              <button type="button" class="me-v21-extras-btn" @click="openDigest()">Resumen</button>
+              <button type="button" class="me-v21-extras-btn" @click="exportCV()" :disabled="state.cvExport.busy">{{state.cvExport.busy?'Exportando…':'Exportar CV'}}</button>
+            </div>
           </div>
           <section v-if="isContextWorkspace && workspaceState.workspace==='directory'" id="me-v26b-directory" class="me-v26b-workspace me-v20-colleagues" aria-label="Directorio del equipo">
             <div class="me-v26b-topline"><span>Mi espacio / Directorio</span><button type="button" @click="returnToOverview">← Volver a Mi espacio</button></div>
@@ -1660,11 +1664,6 @@
               </div>
             </template>
           </template>
-          <!-- Phase 21: Quick bar — digest + CV export -->
-          <div v-if="linked && !state.profile.open" class="me-v21-extras-bar">
-            <button type="button" class="me-v21-extras-btn" @click="openDigest()">Resumen</button>
-            <button type="button" class="me-v21-extras-btn" @click="exportCV()" :disabled="state.cvExport.busy">{{state.cvExport.busy?'Exportando…':'Exportar CV'}}</button>
-          </div>
         </template>
       </section>`
     };
