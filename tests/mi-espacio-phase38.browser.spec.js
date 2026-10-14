@@ -28,12 +28,8 @@ test('Phase 38 adaptive dossier/disclosure '+fixture.id+' '+width,async({page})=
   await profile.getByRole('button',{name:/Volver/}).click();
   await expect(app.locator('.me-v9-overview')).toBeVisible();
   await expect(app.locator('.me-v26d-workspace')).toHaveCount(0);
-  await app.locator('.me-v28-disclosure-toggle').filter({hasText:'Proyectos'}).click();
   await expect(app.locator('#me-v28-projects')).toContainText('Proyecto vinculado');
-  return;
-  const disclosure=app.locator('.me-v38-research-disclosure').first();await expect(disclosure).toBeVisible();
-  await disclosure.locator('summary').click();await expect(disclosure.locator('.me-v38-research-meta')).toContainText('Etapa: Activo');
-  await disclosure.locator('summary').click();await expect(disclosure).not.toHaveAttribute('open','');
+  await expect(app.locator('.me-v8-research').getByRole('button',{name:/Proyectos/})).toHaveCount(0);
  }
  const out=await page.evaluate(()=>({errors:window.__errors,overflow:document.documentElement.scrollWidth-innerWidth}));
  expect(out.errors).toEqual([]);expect(out.overflow).toBeLessThanOrEqual(2);
