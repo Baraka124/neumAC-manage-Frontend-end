@@ -30,7 +30,7 @@ for(const width of [390,768,1366]){
   for(const kind of [
     {open:'Abrir calendario',panel:'.me-v26b-workspace',back:'Volver a Mi espacio'},
     {open:'Directorio',panel:'.me-v26b-workspace',back:'Volver a Mi espacio'},
-    {open:'Explorar mi investigación',panel:'.me-v26d-workspace',back:'Volver a Mi espacio'}
+    {open:'Ver investigación',panel:'.me-v26d-workspace',back:'Volver a Mi espacio'}
   ]){
    await app.getByRole('button',{name:new RegExp(kind.open)}).first().click();
    const panel=app.locator(kind.panel);

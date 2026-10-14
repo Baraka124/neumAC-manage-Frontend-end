@@ -415,12 +415,12 @@
         const quickActionItems=Vue.computed(()=>{
           const items=[];
           if(linked.value){
-            items.push({id:'profile',label:'Editar mi perfil',icon:'✏️'});
+            items.push({id:'profile',label:'Editar perfil',icon:'✏️'});
             items.push({id:'report',label:'Comunicar discrepancia',icon:'📋'});
             items.push({id:'claim',label:'Reivindicar publicación',icon:'📄'});
           }
           if(can('absence_management')) items.push({id:'absence',label:'Solicitar ausencia',icon:'🗓️'});
-          if(can('certificates_management')) items.push({id:'certs',label:'Mis certificados',icon:'📜'});
+          if(can('certificates_management')) items.push({id:'certs',label:'Certificados',icon:'📜'});
           if(can('oncall_schedule')) items.push({id:'oncall',label:'Cuadrante de guardias',icon:'🏥'});
           return items;
         });
@@ -612,7 +612,7 @@
             }
             if(activity?.research?.studies?.length){
               lines.push('');lines.push('ESTUDIOS CLÍNICOS');lines.push('─'.repeat(30));
-              activity.research.studies.forEach(s=>lines.push('• '+s.title+(s.role?' — '+s.role:'')));
+              activity.research.studies.forEach(s=>lines.push('• '+s.title+(s.role?' — '+label(STUDY,s.role):'')));
             }
             if(activity?.research?.publications?.length){
               lines.push('');lines.push('PUBLICACIONES');lines.push('─'.repeat(30));
@@ -658,6 +658,7 @@
             html+='.metric .val{font-size:22pt;font-weight:800;color:#158a89;display:block}.metric .lbl{font-size:8pt;color:#60747d}';
             html+='ul{margin:4px 0;padding-left:18px}li{margin-bottom:3px}';
             html+='.footer{text-align:center;font-size:8pt;color:#999;margin-top:30px;border-top:1px solid #e0e8eb;padding-top:8px}';
+            html+='.header{border-bottom:1px solid #b8c9ce;padding-bottom:20px;margin-bottom:24px}.header-info h1{font-size:24pt;font-weight:600;letter-spacing:-.5pt}.header-info p{font-size:11pt;color:#405963}.section{margin-bottom:22px}.section h2{font-size:14pt;font-weight:600;color:#183c49;break-after:avoid}li{margin-bottom:8px;break-inside:avoid;overflow-wrap:anywhere}p{overflow-wrap:anywhere}.metric .val{font-weight:600}.metric .lbl,.footer{font-size:9pt}.footer{color:#60747d}.header,.metrics{break-inside:avoid}';
             html+='</style></head><body>';
             // Header
             html+='<div class="header">'+photoHtml+'<div class="header-info"><h1>'+name+'</h1>';
@@ -690,11 +691,11 @@
             const lr=leadershipRoles.value;
             if(lr.length){html+='<div class="section"><h2>Roles de liderazgo</h2><ul>'+lr.map(r=>'<li><strong>'+r.label+'</strong> — '+r.name+'</li>').join('')+'</ul></div>';}
             // Research lines
-            if(activity?.research?.lines?.length){html+='<div class="section"><h2>Líneas de investigación</h2><ul>'+activity.research.lines.map(l=>'<li>'+l.name+(l.subArea?' ('+l.subArea+')':'')+(l.role?' — '+l.role:'')+'</li>').join('')+'</ul></div>';}
+            if(activity?.research?.lines?.length){html+='<div class="section"><h2>Líneas de investigación</h2><ul>'+activity.research.lines.map(l=>'<li>'+l.name+(l.subArea?' ('+l.subArea+')':'')+(l.role?' — '+label(LINE,l.role):'')+'</li>').join('')+'</ul></div>';}
             // Studies
-            if(activity?.research?.studies?.length){html+='<div class="section"><h2>Estudios clínicos</h2><ul>'+activity.research.studies.map(s=>'<li>'+s.title+(s.role?' — '+s.role:'')+(s.code?' · '+s.code:'')+'</li>').join('')+'</ul></div>';}
+            if(activity?.research?.studies?.length){html+='<div class="section"><h2>Estudios clínicos</h2><ul>'+activity.research.studies.map(s=>'<li>'+s.title+(s.role?' — '+label(STUDY,s.role):'')+(s.code?' · '+s.code:'')+'</li>').join('')+'</ul></div>';}
             // Projects
-            if(activity?.research?.projects?.length){html+='<div class="section"><h2>Proyectos de innovación</h2><ul>'+activity.research.projects.map(p=>'<li>'+p.title+(p.role?' — '+p.role:'')+(p.stage?' · '+p.stage:'')+'</li>').join('')+'</ul></div>';}
+            if(activity?.research?.projects?.length){html+='<div class="section"><h2>Proyectos de innovación</h2><ul>'+activity.research.projects.map(p=>'<li>'+p.title+(p.role?' — '+label(PROJECT,p.role):'')+(p.stage?' · '+p.stage:'')+'</li>').join('')+'</ul></div>';}
             // Publications
             if(activity?.publications?.items?.length){html+='<div class="section"><h2>Publicaciones</h2><ul>'+activity.publications.items.map(p=>'<li>'+p.title+(p.byline?' <small>'+p.byline+'</small>':'')+'</li>').join('')+'</ul></div>';}
             // Certificates
@@ -1087,7 +1088,7 @@
               </div>
               <div class="me-v28-identity-actions">
                 <button v-if="linked" id="me-v26c-profile-trigger" type="button" class="me-v15-profile-link me-v22-profile-link me-v28-profile-toggle" :aria-expanded="profileActive" aria-controls="me-v28-profile-panel" @click="profileActive?closeProfile():openProfile()">
-                  <span>Mi perfil completo</span><svg class="me-v28-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span>Perfil profesional</span><svg class="me-v28-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
                 <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
               </div>
@@ -1098,14 +1099,13 @@
                 <span v-if="personalContextRemaining" class="me-v22-context-more">+{{personalContextRemaining}} áreas vinculadas</span>
               </div>
               <div v-if="leadershipCount" class="me-v22-leadership-summary">
-                <span class="me-v22-leadership-icon" aria-hidden="true">★</span>
                 <span>{{leadershipCount}} {{leadershipCount===1?'rol de liderazgo':'roles de liderazgo'}}</span>
               </div>
             </div>
             <!-- Phase 28A: the authorized profile stays inside its identity surface. -->
-            <section v-if="profileActive && linked" id="me-v28-profile-panel" class="me-v15-profile-panel me-v26c-profile me-v28-inline-profile" aria-label="Mi perfil profesional">
+            <section v-if="profileActive && linked" id="me-v28-profile-panel" class="me-v15-profile-panel me-v26c-profile me-v28-inline-profile" aria-label="Perfil profesional">
             <div class="me-v15-profile-head">
-              <div><p class="mi-espacio-eyebrow">MI ESPACIO / PERFIL PROFESIONAL</p><h3 class="me-v26c-title" tabindex="-1">Mi perfil profesional</h3><p>Datos institucionales verificados y contenido editable de tu perfil.</p></div>
+              <div><h3 class="me-v26c-title" tabindex="-1">Perfil profesional</h3><p>Información profesional y datos de contacto.</p></div>
               <button type="button" class="me-v15-profile-close" @click="closeProfile" aria-label="Volver a Mi espacio">← Volver</button>
             </div>
             <p v-if="state.profile.busy" class="mi-espacio-state" role="status">Cargando perfil…</p>
@@ -1204,7 +1204,7 @@
                 <div class="me-form-actions"><button type="button" @click="closeProfile" :disabled="state.profile.saving">Cancelar</button><button type="submit" class="me-btn-primary" :disabled="state.profile.saving || !profileDirty">{{state.profile.saving?'Guardando…':'Guardar cambios'}}</button></div>
               </form>
               <div v-if="state.profile.certificates.length" class="me-v15-certificates">
-                <h4>Mis certificados</h4>
+                <h4>Certificados</h4>
                 <ul class="me-list"><li v-for="c in state.profile.certificates" :key="c.id" class="me-v16-cert-item" :class="{'me-v16-cert-expired':c.urgency==='expired','me-v16-cert-expiring':c.urgency==='expiring_soon'}">
                   <span class="me-item-main">{{c.name}}<small v-if="c.expiryDate"> · {{fmtDate(c.expiryDate)}}</small></span>
                   <span v-if="c.urgency==='expired'" class="me-v16-cert-badge me-v16-cert-badge--expired">Caducado</span>
@@ -1248,10 +1248,10 @@
           </div>
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
             <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
-            <button type="button" class="me-v21-notif-btn" @click="toggleNotifications" :aria-expanded="state.notifications.open" aria-label="Notificaciones">🔔<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
+            <button type="button" class="me-v21-notif-btn" @click="toggleNotifications" :aria-expanded="state.notifications.open" aria-label="Notificaciones">Notificaciones<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
             <button id="me-v26b-directory-trigger" type="button" class="me-v20-directory-btn" @click="loadColleagues" :aria-expanded="isContextWorkspace && workspaceState.workspace==='directory'" aria-controls="me-v26b-directory">Directorio</button>
-            <button id="me-v26b-calendar-trigger" type="button" class="me-v21-cal-btn" @click="openCalendar()" :aria-expanded="isContextWorkspace && workspaceState.workspace==='calendar'" aria-controls="me-v26b-calendar" aria-label="Abrir calendario">📅</button>
-            <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">📄 {{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
+            <button id="me-v26b-calendar-trigger" type="button" class="me-v21-cal-btn" @click="openCalendar()" :aria-expanded="isContextWorkspace && workspaceState.workspace==='calendar'" aria-controls="me-v26b-calendar" aria-label="Abrir calendario">Calendario</button>
+            <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">{{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
           </div>
           <div v-if="state.quickActions && linked && !isContextWorkspace" class="me-v20-quick-actions">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
@@ -1383,7 +1383,7 @@
           <section v-if="linked && state.activity && isContextWorkspace && workspaceState.workspace==='duties'"
             id="me-v26g-duties" class="me-v26g-duties me-v26d-workspace" aria-labelledby="me-v26g-duty-title">
             <button type="button" class="me-duty-back" @click="backToAgenda">← Volver a Mi espacio</button>
-            <h3 id="me-v26g-duty-title" class="me-v26g-duty-title me-duty-heading" tabindex="-1">Mis guardias</h3>
+            <h3 id="me-v26g-duty-title" class="me-v26g-duty-title me-duty-heading" tabindex="-1">Guardias</h3>
             <p>Asignaciones vinculadas a tu cuenta según los registros departamentales.</p>
             <div class="me-v26g-duty-layout" :class="{'has-selection':!!selectedDuty}">
               <div class="me-v26g-duty-list">
@@ -1402,7 +1402,7 @@
               </div>
               <aside class="me-v26g-duty-detail me-duty-detail" aria-label="Detalle de guardia personal">
                 <template v-if="selectedDuty">
-                  <button type="button" class="me-duty-detail-back" @click="closeDutyDetail">← Volver a mis guardias</button>
+                  <button type="button" class="me-duty-detail-back" @click="closeDutyDetail">← Volver a guardias</button>
                   <h4 tabindex="-1" class="me-duty-detail-title">{{fmtDutyDate(selectedDuty.date)}}</h4>
                   <dl class="me-duty-facts">
                     <div><dt>Modalidad</dt><dd>{{dutyShift(selectedDuty.shift)}}</dd></div>
@@ -1417,7 +1417,7 @@
           </section>
           <section v-if="linked && isContextWorkspace && ['research','publications'].includes(workspaceState.workspace)" class="me-v26d-workspace" aria-label="Actividad personal">
             <button type="button" @click="closePortfolio">← Volver a Mi espacio</button>
-            <h3 class="me-v26d-title" tabindex="-1">{{workspaceState.workspace==='research'?'Mi investigación':'Mis publicaciones'}}</h3>
+            <h3 class="me-v26d-title" tabindex="-1">{{workspaceState.workspace==='research'?'Investigación':'Publicaciones'}}</h3>
             <p>Registros vinculados a tu perfil. Consulta el módulo institucional para cualquier modificación autorizada.</p>
             <template v-if="workspaceState.workspace==='research'">
               <div class="me-v26d-filters"><button v-for="g in researchGroups" :key="g.id" type="button" @click="changeResearchGroup(g.id)" :aria-pressed="state.researchGroup===g.id">{{g.label}}</button></div>
@@ -1441,22 +1441,18 @@
                 <div><p class="mi-espacio-eyebrow">REQUIERE TU ATENCIÓN</p><p><strong>{{state.review.items.length}} {{state.review.items.length===1?'comunicación pendiente':'comunicaciones pendientes'}}</strong> de revisión</p></div>
                 <button type="button" class="me-v13b-attention-action" aria-controls="me-v8-administration" @click="openPendingReviews">Revisar comunicaciones <span aria-hidden="true">→</span></button>
               </div>
-              <div v-if="state.dutyMode==='overview' && leadershipFocus" class="me-v25-section-intro" aria-label="Ámbito de mis responsabilidades">
-                <span class="me-v25-eyebrow">RESPONSABILIDADES VINCULADAS</span>
-                <p>Mi actividad clínica y científica, según los registros del servicio.</p>
-              </div>
               <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview" :class="{'me-v10-research-first':!showAgenda,'me-v10-sparse':!hasAgenda && !hasResearch,'me-v12-research-priority':researchPriority}">
                 <section v-if="showAgenda" class="me-v8-column me-v8-agenda me-v9-panel" :class="{'me-v10-agenda-sparse':!hasAgenda}" aria-labelledby="me-v9-agenda-title">
-                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">AGENDA PERSONAL</p><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Mi agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} guardias</span></div>
+                  <div class="me-v9-panel-heading"><div><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} guardias</span></div>
                   <div v-if="upcomingGuardias.length" class="me-v8-commitments">
                     <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">{{upcomingGuardias[0].date===localToday?'GUARDIA REGISTRADA HOY':'PRÓXIMA GUARDIA'}}</span><strong>{{fmtDutyDate(upcomingGuardias[0].date)}}</strong><span>{{dutyShift(upcomingGuardias[0].shift)}} · {{guardiaRole(upcomingGuardias[0].role)}}</span></div>
                     <ol v-if="upcomingGuardias.length>1" id="me-v28c-guardias" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in upcomingGuardias.slice(1,state.operationsOpen.guardias?upcomingGuardias.length:3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
                     <button v-if="upcomingGuardias.length>3" type="button" class="me-v28-disclosure-toggle" aria-controls="me-v28c-guardias" :aria-expanded="state.operationsOpen.guardias" @click="state.operationsOpen.guardias=!state.operationsOpen.guardias"><span>{{state.operationsOpen.guardias?'Mostrar menos guardias':'Mostrar próximas guardias'}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
+                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="state.activity.agenda.guardias.length && !personalRotations.length && !supervisedRotations.length" class="me-v8-commitments">
                     <p class="me-v8-quiet">No constan guardias próximas. Puedes consultar tu historial de guardias.</p>
-                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
+                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="personalRotations.length" class="me-v8-upnext me-v9-feature me-v10-rotation-feature">
                     <span class="me-v8-kicker">MI ROTACIÓN REGISTRADA</span>
@@ -1477,9 +1473,9 @@
                       <button v-if="personalRotations.length>(state.activity.agenda.guardias.length?1:2)" type="button"
                         class="me-v28-disclosure-toggle" :aria-expanded="state.operationsOpen.rotations"
                         aria-controls="me-v28d-rotations" @click="state.operationsOpen.rotations=!state.operationsOpen.rotations">
-                        <span>Mis rotaciones <small>{{personalRotations.length}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>Rotaciones <small>{{personalRotations.length}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                       </button>
-                      <h4 v-else class="me-v28d-static-title">Mis rotaciones <small>{{personalRotations.length}}</small></h4>
+                      <h4 v-else class="me-v28d-static-title">Rotaciones <small>{{personalRotations.length}}</small></h4>
                       <ul id="me-v28d-rotations" class="me-v28d-rotation-list">
                         <li v-for="(r,i) in personalRotations.slice(state.activity.agenda.guardias.length?0:1,state.operationsOpen.rotations?personalRotations.length:(state.activity.agenda.guardias.length?1:2))" :key="r.id||i">
                           <strong>{{r.unit||'Rotación asignada'}}</strong>
@@ -1511,7 +1507,7 @@
                   </div>
                 </section>
                 <section v-if="hasResearch" class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
-                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PARTICIPACIÓN VERIFICADA</p><h3 id="me-v9-research-title">Mi investigación</h3></div></div>
+                  <div class="me-v9-panel-heading"><div><h3 id="me-v9-research-title">Investigación</h3></div></div>
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
                     <div v-if="state.activity.research.lines.length" class="me-v28-disclosure">
                       <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.lines" aria-controls="me-v28-lines" @click="state.researchOpen.lines=!state.researchOpen.lines"><span>Líneas de investigación <small>{{state.activity.counts.lines}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -1526,36 +1522,35 @@
                       <ul id="me-v28-projects"><li v-for="p in state.activity.research.projects.slice(0,state.researchOpen.projects?state.activity.research.projects.length:2)" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul>
                     </div>
                   </div>
-                  <button v-if="hasResearch" type="button" id="me-v26d-research-trigger" class="me-v9-inline-action" @click="openPortfolio('research')">Explorar mi investigación →</button>
+                  <button v-if="hasResearch" type="button" id="me-v26d-research-trigger" class="me-v9-inline-action" @click="openPortfolio('research')">Ver investigación →</button>
 
                 </section>
               </div>
-              <section v-else class="me-v8-all-duties" aria-label="Mis guardias">
+              <section v-else class="me-v8-all-duties" aria-label="Guardias">
                 <button type="button" class="me-duty-back" @click="backToAgenda">← Volver a mi espacio</button>
-                <h3 class="me-duty-heading" tabindex="-1">Mis guardias</h3>
+                <h3 class="me-duty-heading" tabindex="-1">Guardias</h3>
                 <ol class="me-v8-timeline"><li v-for="g in state.activity.agenda.guardias" :key="g.id"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
                 <button v-if="can('oncall_schedule')" type="button" class="me-duty-institutional" @click="navigate('oncall_schedule')">Abrir cuadrante departamental ↗</button>
               </section>
               <div v-if="state.dutyMode==='overview'" class="me-v9-lower-grid">
-                <section class="me-v9-publications" aria-label="Mis publicaciones">
-                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PRODUCCIÓN CIENTÍFICA</p><h3>Mis publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button></div>
+                <section class="me-v9-publications" aria-label="Publicaciones">
+                  <div class="me-v9-panel-heading"><div><h3>Publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button></div>
                   <ol v-if="state.activity.publications.items.length" id="me-v28-publications" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,state.publicationsExpanded?state.activity.publications.items.length:3)" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
                   <p v-if="!state.activity.publications.items.length && !state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p>
                   <p v-else-if="!state.activity.publications.items.length" class="me-v8-quiet">No hay publicaciones vinculadas a tu perfil.</p>
-                  <button v-if="state.activity.publications.items.length" id="me-v26d-publications-trigger" type="button" @click="openPortfolio('publications')">Explorar mis publicaciones →</button>
+                  <button v-if="state.activity.publications.items.length" id="me-v26d-publications-trigger" type="button" @click="openPortfolio('publications')">Ver publicaciones →</button>
                    <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle me-v28-disclosure-toggle" :aria-expanded="state.publicationsExpanded" aria-controls="me-v28-publications" @click="state.publicationsExpanded=!state.publicationsExpanded"><span>{{state.publicationsExpanded?'Mostrar menos publicaciones':'Mostrar todas las publicaciones'}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </section>
                 <section class="me-v9-services" aria-label="Comunicaciones y gestiones">
-                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">GESTIÓN PERSONAL</p><h3>Comunicaciones</h3></div></div>
+                  <div class="me-v9-panel-heading"><div><h3>Comunicaciones</h3></div></div>
                   <p>Consultas y correcciones de tu información profesional.</p><p v-if="state.reports.length" class="me-v9-service-meta">Comunicaciones enviadas · {{state.reports.length}}</p>
                   <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Comunicaciones y gestiones'}} <span aria-hidden="true">{{state.toolsOpen?'−':'→'}}</span></button>
                 </section>
               </div>
               <!-- Secondary personal metrics/onboarding follow core responsibilities. -->
           <div v-if="showPhotoNudge" class="me-v23-photo-nudge" role="status">
-            <div class="me-v23-photo-nudge-avatar" aria-hidden="true">📷</div>
             <div class="me-v23-photo-nudge-body">
-              <p>Tu perfil institucional no tiene foto. Una foto profesional mejora tu visibilidad en el directorio y en tus publicaciones.</p>
+              <p>Puedes añadir una foto a tu perfil profesional.</p>
               <div class="me-v23-photo-nudge-actions">
                 <button type="button" class="me-v23-photo-nudge-btn" @click="openProfile()">Subir foto</button>
                 <button type="button" class="me-v23-photo-nudge-dismiss" @click="state.photoNudgeDismissed=true">Ahora no</button>
@@ -1576,7 +1571,7 @@
             </div>
           </div>
               <section v-if="state.dutyMode==='overview' && state.timeline.entries.length" class="me-v16-timeline" aria-label="Actividad reciente">
-                <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">ACTIVIDAD RECIENTE</p><h3>Mi actividad</h3></div></div>
+                <div class="me-v9-panel-heading"><div><h3>Actividad</h3></div></div>
                 <div v-if="state.timeline.entries.length>3" class="me-v20-timeline-filters" role="tablist" aria-label="Filtrar actividad">
                   <button v-for="f in TIMELINE_FILTERS" :key="f.value" type="button" role="tab" class="me-v20-tl-filter" :class="{'is-active':state.timeline.filter===f.value}" :aria-selected="state.timeline.filter===f.value" @click="state.timeline.filter=f.value">{{f.label}}</button>
                 </div>
@@ -1590,7 +1585,7 @@
                   </li>
                 </ul>
                 <p v-if="!filteredTimeline.length && state.timeline.filter!=='all'" class="me-v8-quiet">No hay actividad de tipo «{{TIMELINE_FILTERS.find(f=>f.value===state.timeline.filter)?.label}}».</p>
-                <button v-if="filteredTimeline.length>5" type="button" class="me-v16-timeline-toggle" :aria-expanded="state.timeline.expanded" @click="state.timeline.expanded=!state.timeline.expanded">{{state.timeline.expanded?'Ver menos':'Ver toda mi actividad'}} <span aria-hidden="true">{{state.timeline.expanded?'↑':'→'}}</span></button>
+                <button v-if="filteredTimeline.length>5" type="button" class="me-v16-timeline-toggle" :aria-expanded="state.timeline.expanded" @click="state.timeline.expanded=!state.timeline.expanded">{{state.timeline.expanded?'Ver menos':'Ver toda la actividad'}} <span aria-hidden="true">{{state.timeline.expanded?'↑':'→'}}</span></button>
               </section>
               <section v-if="state.dutyMode==='overview' && urgentCertificates.length && !state.profile.open" class="me-v16-cert-alert" aria-label="Certificados que requieren atención" role="alert">
                 <p class="mi-espacio-eyebrow">CERTIFICADOS</p>
@@ -1600,7 +1595,7 @@
                     <span>{{certUrgencyLabel(c)}}</span>
                   </li>
                 </ul>
-                <button type="button" class="me-v15-profile-link" @click="openProfile">Revisar en mi perfil <span aria-hidden="true">→</span></button>
+                <button type="button" class="me-v15-profile-link" @click="openProfile">Revisar en el perfil <span aria-hidden="true">→</span></button>
               </section>
               <div v-if="state.dutyMode==='overview' && state.toolsOpen" id="me-v8-administration" class="me-v9-administration">
                 <section v-if="state.toolsOpen && state.activity && state.dutyMode==='overview'" class="me-report" aria-label="Comunicar una discrepancia">
@@ -1624,7 +1619,7 @@
                 </form>
               </template>
               <div v-if="state.reports.length" class="me-myreports">
-                <h4>Mis comunicaciones</h4>
+                <h4>Comunicaciones</h4>
                 <ul class="me-list">
                   <li v-for="r in state.reports.slice(0,5)" :key="r.id">
                     <span class="me-item-main">{{subjectLabel(r.subjectType)}} · {{kindLabel(r.kind)}}<small v-if="r.subjectLabel"> · {{r.subjectLabel}}</small></span>
@@ -1667,8 +1662,8 @@
           </template>
           <!-- Phase 21: Quick bar — digest + CV export -->
           <div v-if="linked && !state.profile.open" class="me-v21-extras-bar">
-            <button type="button" class="me-v21-extras-btn" @click="openDigest()">📊 Resumen</button>
-            <button type="button" class="me-v21-extras-btn" @click="exportCV()" :disabled="state.cvExport.busy">{{state.cvExport.busy?'Exportando…':'📄 Exportar CV'}}</button>
+            <button type="button" class="me-v21-extras-btn" @click="openDigest()">Resumen</button>
+            <button type="button" class="me-v21-extras-btn" @click="exportCV()" :disabled="state.cvExport.busy">{{state.cvExport.busy?'Exportando…':'Exportar CV'}}</button>
           </div>
         </template>
       </section>`

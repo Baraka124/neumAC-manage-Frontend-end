@@ -49,7 +49,7 @@ for(const kind of Object.keys(cases)){
    const app=page.locator('.mi-espacio');
    if(kind==='head'||kind==='engineer'){
      await expect(app.locator('.me-v8-research')).toBeVisible();
-     await app.getByRole('button',{name:/Explorar mi investigación/}).click();
+     await app.getByRole('button',{name:/Ver investigación/}).click();
      await app.getByRole('button',{name:'Estudios',exact:true}).click();
      await expect(app.locator('.me-v26d-workspace')).toContainText(kind==='head'?'Estudio verificado por liderazgo':'Estudio de ingeniería verificado');
      await expect(app.locator('.me-v9-overview')).toHaveCount(0);
@@ -62,7 +62,7 @@ for(const kind of Object.keys(cases)){
    if(kind==='clinician'){
      await expect(app.locator('.me-v8-agenda')).toContainText('21 de octubre de 2026');
      await expect(app.locator('.me-v8-agenda')).toContainText('Residente de prueba');
-     await app.getByRole('button',{name:/Ver mis guardias/}).first().click();
+     await app.getByRole('button',{name:/Ver guardias/}).first().click();
      await expect(app.locator('.me-v26g-duties')).toBeVisible();
      await app.locator('.me-v26g-duty-row').first().click();
      await expect(app.locator('.me-v26g-duty-detail')).toContainText('Guardia presencial');
@@ -73,7 +73,7 @@ for(const kind of Object.keys(cases)){
    if(kind==='resident'){
      await expect(app.locator('.me-v10-rotation-feature')).toContainText('Unidad de prueba UCI');
      await expect(app.locator('.me-v8-research')).toHaveCount(0);
-     await expect(app.getByRole('button',{name:/Ver mis guardias/})).toHaveCount(0);
+     await expect(app.getByRole('button',{name:/Ver guardias/})).toHaveCount(0);
    }
    const result=await page.evaluate(()=>({errors:window.__errors,requests:window.__requests,width:document.documentElement.scrollWidth,viewport:window.innerWidth}));
    expect(result.errors).toEqual([]);
