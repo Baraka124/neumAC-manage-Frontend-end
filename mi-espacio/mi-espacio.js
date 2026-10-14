@@ -75,7 +75,7 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,publicationsExpanded:false,
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,researchOpen:{lines:false,studies:false,projects:false},publicationsExpanded:false,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}},
@@ -145,7 +145,7 @@
           if(controller)controller.abort();
           controller=null;
           state.context=null;state.error='';state.busy=false;
-          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.researchExpanded=false;state.publicationsExpanded=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
+          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.researchExpanded=false;state.researchOpen={lines:false,studies:false,projects:false};state.publicationsExpanded=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
@@ -1469,12 +1469,21 @@
                 <section v-if="hasResearch" class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PARTICIPACIÓN VERIFICADA</p><h3 id="me-v9-research-title">Mi investigación</h3></div></div>
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
-                    <div v-if="state.activity.research.lines.length"><h4>Líneas de investigación <span>{{state.activity.counts.lines}}</span></h4><ul><li v-for="l in state.activity.research.lines.slice(0,state.researchExpanded?state.activity.research.lines.length:2)" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul></div>
-                    <div v-if="state.activity.research.studies.length"><h4>Estudios <span>{{state.activity.counts.studies}}</span></h4><ul><li v-for="s in state.activity.research.studies.slice(0,state.researchExpanded?state.activity.research.studies.length:2)" :key="s.id"><span>{{s.title}}</span><small>{{studyRole(s.role)}}<template v-if="s.code"> · {{s.code}}</template></small></li></ul></div>
-                    <div v-if="state.activity.research.projects.length"><h4>Proyectos <span>{{state.activity.counts.projects}}</span></h4><ul><li v-for="p in state.activity.research.projects.slice(0,state.researchExpanded?state.activity.research.projects.length:2)" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul></div>
+                    <div v-if="state.activity.research.lines.length" class="me-v28-disclosure">
+                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.lines" aria-controls="me-v28-lines" @click="state.researchOpen.lines=!state.researchOpen.lines"><span>Líneas de investigación <small>{{state.activity.counts.lines}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                      <ul id="me-v28-lines"><li v-for="l in state.activity.research.lines.slice(0,state.researchOpen.lines?state.activity.research.lines.length:2)" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul>
+                    </div>
+                    <div v-if="state.activity.research.studies.length" class="me-v28-disclosure">
+                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.researchOpen.studies=!state.researchOpen.studies"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                      <ul id="me-v28-studies"><li v-for="st in state.activity.research.studies.slice(0,state.researchOpen.studies?state.activity.research.studies.length:2)" :key="st.id"><span>{{st.title}}</span><small>{{studyRole(st.role)}}<template v-if="st.code"> · {{st.code}}</template></small></li></ul>
+                    </div>
+                    <div v-if="state.activity.research.projects.length" class="me-v28-disclosure">
+                      <button type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.researchOpen.projects=!state.researchOpen.projects"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
+                      <ul id="me-v28-projects"><li v-for="p in state.activity.research.projects.slice(0,state.researchOpen.projects?state.activity.research.projects.length:2)" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul>
+                    </div>
                   </div>
                   <button v-if="hasResearch" type="button" id="me-v26d-research-trigger" class="me-v9-inline-action" @click="openPortfolio('research')">Explorar mi investigación →</button>
-                  <button v-if="hasResearchOverflow" type="button" class="me-v10-research-toggle" :aria-expanded="state.researchExpanded" @click="state.researchExpanded=!state.researchExpanded">{{state.researchExpanded?'Ver resumen':'Ver toda mi investigación'}} <span aria-hidden="true">{{state.researchExpanded?'↑':'→'}}</span></button>
+
                 </section>
               </div>
               <section v-else class="me-v8-all-duties" aria-label="Mis guardias">
@@ -1486,11 +1495,11 @@
               <div v-if="state.dutyMode==='overview'" class="me-v9-lower-grid">
                 <section class="me-v9-publications" aria-label="Mis publicaciones">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PRODUCCIÓN CIENTÍFICA</p><h3>Mis publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button></div>
-                  <ol v-if="state.activity.publications.items.length" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,state.publicationsExpanded?state.activity.publications.items.length:3)" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
+                  <ol v-if="state.activity.publications.items.length" id="me-v28-publications" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,state.publicationsExpanded?state.activity.publications.items.length:3)" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
                   <p v-if="!state.activity.publications.items.length && !state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p>
                   <p v-else-if="!state.activity.publications.items.length" class="me-v8-quiet">No hay publicaciones vinculadas a tu perfil.</p>
                   <button v-if="state.activity.publications.items.length" id="me-v26d-publications-trigger" type="button" @click="openPortfolio('publications')">Explorar mis publicaciones →</button>
-                   <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle" :aria-expanded="state.publicationsExpanded" @click="state.publicationsExpanded=!state.publicationsExpanded">{{state.publicationsExpanded?'Ver resumen':'Ver todas mis publicaciones'}} <span aria-hidden="true">{{state.publicationsExpanded?'↑':'→'}}</span></button>
+                   <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle me-v28-disclosure-toggle" :aria-expanded="state.publicationsExpanded" aria-controls="me-v28-publications" @click="state.publicationsExpanded=!state.publicationsExpanded"><span>{{state.publicationsExpanded?'Mostrar menos publicaciones':'Mostrar todas las publicaciones'}}</span><span class="me-v28-chevron" aria-hidden="true">⌄</span></button>
                 </section>
                 <section class="me-v9-services" aria-label="Comunicaciones y gestiones">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">GESTIÓN PERSONAL</p><h3>Comunicaciones</h3></div></div>
