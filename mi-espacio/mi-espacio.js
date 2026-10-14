@@ -174,7 +174,7 @@
         const profileNotice=Vue.ref('');
         const profileActive=Vue.computed(()=>workspaceState.value.workspace==='profile'&&state.profile.open);
         function navigateWorkspace(e){const next=workspaceNav?.dispatch(e);if(next)workspaceState.value=next;return next;}
-        const isContextWorkspace=Vue.computed(()=>workspaceState.value.view==='workspace' && ['calendar','directory','research','publications'].includes(workspaceState.value.workspace));
+        const isContextWorkspace=Vue.computed(()=>workspaceState.value.view==='workspace' && ['calendar','directory','duties','research','publications'].includes(workspaceState.value.workspace));
         const selectedDate=Vue.computed(()=>workspaceState.value.workspace==='calendar'&&workspaceState.value.detail?.type==='date'?workspaceState.value.detail.id:'');
         const selectedDayEvents=Vue.computed(()=>state.calendar.events.filter(e=>selectedDate.value&&e.date===selectedDate.value));
         const selectedColleague=Vue.computed(()=>workspaceState.value.workspace==='directory'&&workspaceState.value.detail?.type==='staff' ?
@@ -188,8 +188,8 @@
           else if(which==='notifications')state.notifications.open=false;
         }
         function activateSecondary(which){
-          const before=workspaceState.value, contextual=['calendar','directory','research','publications'].includes(which);
-          const fallback={calendar:'me-v26b-calendar-trigger',directory:'me-v26b-directory-trigger',research:'me-v26d-research-trigger',publications:'me-v26d-publications-trigger'}[which]||'mi-espacio-title';
+          const before=workspaceState.value, contextual=['calendar','directory','duties','research','publications'].includes(which);
+          const fallback={calendar:'me-v26b-calendar-trigger',directory:'me-v26b-directory-trigger',research:'me-v26d-research-trigger',publications:'me-v26d-publications-trigger',duties:'me-v26g-duties-trigger'}[which]||'mi-espacio-title';
           const origin=contextual&&before.view==='overview' ? {
             focusId:document.activeElement?.id || fallback,scrollY:window.scrollY
           }:undefined;
@@ -200,13 +200,14 @@
           }
           const next=navigateWorkspace({type:'OPEN_WORKSPACE',workspace:which,origin});
           if(before.dirty&&next===before)return false;
+          if(which!=='duties' && before.workspace==='duties'){state.dutyMode='overview';state.dutyIndex=null;}
           if(which!=='profile')state.profile.open=false;
           if(which!=='directory')state.colleagues.open=false;
           if(which!=='calendar')state.calendar.open=false;
           if(which!=='digest')state.digest.open=false;
           if(which!=='notifications')state.notifications.open=false;
           Vue.nextTick(()=>{
-            const selector=contextual?'.me-v26d-title,.me-v26b-workspace-title':
+            const selector=contextual?'.me-v26g-duty-title,.me-v26d-title,.me-v26b-workspace-title':
               {profile:'.me-v15-profile-panel',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
             const el=selector&&document.querySelector('.mi-espacio '+selector);
             if(el){el.scrollIntoView({behavior:'auto',block:'start'});if(contextual)el.focus({preventScroll:true});}
@@ -219,8 +220,9 @@
           navigateWorkspace({type:'BACK'});
           if(which==='calendar')state.calendar.open=false;
           if(which==='directory')state.colleagues.open=false;
+          if(which==='duties'){state.dutyMode='overview';state.dutyIndex=null;}
           Vue.nextTick(()=>{
-            const fallback={calendar:'me-v26b-calendar-trigger',directory:'me-v26b-directory-trigger',research:'me-v26d-research-trigger',publications:'me-v26d-publications-trigger'}[which]||'mi-espacio-title';
+            const fallback={calendar:'me-v26b-calendar-trigger',directory:'me-v26b-directory-trigger',research:'me-v26d-research-trigger',publications:'me-v26d-publications-trigger',duties:'me-v26g-duties-trigger'}[which]||'mi-espacio-title';
             const control=document.getElementById(origin?.focusId||'')||document.getElementById(fallback);
             if(Number.isFinite(origin?.scrollY))window.scrollTo({top:origin.scrollY,behavior:'auto'});
             control?.focus({preventScroll:true});
@@ -913,22 +915,31 @@
           });
         }
         function openDuties(index) {
+          if(!linked.value||!state.activity||!activateSecondary('duties'))return;
           state.dutyMode='duties';
-          const entries=state.activity?.agenda?.guardias || [];
-          state.dutyIndex=Number.isInteger(index)&&index>=0&&index<entries.length ? index : null;
-          focusDuty(state.dutyIndex===null ? '.me-duty-heading' : '.me-duty-row[data-index="'+state.dutyIndex+'"]');
+          state.dutyIndex=null;
+          const entries=state.activity.agenda.guardias;
+          if(Number.isInteger(index)&&index>=0&&index<entries.length)selectDuty(index);
         }
         function selectDuty(index) {
           const entries=state.activity?.agenda?.guardias || [];
-          if(!Number.isInteger(index)||index<0||index>=entries.length)return;
+          if(!linked.value||workspaceState.value.workspace!=='duties'||!Number.isInteger(index)||index<0||index>=entries.length)return;
           if(state.dutyIndex===index){closeDutyDetail();return;}
-          state.dutyIndex=index; // Keep the clicked record in place.
+          state.dutyIndex=index;
+          // The index is scoped to the already authorized /api/me/context array; never fetch a staff-wide record.
+          navigateWorkspace({type:'OPEN_DETAIL',detail:{type:'duty',id:String(index)}});
+          Vue.nextTick(()=>document.querySelector('.mi-espacio .me-v26g-duty-detail h4')?.focus({preventScroll:true}));
         }
         function closeDutyDetail(){
-          const index=state.dutyIndex;state.dutyIndex=null;
-          focusDuty('.me-duty-row[data-index="'+index+'"]');
+          const index=state.dutyIndex;
+          if(workspaceState.value.workspace==='duties'&&workspaceState.value.detail?.type==='duty')navigateWorkspace({type:'BACK'});
+          state.dutyIndex=null;
+          if(Number.isInteger(index))focusDuty('.me-v26g-duty-row[data-index="'+index+'"]');
         }
-        function backToAgenda(){state.dutyMode='overview';state.dutyIndex=null;focusDuty('.me-v9-agenda-title');}
+        function backToAgenda(){
+          if(workspaceState.value.workspace==='duties'){returnToOverview();return;}
+          state.dutyMode='overview';state.dutyIndex=null;focusDuty('.me-v9-agenda-title');
+        }
         // Phase 6B: personal, read-only portfolio; never navigates out of Mi espacio.
         const researchGroups=Object.freeze([
           {id:'lines',label:'Líneas'}, {id:'studies',label:'Estudios'}, {id:'projects',label:'Proyectos'}
@@ -998,7 +1009,8 @@
           if(isContextWorkspace.value&&workspaceState.value.detail&&target.closest('.me-v26b-workspace')){
             backContextDetail();event.stopPropagation();return;
           }
-          if(target.closest('.me-duty-list') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
+          if(target.closest('.me-v26g-duties') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
+          else if(target.closest('.me-duty-list') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
           else if(target.closest('.me-publication-layout') && selectedPublication.value){closePublication();event.stopPropagation();}
           else if(target.closest('.me-portfolio:not(.me-publications)') && selectedResearch.value){closeResearch();event.stopPropagation();}
         }
@@ -1350,6 +1362,42 @@
           </section>
 
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
+          <!-- Phase 26G: read-only, session-scoped guardia workspace on the shared navigation contract. -->
+          <section v-if="linked && state.activity && isContextWorkspace && workspaceState.workspace==='duties'"
+            id="me-v26g-duties" class="me-v26g-duties me-v26d-workspace" aria-labelledby="me-v26g-duty-title">
+            <button type="button" class="me-duty-back" @click="backToAgenda">← Volver a Mi espacio</button>
+            <h3 id="me-v26g-duty-title" class="me-v26g-duty-title me-duty-heading" tabindex="-1">Mis guardias</h3>
+            <p>Asignaciones vinculadas a tu cuenta según los registros departamentales.</p>
+            <div class="me-v26g-duty-layout" :class="{'has-selection':!!selectedDuty}">
+              <div class="me-v26g-duty-list">
+                <p v-if="!state.activity.agenda.guardias.length" class="me-v8-quiet">No constan guardias vinculadas a tu perfil. Esto no confirma disponibilidad.</p>
+                <ol v-else class="me-v26g-duty-entries">
+                  <li v-for="(g,index) in state.activity.agenda.guardias" :key="g.id||g.date+'-'+index">
+                    <button type="button" class="me-v26g-duty-row me-duty-row" :data-index="index"
+                      :aria-pressed="state.dutyIndex===index" @click="selectDuty(index)">
+                      <span class="me-duty-row-main">
+                        <strong>{{fmtDutyDate(g.date)}}</strong>
+                        <small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small>
+                      </span><span aria-hidden="true">→</span>
+                    </button>
+                  </li>
+                </ol>
+              </div>
+              <aside class="me-v26g-duty-detail me-duty-detail" aria-label="Detalle de guardia personal">
+                <template v-if="selectedDuty">
+                  <button type="button" class="me-duty-detail-back" @click="closeDutyDetail">← Volver a mis guardias</button>
+                  <h4 tabindex="-1" class="me-duty-detail-title">{{fmtDutyDate(selectedDuty.date)}}</h4>
+                  <dl class="me-duty-facts">
+                    <div><dt>Modalidad</dt><dd>{{dutyShift(selectedDuty.shift)}}</dd></div>
+                    <div><dt>Asignación</dt><dd>{{guardiaRole(selectedDuty.role)}}</dd></div>
+                  </dl>
+                  <p class="me-duty-provenance">Información vinculada a tu perfil. Para consultar el cuadrante completo utiliza el módulo autorizado.</p>
+                </template>
+                <p v-else class="me-duty-unselected">Selecciona una guardia para consultar sus detalles registrados.</p>
+              </aside>
+            </div>
+            <button v-if="can('oncall_schedule')" type="button" class="me-duty-institutional" @click="navigate('oncall_schedule')">Abrir cuadrante departamental ↗</button>
+          </section>
           <section v-if="linked && isContextWorkspace && ['research','publications'].includes(workspaceState.workspace)" class="me-v26d-workspace" aria-label="Actividad personal">
             <button type="button" @click="closePortfolio">← Volver a Mi espacio</button>
             <h3 class="me-v26d-title" tabindex="-1">{{workspaceState.workspace==='research'?'Mi investigación':'Mis publicaciones'}}</h3>
@@ -1386,11 +1434,11 @@
                   <div v-if="upcomingGuardias.length" class="me-v8-commitments">
                     <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">PRÓXIMA GUARDIA</span><strong>{{fmtDutyDate(upcomingGuardias[0].date)}}</strong><span>{{dutyShift(upcomingGuardias[0].shift)}} · {{guardiaRole(upcomingGuardias[0].role)}}</span></div>
                     <ol v-if="upcomingGuardias.length>1" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in upcomingGuardias.slice(1,3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
-                    <button type="button" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
+                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="state.activity.agenda.guardias.length && !personalRotations.length && !supervisedRotations.length" class="me-v8-commitments">
                     <p class="me-v8-quiet">No constan guardias próximas. Puedes consultar tu historial de guardias.</p>
-                    <button type="button" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
+                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="personalRotations.length" class="me-v8-upnext me-v9-feature me-v10-rotation-feature">
                     <span class="me-v8-kicker">MI ROTACIÓN REGISTRADA</span>
