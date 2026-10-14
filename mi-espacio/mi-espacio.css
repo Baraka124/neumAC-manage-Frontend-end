@@ -1060,3 +1060,17 @@
 .mi-espacio .me-v28d-static-title small{font-size:12px;color:var(--me-muted);font-weight:500}
 .mi-espacio .me-v28d-rotations,.mi-espacio .me-v28d-other-rotations{min-width:0}
 @media(max-width:430px){.mi-espacio .me-v28d-rotation-list strong{overflow-wrap:anywhere}}
+
+/* Phase 28E — shared disclosure visual language; avoid card stacking and forced scrolling. */
+.mi-espacio{--me28-disclosure-stroke:#e0e9e6;--me28-disclosure-ink:#176c67;--me28-disclosure-motion:190ms}
+.mi-espacio .me-v28-disclosure{min-width:0;border-top:1px solid var(--me28-disclosure-stroke)}
+.mi-espacio .me-v28-disclosure-toggle{font-size:13px;line-height:1.45;letter-spacing:0;min-height:44px;touch-action:manipulation;overflow-wrap:anywhere}
+.mi-espacio .me-v28-disclosure-toggle :is(small,span){min-width:0}
+.mi-espacio .me-v28-disclosure-toggle .me-v28e-chevron{width:18px;height:18px;flex-shrink:0;color:var(--me28-disclosure-ink);transform-origin:center;transition:transform var(--me28-disclosure-motion) ease}
+.mi-espacio .me-v28-disclosure-toggle[aria-expanded=true] .me-v28e-chevron{transform:rotate(180deg)}
+.mi-espacio :is(.me-v28-disclosure,.me-v28d-rotations,.me-v28d-other-rotations) :is(li,strong,small){overflow-wrap:anywhere}
+.mi-espacio .me-v28-disclosure-toggle:focus-visible,.mi-espacio .me-v28-profile-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
+.mi-espacio .me-v28-disclosure :is(li):not(:first-child){animation:me28-reveal var(--me28-disclosure-motion) ease-out both}
+@keyframes me28-reveal{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){.mi-espacio .me-v28-disclosure-toggle{min-height:44px;padding-block:10px!important}.mi-espacio .me-v28-disclosure :is(ul,ol){min-width:0}}
+@media(prefers-reduced-motion:reduce){.mi-espacio .me-v28-disclosure :is(li),.mi-espacio .me-v28-disclosure-toggle .me-v28e-chevron{animation:none!important;transition:none!important}}
