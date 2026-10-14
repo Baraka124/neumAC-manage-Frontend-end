@@ -208,7 +208,7 @@
           if(which!=='notifications')state.notifications.open=false;
           Vue.nextTick(()=>{
             const selector=contextual?'.me-v26g-duty-title,.me-v26d-title,.me-v26b-workspace-title':
-              {profile:'.me-v15-profile-panel',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
+              {digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which]; // Profile unfolds in place, never scroll the page.
             const el=selector&&document.querySelector('.mi-espacio '+selector);
             if(el){el.scrollIntoView({behavior:'auto',block:'start'});if(contextual)el.focus({preventScroll:true});}
           });
@@ -1071,7 +1071,12 @@
                 </div>
                 <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
               </div>
-              <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
+              <div class="me-v28-identity-actions">
+                <button v-if="linked" id="me-v26c-profile-trigger" type="button" class="me-v15-profile-link me-v22-profile-link me-v28-profile-toggle" :aria-expanded="profileActive" aria-controls="me-v28-profile-panel" @click="profileActive?closeProfile():openProfile()">
+                  <span>Mi perfil completo</span><svg class="me-v28-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
+              </div>
             </div>
             <div v-if="(state.activity && personalContext.length) || leadershipCount" class="me-v22-identity-meta">
               <div v-if="state.activity && personalContext.length" class="me-v22-context-pills" aria-label="Actividad profesional vinculada">
@@ -1083,11 +1088,8 @@
                 <span>{{leadershipCount}} {{leadershipCount===1?'rol de liderazgo':'roles de liderazgo'}}</span>
               </div>
             </div>
-            <div class="me-v22-identity-footer">
-              <button v-if="linked && !state.profile.open" id="me-v26c-profile-trigger" type="button" class="me-v15-profile-link me-v22-profile-link" @click="openProfile">Mi perfil completo <span aria-hidden="true">→</span></button>
-            </div>
-          </section>
-          <section v-if="profileActive && linked" class="me-v15-profile-panel me-v26c-profile" aria-label="Mi perfil profesional">
+            <!-- Phase 28A: the authorized profile stays inside its identity surface. -->
+            <section v-if="profileActive && linked" id="me-v28-profile-panel" class="me-v15-profile-panel me-v26c-profile me-v28-inline-profile" aria-label="Mi perfil profesional">
             <div class="me-v15-profile-head">
               <div><p class="mi-espacio-eyebrow">MI ESPACIO / PERFIL PROFESIONAL</p><h3 class="me-v26c-title" tabindex="-1">Mi perfil profesional</h3><p>Datos institucionales verificados y contenido editable de tu perfil.</p></div>
               <button type="button" class="me-v15-profile-close" @click="closeProfile" aria-label="Volver a Mi espacio">← Volver</button>
@@ -1222,8 +1224,9 @@
                 </div>
               </div>
             </template>
+            </section>
           </section>
-          <div v-if="linked && upcomingEvents.length && !state.profile.open && !isContextWorkspace" class="me-v23-upcoming" aria-label="Próximos 7 días">
+          <div v-if="linked && upcomingEvents.length && !isContextWorkspace" class="me-v23-upcoming" aria-label="Próximos 7 días">
             <div v-for="(ev,i) in upcomingEvents" :key="i" class="me-v23-event" :data-urgency="ev.urgency">
               <span class="me-v23-event-icon">{{ev.icon}}</span>
               <div class="me-v23-event-text"><span class="me-v23-event-title">{{ev.title}}</span><span class="me-v23-event-date">{{fmtDate(ev.date)}}</span></div>
@@ -1413,7 +1416,7 @@
               <p v-if="!state.activity.publications.items.length">No hay publicaciones vinculadas a tu perfil.</p>
             </template>
           </section>
-          <template v-if="linked && !isContextWorkspace && !profileActive">
+          <template v-if="linked && !isContextWorkspace">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
               <span class="me-v10d-loading-label">Cargando actividad vinculada…</span>
               <div class="me-v10d-loading-grid" aria-hidden="true"><div class="me-v10d-loading-block"></div><div class="me-v10d-loading-block"></div></div>

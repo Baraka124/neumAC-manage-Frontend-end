@@ -126,7 +126,8 @@ for(const [name,scenario] of Object.entries(cases)){
      const app=page.locator('.mi-espacio');
      await page.getByRole('button',{name:/Mi perfil completo/}).click();
      await expect(app.locator('.me-v26c-profile')).toBeVisible();
-     await expect(app.locator('.me-v9-overview')).toHaveCount(0);
+     await expect(app.locator('.me-v9-overview')).toBeVisible();
+     await expect(app.locator('.me-v28-profile-toggle')).toHaveAttribute('aria-expanded','true');
      await expect(app.locator('.me-readonly-value')).toContainText('professional@example.invalid');
      await app.locator('#me-profile-bio').fill('Biografía modificada');
      await expect(app.getByText('Tienes cambios sin guardar.')).toBeVisible();
