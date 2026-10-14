@@ -1104,3 +1104,227 @@
 html body #app .mi-espacio .me-v22-name-line h3{font-size:clamp(22px,2vw,26px)!important;font-weight:600!important;color:var(--me-ink)!important;letter-spacing:-.02em!important}
 html body #app .mi-espacio .me-v9-panel-heading h3{font-size:21px!important;font-weight:600!important;color:var(--me-ink)!important;letter-spacing:-.015em!important}
 html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
+
+
+/* Phase 30A — institutional reading hierarchy; exclusively Mi Espacio.
+   Preserve Phase 29's production cascade fixes and the current data contract. */
+.mi-espacio{
+  --me30-line:#dfe8e5;
+  --me30-subtle:#f6f9f8;
+  --me30-reading:#26444a;
+  --me30-secondary:#566f73;
+  --me30-emphasis:#195f5b;
+  --me30-measure:78ch;
+  color:var(--me30-reading);
+  line-height:1.58;
+}
+.mi-espacio .mi-espacio-head{
+  padding-bottom:clamp(16px,2vw,24px);
+  border-bottom:1px solid var(--me30-line);
+}
+.mi-espacio .mi-espacio-head h2{
+  margin:0;
+  font-size:clamp(26px,2.5vw,34px);
+  font-weight:600;
+  line-height:1.15;
+  letter-spacing:-.025em;
+}
+.mi-espacio .me-v22-identity{
+  background:var(--me30-subtle);
+  border-color:var(--me30-line);
+  box-shadow:none;
+}
+.mi-espacio .me-v22-role-line{row-gap:5px}
+.mi-espacio .me-v22-context-pills{gap:8px 16px}
+.mi-espacio .me-v22-context-more{line-height:1.5}
+.mi-espacio .me-v22-designation,
+.mi-espacio .mi-espacio-person-email{line-height:1.55;color:var(--me30-secondary)}
+.mi-espacio .me-v9-panel-heading{margin-bottom:clamp(14px,1.6vw,21px)}
+.mi-espacio .me-v9-panel-heading h3{max-width:36ch;text-wrap:balance}
+.mi-espacio .me-v9-verified-count{
+  font-size:12px;
+  font-weight:500;
+  color:var(--me30-secondary);
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.mi-espacio .me-v8-kicker{
+  font-size:11px;
+  font-weight:650;
+  letter-spacing:.065em;
+  line-height:1.5;
+}
+.mi-espacio .me-v9-feature strong{
+  display:block;
+  max-width:var(--me30-measure);
+  font-weight:600;
+  line-height:1.35;
+  letter-spacing:-.012em;
+  overflow-wrap:anywhere;
+}
+.mi-espacio .me-v8-research-groups li span,
+.mi-espacio .me-v9-publications .me-v8-publication-list strong{
+  max-width:var(--me30-measure);
+  font-size:15px;
+  font-weight:500;
+  line-height:1.58;
+  overflow-wrap:anywhere;
+}
+.mi-espacio :is(.me-v8-research-groups li small,.me-v8-publication-list li small,.me-v8-publication-list li span,.me-v28d-recorded-status){
+  font-size:13px;
+  line-height:1.55;
+  color:var(--me30-secondary);
+}
+.mi-espacio :is(.me-v9-empty,.me-v8-quiet,.me-v9-services>p){
+  font-size:14px;
+  line-height:1.65;
+  color:var(--me30-secondary);
+}
+.mi-espacio .me-v28-disclosure-toggle{
+  font-size:14px;
+  font-weight:550;
+  line-height:1.5;
+  color:var(--me30-reading);
+}
+.mi-espacio .me-v28-disclosure-toggle small{
+  font-size:12px;
+  font-weight:400;
+  color:var(--me30-secondary);
+}
+
+/* Phase 30B — an editorial composition, rather than nested white cards.
+   Keep the existing role- and workload-derived column allocation unchanged. */
+.mi-espacio .me-v20-quick-bar{
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) repeat(4,minmax(0,1fr));
+  gap:8px;
+  padding:14px 0;
+  margin:2px 0 0;
+  border-top:1px solid var(--me30-line);
+  border-bottom:1px solid var(--me30-line);
+}
+.mi-espacio .me-v20-quick-bar>button{
+  width:100%;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  padding:9px 11px;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:6px;
+  color:var(--me30-reading);
+  font-size:13px;
+  font-weight:500;
+  line-height:1.4;
+  text-align:left;
+  white-space:normal;
+  cursor:pointer;
+}
+.mi-espacio .me-v20-quick-bar>button:first-child{
+  border-color:var(--me30-line);
+  background:var(--me30-subtle);
+}
+.mi-espacio .me-v20-quick-bar>button:hover:not(:disabled){
+  border-color:#bdcfca;
+  background:#f1f6f3;
+}
+.mi-espacio .me-v20-quick-bar>button:focus-visible{
+  outline:3px solid #158a89;
+  outline-offset:2px;
+}
+.mi-espacio--v9 .me-v9-overview{gap:clamp(20px,3vw,38px);padding:clamp(23px,3vw,33px) 0 21px}
+.mi-espacio--v9 .me-v9-panel{
+  min-width:0;
+  padding:0 0 0 clamp(18px,2vw,27px);
+  border:0;
+  border-left:1px solid var(--me30-line);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.mi-espacio--v9 .me-v9-panel .me-v8-research-groups{gap:15px}
+.mi-espacio--v9 .me-v9-panel .me-v8-research-groups li{padding:12px 0}
+.mi-espacio--v9 .me-v9-lower-grid{
+  gap:0;
+  margin-top:0;
+}
+.mi-espacio--v9 .me-v9-publications{
+  border:0;
+  border-top:1px solid var(--me30-line);
+  border-radius:0;
+  background:transparent;
+  padding:clamp(21px,3vw,32px) 0;
+}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list li{
+  padding:15px 0;
+  max-width:var(--me30-measure);
+}
+.mi-espacio--v9 .me-v9-services{
+  border:0;
+  border-top:1px solid var(--me30-line);
+  border-bottom:1px solid var(--me30-line);
+  border-radius:0;
+  background:transparent;
+  padding:16px 0;
+}
+.mi-espacio .me-v28-disclosure{
+  border-color:var(--me30-line);
+  padding-bottom:9px;
+}
+.mi-espacio .me-v23-dashboard{
+  border-top:1px solid var(--me30-line);
+  padding-top:18px;
+  margin-top:24px;
+}
+.mi-espacio .me-v23-impact-stat,
+.mi-espacio .me-v20-stat{
+  background:transparent;
+  border:0;
+  border-right:1px solid var(--me30-line);
+  border-radius:0;
+  text-align:left;
+  padding:7px 16px 9px 0;
+}
+.mi-espacio .me-v23-impact-stat:last-child,
+.mi-espacio .me-v20-stat:last-child{border-right:0}
+.mi-espacio .me-v23-impact-value,
+.mi-espacio .me-v20-stat-value{
+  font-size:clamp(20px,2vw,26px);
+  font-weight:600;
+  line-height:1.2;
+}
+.mi-espacio .me-v23-impact-label,.mi-espacio .me-v20-stat-label{
+  font-size:12px;
+  line-height:1.5;
+  color:var(--me30-secondary);
+}
+.mi-espacio .me-v21-extras-bar{
+  margin-top:20px;
+  border-top:1px solid var(--me30-line);
+  padding-top:12px;
+}
+@media(max-width:850px){
+  .mi-espacio .me-v20-quick-bar{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .mi-espacio--v9 .me-v9-overview{grid-template-columns:minmax(0,1fr);gap:0}
+  .mi-espacio--v9 .me-v9-panel{
+    padding:20px 0;
+    border-left:0;
+    border-bottom:1px solid var(--me30-line);
+  }
+  .mi-espacio--v9 .me-v9-panel:first-child{padding-top:0}
+  .mi-espacio .me-v23-impact-stat,.mi-espacio .me-v20-stat{padding-right:10px}
+}
+@media(max-width:480px){
+  .mi-espacio{padding-inline:16px}
+  .mi-espacio .me-v20-quick-bar{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 9px}
+  .mi-espacio .me-v20-quick-bar>button:first-child{grid-column:1/-1}
+  .mi-espacio .me-v22-identity-top{align-items:start}
+  .mi-espacio .me-v9-panel-heading{flex-direction:row;align-items:baseline}
+  .mi-espacio .me-v23-impact-row,.mi-espacio .me-v23-ops-row{gap:8px}
+  .mi-espacio .me-v23-impact-stat,.mi-espacio .me-v20-stat{min-width:100px;flex-basis:calc(50% - 8px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .mi-espacio .me-v20-quick-bar>button{transition:none!important}
+}
