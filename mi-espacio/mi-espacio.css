@@ -1061,8 +1061,7 @@
 .mi-espacio .me-v28-disclosure-toggle[aria-expanded=true] .me-v28e-chevron{transform:rotate(180deg)}
 .mi-espacio :is(.me-v28-disclosure,.me-v28d-rotations,.me-v28d-other-rotations) :is(li,strong,small){overflow-wrap:anywhere}
 .mi-espacio .me-v28-disclosure-toggle:focus-visible,.mi-espacio .me-v28-profile-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
-.mi-espacio .me-v28-disclosure :is(li):not(:first-child){animation:me28-reveal var(--me28-disclosure-motion) ease-out both}
-@keyframes me28-reveal{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+/* Lists expand in the normal document flow; animating each row caused visual shake. */}
 @media(max-width:768px){.mi-espacio .me-v28-disclosure-toggle{min-height:44px;padding-block:10px!important}.mi-espacio .me-v28-disclosure :is(ul,ol){min-width:0}}
 @media(prefers-reduced-motion:reduce){.mi-espacio .me-v28-disclosure :is(li),.mi-espacio .me-v28-disclosure-toggle .me-v28e-chevron{animation:none!important;transition:none!important}}
 
@@ -1782,6 +1781,36 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .mi-espacio-person-email{font-size:14px;line-height:1.5;margin:3px 0 0}
 .mi-espacio.me-approved-workspace .me-v28-identity-actions{align-self:center;display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
 .mi-espacio.me-approved-workspace .me-v28-identity-actions button{min-height:44px;padding:8px 12px;font-size:13px;background:transparent;box-shadow:none;border:1px solid var(--me30-line);border-radius:8px}
+
+/* Phase 44A · One high-contrast disclosure glyph and one interaction rhythm.
+   These are scoped to Mi Espacio; the neumDESK shell is unchanged. */
+.mi-espacio.me-approved-workspace .me-v28-chevron{
+ box-sizing:border-box;width:32px;height:32px;flex:0 0 32px;
+ display:block;padding:7px;border:1px solid #b9d1c6;border-radius:50%;
+ background:#f1f7f3;color:#276458;stroke:currentColor;
+ transform-origin:center;transition:transform 170ms ease,background-color 170ms ease,border-color 170ms ease;
+}
+.mi-espacio.me-approved-workspace .me-v28-chevron path{stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.mi-espacio.me-approved-workspace :is(.me-v28-profile-toggle,.me-v28-disclosure-toggle,.me-v35-history-toggle,.me-v20-quick-toggle,.me-v8-tools-toggle):hover .me-v28-chevron,
+.mi-espacio.me-approved-workspace :is(.me-approved-record,.me-v41-science,.me-v34-institutional-details,.me-v38-research-disclosure,.me-v39-metrics)>summary:hover .me-v28-chevron{
+ background:#dfeee4;border-color:#88b39f;color:#164f44;
+}
+.mi-espacio.me-approved-workspace :is(.me-v28-profile-toggle,.me-v28-disclosure-toggle,.me-v35-history-toggle,.me-v20-quick-toggle,.me-v8-tools-toggle):focus-visible,
+.mi-espacio.me-approved-workspace :is(.me-approved-record,.me-v41-science,.me-v34-institutional-details,.me-v38-research-disclosure,.me-v39-metrics)>summary:focus-visible{
+ outline:3px solid #258775;outline-offset:3px;border-radius:7px;
+}
+.mi-espacio.me-approved-workspace .me-v28-disclosure-toggle{gap:11px;min-height:48px;font-size:14px;font-weight:600}
+.mi-espacio.me-approved-workspace .me-v28-disclosure-toggle .me-v40-show-count{font-size:13px;letter-spacing:0;white-space:normal;text-align:right}
+.mi-espacio.me-approved-workspace .me-v28-profile-toggle{gap:11px;font-size:13px;font-weight:600}
+.mi-espacio.me-approved-workspace .me-v8-tools-toggle{display:inline-flex;align-items:center;gap:12px;min-height:48px}
+.mi-espacio.me-approved-workspace .me-v8-tools-toggle[aria-expanded=true] .me-v28-chevron{transform:rotate(180deg)}
+.mi-espacio.me-approved-workspace .me-v39-metrics>summary{gap:12px;min-height:52px}
+.mi-espacio.me-approved-workspace .me-v39-metrics>summary>.me-v28-chevron{margin-left:4px}
+.mi-espacio.me-approved-workspace .me-v41-more{min-height:44px}
+@media(prefers-reduced-motion:reduce){
+ .mi-espacio.me-approved-workspace .me-v28-chevron{transition:none!important;animation:none!important}
+ .mi-espacio.me-approved-workspace .me-v28-disclosure :is(li),.mi-espacio.me-approved-workspace .me-approved-record :is(summary,dl){animation:none!important;transition:none!important}
+}
 .mi-espacio.me-approved-workspace .me-approved-affiliations{margin-top:10px;border-left:2px solid #a5c9b7;padding-left:12px;max-width:700px}
 .mi-espacio.me-approved-workspace .me-v42-affiliations-title{display:block;font-size:11px;font-weight:700;line-height:1.5;letter-spacing:.06em;color:#5c7b72;margin-bottom:5px}
 .mi-espacio.me-approved-workspace .me-approved-affiliations .me-approved-affiliation-label{font-size:12px;letter-spacing:0;text-transform:none;color:#55766c}
@@ -1822,8 +1851,8 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .me-approved-status:before{content:'';width:5px;height:5px;flex:none;border-radius:50%;background:currentColor}
 .mi-espacio.me-approved-workspace .me-approved-status[data-tone=ongoing]{background:#fff2be;color:#795c09}
 .mi-espacio.me-approved-workspace .me-approved-status[data-tone=completed]{background:#def1e2;color:#23683a}
-.mi-espacio.me-approved-workspace .me-approved-plus{font-size:22px!important;color:#59867b;flex:none;transition:transform .18s ease}
-.mi-espacio.me-approved-workspace .me-approved-record[open] .me-approved-plus{transform:rotate(45deg)}
+.mi-espacio.me-approved-workspace .me-approved-plus{color:#276b5f;flex:none;transition:transform .18s ease}
+.mi-espacio.me-approved-workspace .me-approved-record[open] .me-approved-plus{transform:rotate(180deg)}
 .mi-espacio.me-approved-workspace .me-approved-record>dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;background:#fff;border:1px solid var(--me30-line);border-radius:8px;padding:15px;margin:0 0 16px}
 .mi-espacio.me-approved-workspace .me-approved-record dt{font-size:12px;color:#657879}
 .mi-espacio.me-approved-workspace .me-approved-record dd{margin:5px 0 0;font-size:13px;overflow-wrap:anywhere}
@@ -1868,8 +1897,7 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .me-v39-metrics{margin:24px 0 0;max-width:960px;border-top:1px solid var(--me30-line);border-bottom:1px solid var(--me30-line)}
 .mi-espacio.me-approved-workspace .me-v39-metrics>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 2px;min-height:44px;font-size:13px;font-weight:600;color:var(--me30-reading)}
 .mi-espacio.me-approved-workspace .me-v39-metrics>summary::-webkit-details-marker{display:none}
-.mi-espacio.me-approved-workspace .me-v39-metrics>summary::after{content:'+';margin-left:8px;color:#628978;font-size:20px}
-.mi-espacio.me-approved-workspace .me-v39-metrics[open]>summary::after{content:'−'}
+.mi-espacio.me-approved-workspace .me-v39-metrics[open]>summary>.me-v28-chevron{transform:rotate(180deg)}
 .mi-espacio.me-approved-workspace .me-v39-metrics>summary span{font-size:12px;font-weight:400;color:var(--me30-secondary);margin-left:auto}
 .mi-espacio.me-approved-workspace .me-v39-metrics>summary:focus-visible{outline:3px solid #368d78;outline-offset:2px}
 .mi-espacio.me-approved-workspace .me-v39-metrics .me-v20-dashboard{margin:0 0 14px;padding:15px 0;border:0;background:transparent;box-shadow:none}
