@@ -8,7 +8,7 @@ test('large Mi Espacio research collections reveal progressively in place at des
  window.__issues=[];const app=Vue.createApp(NeumMiEspacio.createView({Vue,API:{request}}),{active:true,user:{id:'p'},canOpenView:()=>false});app.config.errorHandler=e=>window.__issues.push(String(e));app.mount('#app')});
  const studies=page.locator('#me-v28-studies>li'),projects=page.locator('#me-v28-projects>li');
  await expect(studies).toHaveCount(5);await expect(studies.first()).toContainText('Estudio 11');await expect(projects).toHaveCount(5);
- const more=page.getByRole('button',{name:/Ver 5 estudios más/});await more.click();await expect(studies).toHaveCount(10);await more.click();await expect(studies).toHaveCount(12);await studies.first().locator('summary').click();await expect(studies.first().locator('dl')).toBeVisible();
+ const more=page.locator('.me-v44c-collection-toggle').first();await more.click();await expect(studies).toHaveCount(10);await more.click();await expect(studies).toHaveCount(12);await studies.first().locator('summary').click();await expect(studies.first().locator('dl')).toBeVisible();
  await more.click();await expect(studies).toHaveCount(5);await expect(projects).toHaveCount(5);
  const state=await page.evaluate(()=>({issues:window.__issues,overflow:document.documentElement.scrollWidth-innerWidth}));expect(state.issues).toEqual([]);expect(state.overflow).toBeLessThanOrEqual(2);
 });

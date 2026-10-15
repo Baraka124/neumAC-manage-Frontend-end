@@ -36,7 +36,7 @@ for(const width of [390,1366]){
   const app=await mount(page,width);
   const studies=app.locator('#me-v28-studies>li'),projects=app.locator('#me-v28-projects>li');
   await expect(studies).toHaveCount(5);await expect(projects).toHaveCount(5);
-  const toggle=app.getByRole('button',{name:/Ver 5 estudios más/});
+  const toggle=app.locator('.me-v44c-collection-toggle').first();
   await toggle.focus();await expect(toggle).toBeFocused();
   const style=await toggle.evaluate(el=>{
    const icon=el.querySelector('svg.me-v28-chevron'),c=getComputedStyle(icon),focus=getComputedStyle(el);
