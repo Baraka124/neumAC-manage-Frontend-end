@@ -46,7 +46,8 @@
   function shortDutyDate(iso) {
     if(!fmtDutyDate(iso))return '';
     const [year,month,day]=String(iso).slice(0,10).split('-').map(Number);
-    return new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'short',year:'numeric'}).format(new Date(year,month-1,day));
+    const weekday=new Intl.DateTimeFormat('es-ES',{weekday:'long'}).format(new Date(year,month-1,day));
+    return weekday+', '+day+' '+(MONTHS[month-1]||'')+' '+year;
   }
   const PROFESSIONAL_TYPE = Object.freeze({
     medical_resident:'Médico/a residente', attending_physician:'Personal médico adjunto',
