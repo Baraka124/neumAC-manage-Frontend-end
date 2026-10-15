@@ -107,6 +107,7 @@
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
+        const isResident=Vue.computed(()=>['resident','medical_resident'].includes(String(state.context?.staff?.staffType||'').toLowerCase()));
         const initials=Vue.computed(()=>String(state.context?.staff?.name||state.context?.account?.name||'')
           .split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase()||'·');
         const professionalDesignation=Vue.computed(()=>{
@@ -133,6 +134,7 @@
         const hasPublicationOverflow=Vue.computed(()=>(state.activity?.publications?.items?.length||0)>3);
         const hasResearchOverflow=Vue.computed(()=>['lines','studies','projects'].some(k=>(state.activity?.research?.[k]?.length||0)>2));
         const showAgenda=Vue.computed(()=>hasAgenda.value || (!hasResearch.value && !(state.activity?.publications?.items?.length||0)));
+        const showPublications=Vue.computed(()=>!!(state.activity?.publications?.items?.length) || state.activity?.publications?.available===false);
         const personalContext=Vue.computed(()=>{
           const activity=state.activity;
           if(!activity)return [];
@@ -516,11 +518,8 @@
           const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
           const in7=new Date(now.getTime()+7*86400000);
           const in7str=[in7.getFullYear(),String(in7.getMonth()+1).padStart(2,'0'),String(in7.getDate()).padStart(2,'0')].join('-');
-          // Next guardia
-          const guardias=(state.activity?.agenda?.guardias||[]).filter(g=>/^\d{4}-\d{2}-\d{2}$/.test(g.date)&&g.date>=today&&g.date<=in7str).sort((a,b)=>a.date.localeCompare(b.date));
-          if(guardias.length){
-            events.push({icon:'🩺',title:'Guardia',date:guardias[0].date,urgency:guardias[0].date===today?'warning':''});
-          }
+          // Guardias already have a complete, dated feature in Agenda. Do not repeat them here.
+          const guardias=upcomingGuardias.value;
           // Next absence
           const absences=(state.activity?.agenda?.absences||[]).filter(a=>a.start&&a.end&&a.end>=today&&a.start<=in7str).sort((a,b)=>a.start.localeCompare(b.start));
           if(absences.length){
@@ -810,6 +809,15 @@
           state.toolsOpen=true;state.report.open=true;state.report.done=false;state.report.error='';
           focusDuty('#me-report-subject');
         }
+        function reportMissingRotation(){
+          if(!linked.value)return;
+          state.report.subject_type='rotation';
+          state.report.kind='missing';
+          state.report.subject_id='';
+          state.report.subject_label='';
+          state.report.message='';
+          openReportForm();
+        }
         // When the subject is a line or a publication, load the pickable options
         // so the claim carries a real subject_id (the server then auto-links on accept).
         async function onSubjectTypeChange(){
@@ -1071,7 +1079,7 @@
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,researchTone,researchStatusLabel,dutyDateParts,
-          professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
+          professionalDesignation,roleBadge,isResident,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,showPublications,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           editProfileDirect,profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,focusProfileEditor,
           researchSummary,scientificParticipation,scientificHistoryOpen,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,upcomingAbsenceDaysTotal,
@@ -1097,7 +1105,7 @@
           absenceStatus:k=>label(ABSENCE,k),
           subjectLabel:k=>label(SUBJECT_LABELS,k), kindLabel:k=>label(KIND_LABELS,k), reportStatus:k=>label(REPORT_STATUS,k),
           subjectOptions:SUBJECT_OPTIONS, kindOptions:KIND_OPTIONS,
-          openReportForm, submitReport, onSubjectTypeChange, onSubjectPick, claimPublication,
+          openReportForm,reportMissingRotation, submitReport, onSubjectTypeChange, onSubjectPick, claimPublication,
           reviewFilters:REVIEW_FILTERS, setReviewFilter, resolveItem, openPendingReviews,
           emptyLabel:f=>EMPTY_BY_FILTER[f]||'por revisar'
         };
@@ -1502,7 +1510,7 @@
               </div>
               <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview" :class="{'me-v10-research-first':!showAgenda,'me-v10-sparse':!hasAgenda && !hasResearch,'me-v12-research-priority':researchPriority}">
                 <section v-if="showAgenda" class="me-v8-column me-v8-agenda me-v9-panel" :class="{'me-v10-agenda-sparse':!hasAgenda}" aria-labelledby="me-v9-agenda-title">
-                  <div class="me-v9-panel-heading"><div><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} {{state.activity.counts.guardias===1?'guardia':'guardias'}}</span></div>
+                  <div class="me-v9-panel-heading"><div><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">{{isResident?'Formación y agenda':'Agenda'}}</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} {{state.activity.counts.guardias===1?'guardia':'guardias'}}</span></div>
                   <div v-if="upcomingGuardias.length" class="me-v8-commitments">
                     <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">{{upcomingGuardias[0].date===localToday?'GUARDIA REGISTRADA HOY':'PRÓXIMA GUARDIA'}}</span><time class="me-approved-date" :datetime="upcomingGuardias[0].date" :aria-label="fmtDutyDate(upcomingGuardias[0].date)"><b aria-hidden="true">{{dutyDateParts(upcomingGuardias[0].date).day}}</b><span aria-hidden="true"><strong>{{dutyDateParts(upcomingGuardias[0].date).weekday}}</strong><small>{{dutyDateParts(upcomingGuardias[0].date).month}}</small></span></time><span>{{dutyShift(upcomingGuardias[0].shift)}} · {{guardiaRole(upcomingGuardias[0].role)}}</span></div>
                     <ol v-if="upcomingGuardias.length>1" id="me-v28c-guardias" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in upcomingGuardias.slice(1,state.operationsOpen.guardias?upcomingGuardias.length:3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
@@ -1524,6 +1532,15 @@
                     <strong>{{supervisedRotations[0].resident || supervisedRotations[0].unit || 'Asignación supervisada'}}</strong>
                     <span v-if="supervisedRotations[0].unit">{{supervisedRotations[0].unit}}</span>
                     <span v-if="fmtPeriod(supervisedRotations[0].start,supervisedRotations[0].end)">{{fmtPeriod(supervisedRotations[0].start,supervisedRotations[0].end)}}</span>
+                  </div>
+                  <div v-else-if="!hasAgenda && isResident" class="me-v39-resident-empty" aria-label="Formación clínica sin asignaciones vinculadas">
+                    <span class="me-v39-resident-kicker">FORMACIÓN CLÍNICA</span>
+                    <strong>Tu itinerario, cuando esté registrado</strong>
+                    <p>No constan rotaciones ni guardias vinculadas a tu cuenta en este momento. Esto no confirma que no existan asignaciones.</p>
+                    <div class="me-v39-resident-actions">
+                      <button v-if="can('rotations')" type="button" class="me-v39-resident-link" @click="navigate('rotations')">Consultar rotaciones <span aria-hidden="true">↗</span></button>
+                      <button type="button" class="me-v39-resident-link" @click="reportMissingRotation">Comunicar una asignación no vinculada <span aria-hidden="true">→</span></button>
+                    </div>
                   </div>
                   <p v-else-if="!hasAgenda" class="me-v8-quiet me-v9-empty">No constan asignaciones próximas vinculadas a tu perfil.</p>
                   <div v-if="state.activity.agenda.rotations.length || state.activity.agenda.absences.length" class="me-v8-secondary-agenda">
@@ -1587,8 +1604,8 @@
                 <ol class="me-v8-timeline"><li v-for="g in state.activity.agenda.guardias" :key="g.id"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
                 <button v-if="can('oncall_schedule')" type="button" class="me-duty-institutional" @click="navigate('oncall_schedule')">Abrir cuadrante departamental ↗</button>
               </section>
-              <div v-if="state.dutyMode==='overview'" class="me-v9-lower-grid">
-                <section class="me-v9-publications" :class="{'me-v34-empty-publications':!state.activity.publications.items.length}" aria-label="Publicaciones">
+              <div v-if="state.dutyMode==='overview'" class="me-v9-lower-grid" :class="{'me-v39-secondary-solo':!showPublications}">
+                <section v-if="showPublications" class="me-v9-publications" :class="{'me-v34-empty-publications':!state.activity.publications.items.length}" aria-label="Publicaciones">
                   <div class="me-v9-panel-heading"><div><h3>Publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button></div>
                   <ol v-if="state.activity.publications.items.length" id="me-v28-publications" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,state.publicationsExpanded?state.activity.publications.items.length:3)" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
                   <p v-if="!state.activity.publications.items.length && !state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p>
@@ -1603,7 +1620,7 @@
                 </section>
               </div>
               <!-- Secondary personal metrics/onboarding follow core responsibilities. -->
-          <div v-if="showPhotoNudge" class="me-v23-photo-nudge" role="status">
+          <div v-if="showPhotoNudge && state.toolsOpen" class="me-v23-photo-nudge" role="status">
             <div class="me-v23-photo-nudge-body">
               <p>Puedes añadir una foto a tu perfil profesional.</p>
               <div class="me-v23-photo-nudge-actions">
@@ -1612,7 +1629,9 @@
               </div>
             </div>
           </div>
-          <div v-if="linked && state.dashboard.data && !state.profile.open" class="me-v20-dashboard me-v23-dashboard" aria-label="Métricas personales">
+          <details v-if="linked && state.dashboard.data && !state.profile.open" class="me-v39-metrics" aria-label="Indicadores profesionales">
+            <summary>Indicadores profesionales <span>Consultar cifras registradas</span></summary>
+            <div class="me-v20-dashboard me-v23-dashboard">
             <div v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects || state.dashboard.data.hIndex" class="me-v23-impact-row">
               <div class="me-v23-impact-stat" v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects"><span class="me-v23-impact-value">{{(state.dashboard.data.piStudies||0)+(state.dashboard.data.piProjects||0)}}</span><span class="me-v23-impact-label">IP en {{[state.dashboard.data.piStudies?state.dashboard.data.piStudies+' estudio'+(state.dashboard.data.piStudies!==1?'s':''):'',state.dashboard.data.piProjects?state.dashboard.data.piProjects+' proyecto'+(state.dashboard.data.piProjects!==1?'s':''):''].filter(Boolean).join(', ')}}</span></div>
               <div class="me-v23-impact-stat" v-if="state.dashboard.data.hIndex"><span class="me-v23-impact-value">{{state.dashboard.data.hIndex}}</span><span class="me-v23-impact-label">Índice h</span></div>
@@ -1625,6 +1644,7 @@
               <div class="me-v20-stat" v-if="state.dashboard.data.upcomingAbsenceDays"><span class="me-v20-stat-value">{{state.dashboard.data.upcomingAbsenceDays}}</span><span class="me-v20-stat-label">Días de ausencia programados</span></div>
             </div>
           </div>
+          </details>
               <section v-if="state.dutyMode==='overview' && state.timeline.entries.length" class="me-v16-timeline" aria-label="Actividad reciente">
                 <div class="me-v9-panel-heading"><div><h3>Actividad</h3></div></div>
                 <div v-if="state.timeline.entries.length>3" class="me-v20-timeline-filters" role="tablist" aria-label="Filtrar actividad">
