@@ -517,10 +517,6 @@
 }
 
 /* ── Phase 18 – Profile data surface ── */
-.mi-espacio .me-v18-capabilities{margin-top:4px}
-.mi-espacio .me-v18-cap-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
-.mi-espacio .me-v18-cap-list li{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--me-ink,#183c49);background:rgba(21,138,137,.08);border-radius:6px;padding:4px 10px}
-.mi-espacio .me-v18-cap-check{color:#158a89;font-weight:700;font-size:14px}
 .mi-espacio .me-v18-research-summary{margin-top:4px}
 .mi-espacio .me-v18-metrics-row{display:flex;gap:16px}
 .mi-espacio .me-v18-metrics-row .me-field{flex:1;min-width:0}
@@ -554,11 +550,6 @@
 .mi-espacio .me-v19-absence-status{font-size:11px;padding:2px 8px;border-radius:10px}
 
 /* Leadership roles */
-.mi-espacio .me-v19-leadership{margin-top:4px}
-.mi-espacio .me-v19-leadership-list{list-style:none;margin:8px 0 0;padding:0}
-.mi-espacio .me-v19-leadership-list li{display:flex;align-items:baseline;gap:8px;padding:6px 0;font-size:14px}
-.mi-espacio .me-v19-role-badge{display:inline-block;background:linear-gradient(135deg,#158a89,#1a6b6a);color:#fff;font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:4px;text-transform:uppercase;flex-shrink:0}
-.mi-espacio .me-v19-role-name{color:var(--me-ink,#183c49);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Notification preferences — toggle group */
 .mi-espacio .me-v19-notif-prefs{margin-top:4px}
@@ -1695,11 +1686,25 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 @media(max-width:640px){.mi-espacio .me-v34-institutional-summary{flex-wrap:wrap}.mi-espacio .me-v34-institutional-hint{order:3;flex-basis:100%;margin-left:0}.mi-espacio .me-v34-empty-publications{padding-block:14px}}
 @media(prefers-reduced-motion:reduce){.mi-espacio .me-v34-institutional-summary .me-v28-chevron{transition:none!important}}
 
+/* Phase 41 · participation is optional profile detail, not another duplicate dashboard. */
+.mi-espacio.me-approved-workspace .me-v41-science{margin:12px 0 18px;padding:0;border-top:1px solid var(--me30-line,#dfe8e5);border-bottom:1px solid var(--me30-line,#dfe8e5)}
+.mi-espacio.me-approved-workspace .me-v41-science>summary{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 0;list-style:none;cursor:pointer;color:var(--me30-reading,#26444a);font-size:15px;font-weight:600}
+.mi-espacio.me-approved-workspace .me-v41-science>summary::-webkit-details-marker{display:none}
+.mi-espacio.me-approved-workspace .me-v41-science>summary>span{min-width:0}
+.mi-espacio.me-approved-workspace .me-v41-science>summary>small{margin-left:auto;color:var(--me30-secondary,#566f73);font-size:13px;font-weight:400;white-space:nowrap}
+.mi-espacio.me-approved-workspace .me-v41-science>summary>.me-v28-chevron{color:#577a73;transition:transform .18s ease;flex-shrink:0}
+.mi-espacio.me-approved-workspace .me-v41-science[open]>summary>.me-v28-chevron{transform:rotate(180deg)}
+.mi-espacio.me-approved-workspace .me-v41-science>summary:focus-visible{outline:3px solid #16857d;outline-offset:2px;border-radius:5px}
+.mi-espacio.me-approved-workspace .me-v41-science-body{padding:4px 0 17px}
+.mi-espacio.me-approved-workspace .me-v41-science-note{font-size:13px;line-height:1.65;color:var(--me30-secondary,#566f73);max-width:70ch;margin:0 0 14px}
+.mi-espacio.me-approved-workspace .me-v41-more{border:0;background:transparent;cursor:pointer;font:inherit;font-size:13px;line-height:1.4;font-weight:600;color:#276c60;min-height:44px;padding:10px 0;text-align:left}
+.mi-espacio.me-approved-workspace .me-v41-more:hover{text-decoration:underline}
+.mi-espacio.me-approved-workspace .me-v41-more:focus-visible{outline:3px solid #16857d;outline-offset:3px}
+@media(max-width:480px){.mi-espacio.me-approved-workspace .me-v41-science>summary{flex-wrap:wrap}.mi-espacio.me-approved-workspace .me-v41-science>summary>small{white-space:normal}}
+@media(prefers-reduced-motion:reduce){.mi-espacio.me-approved-workspace .me-v41-science>summary>.me-v28-chevron{transition:none!important}}
+
 /* Phase 35 — verified scientific participation: institutional profile reader. */
 .mi-espacio .me-v35-participation{padding-block:20px 14px;border-top:1px solid var(--me30-line,#dfe8e5)}
-.mi-espacio .me-v35-heading{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:15px}
-.mi-espacio .me-v35-heading h4{margin:0!important;font-size:17px!important;letter-spacing:-.012em}
-.mi-espacio .me-v35-heading p{font-size:13px;line-height:1.55;color:var(--me30-secondary,#566f73);margin:0}
 .mi-espacio .me-v35-records{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:0}
 .mi-espacio .me-v35-record{min-width:0;border-top:1px solid var(--me30-line,#dfe8e5);padding:15px 0;display:flex;flex-direction:column;gap:5px}
 .mi-espacio .me-v35-kind{font-size:11px;letter-spacing:.045em;font-weight:600;color:#426a65;line-height:1.55}

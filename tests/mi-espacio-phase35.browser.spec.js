@@ -29,12 +29,16 @@ for(const width of [390,1366]){
   await app.getByRole('button',{name:'Perfil profesional',exact:true}).click();
   const panel=app.locator('#me-v28-profile-panel');
   await expect(panel.locator('.me-v35-participation')).toBeVisible();
+  // The profile is concise by default, with no duplicate capability or leadership cards.
+  await expect(panel.locator('.me-v18-capabilities, .me-v19-leadership')).toHaveCount(0);
+  await expect(panel.locator('.me-v35-records').first()).toBeHidden();
+  await panel.locator('.me-v41-science>summary').click();
   await expect(panel.locator('.me-v35-records').first()).toContainText('Estudio clínico verificado');
   await expect(panel.locator('.me-v35-records').first()).toContainText('Coinvestigador/a');
   await expect(panel.locator('.me-v35-records').first()).toContainText('En reclutamiento');
   await expect(panel.locator('.me-v35-records').first()).toContainText('Co-IP');
   await expect(panel.locator('#me-v35-history-records')).toHaveCount(0);
-  await expect(panel.locator('.me-v19-leadership-list')).not.toContainText('Estudio clínico verificado');
+  await expect(panel.locator('.me-v19-leadership-list')).toHaveCount(0);
   await panel.getByRole('button',{name:/Participación finalizada/}).click();
   await expect(panel.locator('#me-v35-history-records')).toContainText('Estudio finalizado');
   const errors=await page.evaluate(()=>({errors:window.__errors,requests:window.__requests}));

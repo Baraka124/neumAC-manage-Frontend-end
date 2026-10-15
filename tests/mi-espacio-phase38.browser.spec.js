@@ -22,6 +22,8 @@ test('Phase 38 adaptive dossier/disclosure '+fixture.id+' '+width,async({page})=
  if(fixture.research){
   await app.getByRole('button',{name:'Perfil profesional',exact:true}).click();
   const profile=app.locator('#me-v28-profile-panel');await expect(profile.locator('.me-v35-participation')).toBeVisible();
+  await expect(profile.locator('.me-v18-capabilities, .me-v19-leadership')).toHaveCount(0);
+  await expect(profile.locator('.me-v35-records').first()).toBeHidden();
   const sciencePos=await profile.locator('.me-v35-participation').evaluate(e=>e.getBoundingClientRect().top);
   const editPos=await profile.locator('.me-v15-edit-section').evaluate(e=>e.getBoundingClientRect().top);
   expect(sciencePos).toBeLessThan(editPos);
