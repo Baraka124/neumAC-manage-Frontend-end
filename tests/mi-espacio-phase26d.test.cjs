@@ -10,8 +10,8 @@ test('verified research and publications have one active contextual workspace',(
   else {
    assert.doesNotMatch(src,/id="me-v26d-research-trigger"/);
    assert.match(src,/state\.activity\.research\.lines\.slice/);
-   assert.match(src,/state\.activity\.research\.studies\.slice/);
-   assert.match(src,/state\.activity\.research\.projects\.slice/);
+   assert.match(src,/orderedResearch\(state\.activity\.research\.studies,'status'\)\.slice/);
+   assert.match(src,/orderedResearch\(state\.activity\.research\.projects,'stage'\)\.slice/);
   }
  }
 });

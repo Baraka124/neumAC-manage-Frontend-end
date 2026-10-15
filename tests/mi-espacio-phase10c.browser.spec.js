@@ -63,7 +63,7 @@ for(const [name,scenario] of Object.entries(cases)){
    await expect(page.locator('.me-v9-identity')).toBeVisible();
    if(name==='dutyOrder'){
      await expect(page.locator('.me-approved-date')).toHaveAttribute('datetime','2026-10-18');
-     await expect(page.locator('.me-v9-timeline li').first()).toContainText('20 de octubre de 2026');
+     await expect(page.locator('.me-v9-timeline li').first()).toContainText('20 oct 2026');
    }
    if(name==='resident'){await expect(page.locator('.me-v10-rotation-feature')).toContainText('UCI');await expect(page.locator('.me-v9-identity')).toContainText('Médico/a residente');}
    if(name==='residentMulti'){
@@ -76,7 +76,7 @@ for(const [name,scenario] of Object.entries(cases)){
      await expect(disclosure).toHaveAttribute('aria-expanded','true');
      await expect(list.locator('li')).toHaveCount(2);
      await expect(list).toContainText('Pruebas funcionales');
-     await expect(list).toContainText('Estado registrado: planned');
+     await expect(list).toContainText('Estado: Prevista');
      await disclosure.click();
      await expect(list.locator('li')).toHaveCount(1);
    }
@@ -172,7 +172,7 @@ for(const [name,scenario] of Object.entries(cases)){
     await page.getByRole('button',{name:/Proyectos 3/}).click();
     await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(8);
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(3);
-    await page.getByRole('button',{name:/Mostrar todas las publicaciones/}).click();
+    await page.locator('.me-v10-publications-toggle').click();
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(4);
    }
    if(a.publications.items.length>0)await expect(page.getByText('No hay publicaciones vinculadas a tu perfil.')).toHaveCount(0);

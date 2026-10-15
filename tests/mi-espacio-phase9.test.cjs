@@ -12,7 +12,7 @@ test('one verified identity, two primary areas and an independent scholarly list
 test('secondary management stays available without dominating overview',()=>{
  assert.match(js,/state.toolsOpen=true;state.report.open=true/);
  assert.match(js,/v-if="state.dutyMode==='overview' && state.toolsOpen"/);
- assert.match(js,/Comunicaciones y gestiones/);
+ assert.match(js,/Ver solicitudes y correcciones/);
  assert.match(js,/function resolveItem\(reportId, status\)/);
 });
 test('responsive visual direction does not alter shell or permission contracts',()=>{

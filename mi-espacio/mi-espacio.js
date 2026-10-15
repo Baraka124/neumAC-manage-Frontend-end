@@ -24,12 +24,24 @@
   }
   // Label only source-recorded lifecycle values; unknown remains unknown.
   function researchStatusLabel(value, absent='Estado no registrado') {
-    return String(value||'').trim() ? root.NeumMiEspacioData.participationStatus(value) : absent;
+    if(!String(value||'').trim())return absent;
+    const label=root.NeumMiEspacioData.participationStatus(value);
+    return /^En Desarrollo$/.test(label)?'En desarrollo':label;
   }
   function dutyDateParts(iso) {
     if(!fmtDutyDate(iso))return {day:'',weekday:'',month:''};
     const [y,m,d]=iso.slice(0,10).split('-').map(Number), date=new Date(y,m-1,d);
     return {day:String(d).padStart(2,'0'),weekday:new Intl.DateTimeFormat('es-ES',{weekday:'long'}).format(date),month:new Intl.DateTimeFormat('es-ES',{month:'long',year:'numeric'}).format(date)};
+  }
+  function rotationStatusLabel(value){
+    const raw=String(value||'').trim();
+    const labels={planned:'Prevista',assigned:'Asignada',active:'En curso',ongoing:'En curso',completed:'Finalizada',cancelled:'Cancelada'};
+    return labels[raw.toLowerCase()]||raw;
+  }
+  function shortDutyDate(iso) {
+    if(!fmtDutyDate(iso))return '';
+    const [year,month,day]=String(iso).slice(0,10).split('-').map(Number);
+    return new Intl.DateTimeFormat('es-ES',{weekday:'short',day:'numeric',month:'short',year:'numeric'}).format(new Date(year,month-1,day));
   }
   const PROFESSIONAL_TYPE = Object.freeze({
     medical_resident:'Médico/a residente', attending_physician:'Personal médico adjunto',
@@ -91,7 +103,7 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,researchOpen:{lines:false,studies:false,projects:false},operationsOpen:{guardias:false,absences:false,supervision:false,rotations:false,otherRotations:false},publicationsExpanded:false,
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,researchOpen:{lines:false,studies:false,projects:false},operationsOpen:{guardias:false,absences:false,supervision:false,rotations:false,otherRotations:false},listLimits:{guardias:3,studies:2,projects:2,publications:3},publicationsExpanded:false,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}},
@@ -135,6 +147,40 @@
         const hasResearchOverflow=Vue.computed(()=>['lines','studies','projects'].some(k=>(state.activity?.research?.[k]?.length||0)>2));
         const showAgenda=Vue.computed(()=>hasAgenda.value || (!hasResearch.value && !(state.activity?.publications?.items?.length||0)));
         const showPublications=Vue.computed(()=>!!(state.activity?.publications?.items?.length) || state.activity?.publications?.available===false);
+        // Only explicitly recorded lifecycle terms affect overview order.
+        // Sorting is stable and never writes to the source arrays.
+        function orderedResearch(items,field){
+          const priority=item=>{const tone=researchTone(item?.[field]);return tone==='ongoing'?0:tone==='completed'?2:1;};
+          return (items||[]).map((item,index)=>({item,index})).sort((a,b)=>priority(a.item)-priority(b.item)||a.index-b.index).map(entry=>entry.item);
+        }
+        // Per-collection progressive reveal: short default previews, then five more.
+        // A completed reveal can collapse without touching any other section.
+        const LIST_PREVIEW=Object.freeze({guardias:3,studies:2,projects:2,publications:3});
+        function listExpanded(kind){
+          if(kind==='guardias')return state.operationsOpen.guardias;
+          if(kind==='publications')return state.publicationsExpanded;
+          return !!state.researchOpen[kind];
+        }
+        function setListExpanded(kind,open){
+          if(kind==='guardias')state.operationsOpen.guardias=open;
+          else if(kind==='publications')state.publicationsExpanded=open;
+          else state.researchOpen[kind]=open;
+        }
+        function listLimit(kind,total){
+          const base=LIST_PREVIEW[kind]||3;
+          if(!listExpanded(kind))return base;
+          if(total<=(kind==='studies'||kind==='projects'?7:8))return total;
+          return Math.min(total,state.listLimits[kind]>base?state.listLimits[kind]:base+5);
+        }
+        function stepLargeList(kind,total){
+          const current=listLimit(kind,total),base=LIST_PREVIEW[kind]||3;
+          if(current>=total){state.listLimits[kind]=base;setListExpanded(kind,false);}
+          else {state.listLimits[kind]=Math.min(total,current+5);setListExpanded(kind,true);}
+        }
+        function listControlText(kind,total){
+          const remaining=Math.max(0,total-listLimit(kind,total));
+          return remaining ? 'Ver '+Math.min(remaining,5)+' más' : 'Mostrar menos';
+        }
         const personalContext=Vue.computed(()=>{
           const activity=state.activity;
           if(!activity)return [];
@@ -167,7 +213,7 @@
           if(controller)controller.abort();
           controller=null;
           state.context=null;state.error='';state.busy=false;
-          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.researchExpanded=false;state.researchOpen={lines:false,studies:false,projects:false};state.operationsOpen={guardias:false,absences:false,supervision:false,rotations:false,otherRotations:false};state.publicationsExpanded=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
+          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.researchExpanded=false;state.researchOpen={lines:false,studies:false,projects:false};state.operationsOpen={guardias:false,absences:false,supervision:false,rotations:false,otherRotations:false};state.listLimits={guardias:3,studies:2,projects:2,publications:3};state.publicationsExpanded=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
@@ -457,7 +503,7 @@
           if(linked.value){
             items.push({id:'profile',label:'Editar perfil',icon:'✏️'});
             items.push({id:'report',label:'Comunicar discrepancia',icon:'📋'});
-            items.push({id:'claim',label:'Reivindicar publicación',icon:'📄'});
+            items.push({id:'claim',label:'Solicitar vinculación de publicación',icon:'📄'});
           }
           if(can('absence_management')) items.push({id:'absence',label:'Solicitar ausencia',icon:'🗓️'});
           if(can('certificates_management')) items.push({id:'certs',label:'Certificados',icon:'📜'});
@@ -1078,7 +1124,7 @@
           else if(target.closest('.me-portfolio:not(.me-publications)') && selectedResearch.value){closeResearch();event.stopPropagation();}
         }
         return {
-          state,linked,initials,can,refresh:load,selectedDuty,researchTone,researchStatusLabel,dutyDateParts,
+          state,linked,initials,can,refresh:load,selectedDuty,researchTone,researchStatusLabel,dutyDateParts,shortDutyDate,rotationStatusLabel,orderedResearch,listLimit,stepLargeList,listControlText,
           professionalDesignation,roleBadge,isResident,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,showPublications,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           editProfileDirect,profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,focusProfileEditor,
@@ -1112,7 +1158,7 @@
       },
       template: `
       <section class="mi-espacio mi-espacio--v8 mi-espacio--v9 me-approved-workspace" :class="{'me-v25-leadership':leadershipFocus,'me-v34-research-only':hasResearch && !showAgenda,'me-v34-clinical-first':hasAgenda && !hasResearch,'me-v34-mixed':hasAgenda && hasResearch,'me-v34-no-work':!hasAgenda && !hasResearch}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape" @click.capture="anchorInlineDisclosure">
-        <header class="mi-espacio-head me-v9-accessible-head"><span class="me-approved-eyebrow">TU ENTORNO PROFESIONAL</span><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
+        <header class="mi-espacio-head me-v9-accessible-head"><span class="me-approved-eyebrow">NEUMOLOGÍA · ESPACIO DE TRABAJO</span><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">
@@ -1513,22 +1559,22 @@
                   <div class="me-v9-panel-heading"><div><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">{{isResident?'Formación y agenda':'Agenda'}}</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} {{state.activity.counts.guardias===1?'guardia':'guardias'}}</span></div>
                   <div v-if="upcomingGuardias.length" class="me-v8-commitments">
                     <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">{{upcomingGuardias[0].date===localToday?'GUARDIA REGISTRADA HOY':'PRÓXIMA GUARDIA'}}</span><time class="me-approved-date" :datetime="upcomingGuardias[0].date" :aria-label="fmtDutyDate(upcomingGuardias[0].date)"><b aria-hidden="true">{{dutyDateParts(upcomingGuardias[0].date).day}}</b><span aria-hidden="true"><strong>{{dutyDateParts(upcomingGuardias[0].date).weekday}}</strong><small>{{dutyDateParts(upcomingGuardias[0].date).month}}</small></span></time><span>{{dutyShift(upcomingGuardias[0].shift)}} · {{guardiaRole(upcomingGuardias[0].role)}}</span></div>
-                    <ol v-if="upcomingGuardias.length>1" id="me-v28c-guardias" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in upcomingGuardias.slice(1,state.operationsOpen.guardias?upcomingGuardias.length:3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
-                    <button v-if="upcomingGuardias.length>3" type="button" class="me-v28-disclosure-toggle" aria-controls="me-v28c-guardias" :aria-expanded="state.operationsOpen.guardias" @click="state.operationsOpen.guardias=!state.operationsOpen.guardias"><span>{{state.operationsOpen.guardias?'Mostrar menos guardias':'Mostrar próximas guardias'}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver guardias <span aria-hidden="true">→</span></button>
+                    <ol v-if="upcomingGuardias.length>1" id="me-v28c-guardias" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in upcomingGuardias.slice(1,listLimit('guardias',upcomingGuardias.length))" :key="g.id||index"><time :datetime="g.date" :aria-label="fmtDutyDate(g.date)">{{shortDutyDate(g.date)}}</time><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
+                    <button v-if="upcomingGuardias.length>3" type="button" class="me-v28-disclosure-toggle" aria-controls="me-v28c-guardias" :aria-expanded="state.operationsOpen.guardias" @click="upcomingGuardias.length<=8?(state.operationsOpen.guardias=!state.operationsOpen.guardias):stepLargeList('guardias',upcomingGuardias.length)"><span>{{listControlText('guardias',upcomingGuardias.length)}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Consultar guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="state.activity.agenda.guardias.length && !personalRotations.length && !supervisedRotations.length" class="me-v8-commitments">
-                    <p class="me-v8-quiet">No constan guardias próximas. Puedes consultar tu historial de guardias.</p>
-                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver guardias <span aria-hidden="true">→</span></button>
+                    <p class="me-v8-quiet">No hay próximas guardias registradas.</p>
+                    <button type="button" id="me-v26g-duties-trigger" class="me-duty-open me-v9-inline-action" @click="openDuties()">Consultar guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="personalRotations.length" class="me-v8-upnext me-v9-feature me-v10-rotation-feature">
-                    <span class="me-v8-kicker">MI ROTACIÓN REGISTRADA</span>
+                    <span class="me-v8-kicker">ROTACIÓN ASIGNADA</span>
                     <strong>{{personalRotations[0].unit || 'Rotación asignada'}}</strong>
                     <span v-if="personalRotations[0].start||personalRotations[0].end">{{fmtPeriod(personalRotations[0].start,personalRotations[0].end)}}</span>
-                    <small v-if="personalRotations[0].status" class="me-v28d-recorded-status">Estado registrado: {{personalRotations[0].status}}</small>
+                    <small v-if="personalRotations[0].status" class="me-v28d-recorded-status">Estado: {{rotationStatusLabel(personalRotations[0].status)}}</small>
                   </div>
                   <div v-else-if="supervisedRotations.length" class="me-v8-upnext me-v9-feature me-v10-supervision-feature">
-                    <span class="me-v8-kicker">ROTACIÓN BAJO MI SUPERVISIÓN</span>
+                    <span class="me-v8-kicker">ROTACIÓN QUE SUPERVISO</span>
                     <strong>{{supervisedRotations[0].resident || supervisedRotations[0].unit || 'Asignación supervisada'}}</strong>
                     <span v-if="supervisedRotations[0].unit">{{supervisedRotations[0].unit}}</span>
                     <span v-if="fmtPeriod(supervisedRotations[0].start,supervisedRotations[0].end)">{{fmtPeriod(supervisedRotations[0].start,supervisedRotations[0].end)}}</span>
@@ -1542,7 +1588,7 @@
                       <button type="button" class="me-v39-resident-link" @click="reportMissingRotation">Comunicar una asignación no vinculada <span aria-hidden="true">→</span></button>
                     </div>
                   </div>
-                  <p v-else-if="!hasAgenda" class="me-v8-quiet me-v9-empty">No constan asignaciones próximas vinculadas a tu perfil.</p>
+                  <p v-else-if="!hasAgenda" class="me-v8-quiet me-v9-empty">No hay asignaciones próximas registradas en este espacio.</p>
                   <div v-if="state.activity.agenda.rotations.length || state.activity.agenda.absences.length" class="me-v8-secondary-agenda">
                     <!-- Phase 28D: use only existing, authorized resident rotations; no inferred supervisor name. -->
                     <div v-if="personalRotations.length>(state.activity.agenda.guardias.length?0:1)" class="me-v28-disclosure me-v28d-rotations">
@@ -1556,7 +1602,7 @@
                         <li v-for="(r,i) in personalRotations.slice(state.activity.agenda.guardias.length?0:1,state.operationsOpen.rotations?personalRotations.length:(state.activity.agenda.guardias.length?1:2))" :key="r.id||i">
                           <strong>{{r.unit||'Rotación asignada'}}</strong>
                           <small v-if="r.start||r.end">{{fmtPeriod(r.start,r.end)}}</small>
-                          <small v-if="r.status">Estado registrado: {{r.status}}</small>
+                          <small v-if="r.status">Estado: {{rotationStatusLabel(r.status)}}</small>
                         </li>
                       </ul>
                     </div>
@@ -1575,7 +1621,7 @@
                         <li v-for="(r,i) in otherRotations.slice(0,state.operationsOpen.otherRotations?otherRotations.length:1)" :key="r.id||i">
                           <strong>{{r.unit||r.resident||'Rotación'}}</strong>
                           <small v-if="r.start||r.end">{{fmtPeriod(r.start,r.end)}}</small>
-                          <small v-if="r.status">Estado registrado: {{r.status}}</small>
+                          <small v-if="r.status">Estado: {{rotationStatusLabel(r.status)}}</small>
                         </li>
                       </ul>
                     </div>
@@ -1586,12 +1632,12 @@
                   <div class="me-v9-panel-heading"><div><h3 id="me-v9-research-title">Investigación</h3></div></div>
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
                     <div v-if="state.activity.research.studies.length" class="me-v28-disclosure">
-                      <button v-if="state.activity.research.studies.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.researchOpen.studies=!state.researchOpen.studies"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                      <h4 v-if="state.activity.research.studies.length<=2" class="me-approved-group-title">Estudios</h4><ul id="me-v28-studies"><li v-for="st in state.activity.research.studies.slice(0,state.researchOpen.studies?state.activity.research.studies.length:2)" :key="st.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(st.status)">{{researchStatusLabel(st.status)}}</span><strong>{{st.title}}</strong><small>{{studyRole(st.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div v-if="st.code"><dt>Protocolo</dt><dd>{{st.code}}</dd></div><div><dt>Participación</dt><dd>{{studyRole(st.role)}}</dd></div><div><dt>Estado registrado</dt><dd>{{researchStatusLabel(st.status,'No registrado')}}</dd></div></dl></details></li></ul>
+                      <button v-if="state.activity.research.studies.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.activity.research.studies.length<=7?(state.researchOpen.studies=!state.researchOpen.studies):stepLargeList('studies',state.activity.research.studies.length)"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><span class="me-v40-show-count" aria-hidden="true">{{listControlText('studies',state.activity.research.studies.length)}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <h4 v-if="state.activity.research.studies.length<=2" class="me-approved-group-title">Estudios</h4><ul id="me-v28-studies"><li v-for="st in orderedResearch(state.activity.research.studies,'status').slice(0,listLimit('studies',state.activity.research.studies.length))" :key="st.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(st.status)">{{researchStatusLabel(st.status)}}</span><strong>{{st.title}}</strong><small>{{studyRole(st.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div v-if="st.code"><dt>Protocolo</dt><dd>{{st.code}}</dd></div><div><dt>Participación</dt><dd>{{studyRole(st.role)}}</dd></div><div><dt>Estado registrado</dt><dd>{{researchStatusLabel(st.status,'No registrado')}}</dd></div></dl></details></li></ul>
                     </div>
                     <div v-if="state.activity.research.projects.length" class="me-v28-disclosure">
-                      <button v-if="state.activity.research.projects.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.researchOpen.projects=!state.researchOpen.projects"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                      <h4 v-if="state.activity.research.projects.length<=2" class="me-approved-group-title">Proyectos</h4><ul id="me-v28-projects"><li v-for="p in state.activity.research.projects.slice(0,state.researchOpen.projects?state.activity.research.projects.length:2)" :key="p.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(p.stage)">{{researchStatusLabel(p.stage,'Etapa no registrada')}}</span><strong>{{p.title}}</strong><small>{{projectRole(p.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div><dt>Participación</dt><dd>{{projectRole(p.role)}}</dd></div><div><dt>Etapa registrada</dt><dd>{{researchStatusLabel(p.stage,'No registrada')}}</dd></div><div v-if="p.category"><dt>Categoría</dt><dd>{{p.category}}</dd></div></dl></details></li></ul>
+                      <button v-if="state.activity.research.projects.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.activity.research.projects.length<=7?(state.researchOpen.projects=!state.researchOpen.projects):stepLargeList('projects',state.activity.research.projects.length)"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><span class="me-v40-show-count" aria-hidden="true">{{listControlText('projects',state.activity.research.projects.length)}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <h4 v-if="state.activity.research.projects.length<=2" class="me-approved-group-title">Proyectos</h4><ul id="me-v28-projects"><li v-for="p in orderedResearch(state.activity.research.projects,'stage').slice(0,listLimit('projects',state.activity.research.projects.length))" :key="p.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(p.stage)">{{researchStatusLabel(p.stage,'Etapa no registrada')}}</span><strong>{{p.title}}</strong><small>{{projectRole(p.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div><dt>Participación</dt><dd>{{projectRole(p.role)}}</dd></div><div><dt>Etapa registrada</dt><dd>{{researchStatusLabel(p.stage,'No registrada')}}</dd></div><div v-if="p.category"><dt>Categoría</dt><dd>{{p.category}}</dd></div></dl></details></li></ul>
                     </div>
                   </div>
 
@@ -1606,17 +1652,17 @@
               </section>
               <div v-if="state.dutyMode==='overview'" class="me-v9-lower-grid" :class="{'me-v39-secondary-solo':!showPublications}">
                 <section v-if="showPublications" class="me-v9-publications" :class="{'me-v34-empty-publications':!state.activity.publications.items.length}" aria-label="Publicaciones">
-                  <div class="me-v9-panel-heading"><div><h3>Publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button></div>
-                  <ol v-if="state.activity.publications.items.length" id="me-v28-publications" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,state.publicationsExpanded?state.activity.publications.items.length:3)" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
+                  <div class="me-v9-panel-heading"><div><h3>Publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Solicitar vinculación de una publicación</button></div>
+                  <ol v-if="state.activity.publications.items.length" id="me-v28-publications" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items.slice(0,listLimit('publications',state.activity.publications.items.length))" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
                   <p v-if="!state.activity.publications.items.length && !state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p>
                   <p v-else-if="!state.activity.publications.items.length" class="me-v8-quiet">No hay publicaciones vinculadas a tu perfil.</p>
                   <button v-if="state.activity.publications.items.length" id="me-v26d-publications-trigger" type="button" @click="openPortfolio('publications')">Ver publicaciones →</button>
-                   <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle me-v28-disclosure-toggle" :aria-expanded="state.publicationsExpanded" aria-controls="me-v28-publications" @click="state.publicationsExpanded=!state.publicationsExpanded"><span>{{state.publicationsExpanded?'Mostrar menos publicaciones':'Mostrar todas las publicaciones'}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                   <button v-if="hasPublicationOverflow" type="button" class="me-v10-publications-toggle me-v28-disclosure-toggle" :aria-expanded="state.publicationsExpanded" aria-controls="me-v28-publications" @click="state.activity.publications.items.length<=8?(state.publicationsExpanded=!state.publicationsExpanded):stepLargeList('publications',state.activity.publications.items.length)"><span>{{listControlText('publications',state.activity.publications.items.length)}}</span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </section>
-                <section class="me-v9-services" aria-label="Comunicaciones y gestiones">
+                <section class="me-v9-services" aria-label="Ver solicitudes y correcciones">
                   <div class="me-v9-panel-heading"><div><h3>Comunicaciones</h3></div></div>
-                  <p>Consultas y correcciones de tu información profesional.</p><p v-if="state.reports.length" class="me-v9-service-meta">Comunicaciones enviadas · {{state.reports.length}}</p>
-                  <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Comunicaciones y gestiones'}} <span aria-hidden="true">{{state.toolsOpen?'−':'→'}}</span></button>
+                  <p>Solicitudes sobre tus datos profesionales.</p><p v-if="state.reports.length" class="me-v9-service-meta">Comunicaciones enviadas · {{state.reports.length}}</p>
+                  <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Ver solicitudes y correcciones'}} <span aria-hidden="true">{{state.toolsOpen?'−':'→'}}</span></button>
                 </section>
               </div>
               <!-- Secondary personal metrics/onboarding follow core responsibilities. -->

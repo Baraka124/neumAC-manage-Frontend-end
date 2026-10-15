@@ -9,7 +9,9 @@ test('research disclosure categories have independent presentation state',()=>{
  assert.ok(src.includes('aria-controls="me-v28-publications"'));
 });
 test('existing authorized data arrays are reused without changing the normalizer',()=>{
- for(const k of ['lines','studies','projects'])assert.ok(src.includes('state.activity.research.'+k+'.slice('));
+ assert.ok(src.includes('state.activity.research.lines.slice('));
+ assert.ok(src.includes("orderedResearch(state.activity.research.studies,'status').slice("));
+ assert.ok(src.includes("orderedResearch(state.activity.research.projects,'stage').slice("));
  assert.ok(src.includes('state.activity.publications.items.slice('));
  assert.ok(src.includes("state.researchOpen={lines:false,studies:false,projects:false}"));
 });

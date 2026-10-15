@@ -27,7 +27,7 @@ for(const size of [{width:390,height:844},{width:768,height:1024},{width:1366,he
   });
   const app=page.locator('.mi-espacio');
   await expect(app.locator('.me-v9-overview')).toBeVisible();
-  await app.getByRole('button',{name:/Ver guardias/}).first().click();
+  await app.getByRole('button',{name:/Consultar guardias/}).first().click();
   await expect(app.locator('.me-v26g-duties')).toBeVisible();
   await expect(app.locator('.me-v9-overview')).toHaveCount(0);
   await app.locator('.me-v26g-duty-row').first().click();
