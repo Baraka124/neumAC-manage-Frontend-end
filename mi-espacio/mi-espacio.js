@@ -1158,7 +1158,7 @@
       },
       template: `
       <section class="mi-espacio mi-espacio--v8 mi-espacio--v9 me-approved-workspace" :class="{'me-v25-leadership':leadershipFocus,'me-v34-research-only':hasResearch && !showAgenda,'me-v34-clinical-first':hasAgenda && !hasResearch,'me-v34-mixed':hasAgenda && hasResearch,'me-v34-no-work':!hasAgenda && !hasResearch}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape" @click.capture="anchorInlineDisclosure">
-        <header class="mi-espacio-head me-v9-accessible-head"><span class="me-approved-eyebrow">NEUMOLOGÍA · ESPACIO DE TRABAJO</span><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
+        <header class="mi-espacio-head me-v9-accessible-head"><span class="me-approved-eyebrow">SERVICIO DE NEUMOLOGÍA</span><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">
@@ -1180,8 +1180,9 @@
                 </div>
                 <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
                     <div v-if="state.activity && state.activity.research.lines.length" class="me-v28-disclosure me-approved-affiliations">
+                      <span class="me-v42-affiliations-title">LÍNEAS DE INVESTIGACIÓN</span>
                       <button v-if="state.activity.research.lines.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.lines" aria-controls="me-v28-lines" @click="state.researchOpen.lines=!state.researchOpen.lines"><span>Líneas de investigación <small>{{state.activity.counts.lines}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                      <ul id="me-v28-lines"><li v-for="l in state.activity.research.lines.slice(0,state.researchOpen.lines?state.activity.research.lines.length:2)" :key="l.id"><small class="me-approved-affiliation-label">LÍNEA DE INVESTIGACIÓN · {{lineRole(l.role)}}</small><span>{{l.name}}</span></li></ul>
+                      <ul id="me-v28-lines"><li v-for="l in state.activity.research.lines.slice(0,state.researchOpen.lines?state.activity.research.lines.length:2)" :key="l.id"><small v-if="l.role" class="me-approved-affiliation-label">{{lineRole(l.role)}}</small><span>{{l.name}}</span></li></ul>
                     </div>
 
               </div>
@@ -1582,11 +1583,11 @@
                   </div>
                   <div v-else-if="!hasAgenda && isResident" class="me-v39-resident-empty" aria-label="Formación clínica sin asignaciones vinculadas">
                     <span class="me-v39-resident-kicker">FORMACIÓN CLÍNICA</span>
-                    <strong>Tu itinerario, cuando esté registrado</strong>
-                    <p>No constan rotaciones ni guardias vinculadas a tu cuenta en este momento. Esto no confirma que no existan asignaciones.</p>
+                    <strong>Tu formación clínica</strong>
+                    <p>Ahora mismo no aparecen rotaciones ni guardias en tu espacio. Si tienes una asignación, puedes comunicarla para que se revise.</p>
                     <div class="me-v39-resident-actions">
                       <button v-if="can('rotations')" type="button" class="me-v39-resident-link" @click="navigate('rotations')">Consultar rotaciones <span aria-hidden="true">↗</span></button>
-                      <button type="button" class="me-v39-resident-link" @click="reportMissingRotation">Comunicar una asignación no vinculada <span aria-hidden="true">→</span></button>
+                      <button type="button" class="me-v39-resident-link" @click="reportMissingRotation">Comunicar una rotación que falta <span aria-hidden="true">→</span></button>
                     </div>
                   </div>
                   <p v-else-if="!hasAgenda" class="me-v8-quiet me-v9-empty">No hay asignaciones próximas registradas en este espacio.</p>

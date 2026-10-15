@@ -37,10 +37,10 @@ for(const width of [390,1366]){
   const app=await mount(page,'medical_resident',empty(),{width});
   await expect(app.locator('.me-v39-resident-empty')).toBeVisible();
   await expect(app.locator('#me-v9-agenda-title')).toHaveText('Formación y agenda');
-  await expect(app.locator('.me-v39-resident-empty')).toContainText('Esto no confirma que no existan asignaciones');
+  await expect(app.locator('.me-v39-resident-empty')).toContainText('Si tienes una asignación, puedes comunicarla para que se revise');
   await expect(app.locator('.me-v9-publications')).toHaveCount(0);
   await expect(app.locator('.me-v23-photo-nudge')).toHaveCount(0);
-  await app.getByRole('button',{name:/Comunicar una asignación no vinculada/}).click();
+  await app.getByRole('button',{name:/Comunicar una rotación que falta/}).click();
   await expect(app.locator('#me-report-subject')).toHaveValue('rotation');
   await expect(app.locator('.me-report')).toBeVisible();
   const state=await page.evaluate(()=>({errors:window.__phase39,over:document.documentElement.scrollWidth-innerWidth,requests:window.__requests39}));
