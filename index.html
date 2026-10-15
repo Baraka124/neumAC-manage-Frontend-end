@@ -5591,6 +5591,7 @@
                                 </div>
                                 <div class="rv32-study-command-side">
                                     <div><span>Clinical lead</span><strong>{{ selectedProject.lead?.full_name || getStaffName(selectedProject.lead_investigator_id) || 'Not assigned' }}</strong></div>
+                                    <div v-if="selectedProject.technical_lead?.full_name || selectedProject.technical_lead_id"><span>Technical lead</span><strong>{{ selectedProject.technical_lead?.full_name || getStaffName(selectedProject.technical_lead_id) }}</strong></div>
                                     <div><span>Funding</span><strong>{{ formatFundingStatus(selectedProject.funding_status) }}</strong><small v-if="selectedProject.budget">Budget · €{{ Number(selectedProject.budget).toLocaleString('es-ES') }}</small></div>
                                 </div>
                             </section>
@@ -5668,6 +5669,7 @@
                                         <div class="rv32-section-heading"><div><span>People</span><h2>Project team &amp; collaborators</h2></div><small>{{ ((selectedProject.co_investigators||[]).length + (selectedProject.external_team||[]).length + (selectedProject.lead_investigator_id ? 1 : 0)) }} recorded members</small></div>
                                         <div class="rv32-team-list">
                                             <button v-if="selectedProject.lead || selectedProject.lead_investigator_id" class="rv32-team-row" @click="selectedProject.lead_investigator_id && viewStaffDetails(medicalStaff.find(s=>String(s.id)===String(selectedProject.lead_investigator_id)))"><span class="rv32-avatar">{{ selectedProject.lead?.full_name ? selectedProject.lead.full_name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase() : 'CL' }}</span><span><strong>{{ selectedProject.lead?.full_name || getStaffName(selectedProject.lead_investigator_id) || 'Clinical lead assigned' }}</strong><small>Project / clinical lead</small></span><i>→</i></button>
+                                            <button v-if="selectedProject.technical_lead || selectedProject.technical_lead_id" class="rv32-team-row" @click="selectedProject.technical_lead_id && viewStaffDetails(medicalStaff.find(s=>String(s.id)===String(selectedProject.technical_lead_id)))"><span class="rv32-avatar">{{ selectedProject.technical_lead?.full_name ? selectedProject.technical_lead.full_name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase() : 'TL' }}</span><span><strong>{{ selectedProject.technical_lead?.full_name || getStaffName(selectedProject.technical_lead_id) || 'Technical lead assigned' }}</strong><small>Technical lead</small></span><i>→</i></button>
                                             <template v-for="staffId in (selectedProject.co_investigators||[])" :key="staffId"><button v-if="medicalStaff.find(s=>s.id===staffId)" class="rv32-team-row" @click="viewStaffDetails(medicalStaff.find(s=>s.id===staffId))"><span class="rv32-avatar">{{ medicalStaff.find(s=>s.id===staffId)?.full_name?.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase() || '?' }}</span><span><strong>{{ medicalStaff.find(s=>s.id===staffId)?.full_name }}</strong><small>{{ selectedProject.team_roles?.[staffId] || 'Project contributor' }}</small></span><i>→</i></button></template>
                                             <div v-for="(ext,idx) in (selectedProject.external_team||[])" :key="'ext-'+idx" class="rv32-team-row rv32-team-row--external"><span class="rv32-avatar">{{ ext.name ? ext.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase() : (ext.institution||'?').slice(0,2).toUpperCase() }}</span><span><strong>{{ ext.name || ext.institution }}</strong><small>{{ ext.role || 'Partner' }}<template v-if="ext.name && ext.institution"> · {{ ext.institution }}</template></small></span></div>
                                             <div v-if="!selectedProject.lead_investigator_id && !(selectedProject.co_investigators||[]).length && !(selectedProject.external_team||[]).length" class="rv32-not-recorded">No team members are recorded.</div>
@@ -10824,6 +10826,13 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                                 </select>
                             </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Technical lead</div>
+                                <select class="sm-select" v-model="innovationProjectModal.form.technical_lead_id">
+                                    <option value="">— Not assigned —</option>
+                                    <option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                </select>
+                            </div>
                         </div>
                         <!-- Internal co-investigators with role -->
                         <div class="sm-field nd-l039" >
@@ -12482,8 +12491,8 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="brand-assets.js?v=5.4-production.14-20261009b"></script>
     <script src="mi-espacio/mi-espacio-data.js?v=20261014-upcoming-absences"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
-    <script src="mi-espacio/mi-espacio.js?v=20261015-phase44a-controls"></script>
-    <script src="app.js?v=5.4-production.21-20261013-phase18-formdata-fix"></script>
+    <script src="mi-espacio/mi-espacio.js?v=20261015-technical-lead"></script>
+    <script src="app.js?v=5.4-production.22-20261015-technical-lead"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

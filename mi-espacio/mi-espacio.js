@@ -87,7 +87,7 @@
   const ROTATION = { resident:'Residente', supervisor:'Supervisión' };
   const STUDY = { PI:'IP', 'co-investigator':'Co-investigador', 'sub-investigator':'Sub-investigador' };
   const LINE = { coordinator:'Coordinación', member:'Miembro' };
-  const PROJECT = { lead:'Responsable', 'co-investigator':'Co-investigador' };
+  const PROJECT = { lead:'Responsable', 'technical-lead':'Responsable técnico', 'co-investigator':'Co-investigador' };
   const ABSENCE = { planned_leave:'Programada', currently_absent:'Ausente ahora', returned_to_duty:'Finalizada', cancelled:'Cancelada' };
   const SUBJECT_LABELS = { guardia:'Guardia', rotation:'Rotación', absence:'Ausencia', line:'Línea', study:'Estudio', project:'Proyecto', publication:'Publicación', profile:'Perfil', other:'Otro' };
   const KIND_LABELS = { missing:'Falta algo', incorrect:'Dato incorrecto', authorship:'Autoría', schedule:'Discrepancia de horario', other:'Otro' };
