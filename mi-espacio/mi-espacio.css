@@ -1783,6 +1783,9 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .me-v28-identity-actions{align-self:center;display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
 .mi-espacio.me-approved-workspace .me-v28-identity-actions button{min-height:44px;padding:8px 12px;font-size:13px;background:transparent;box-shadow:none;border:1px solid var(--me30-line);border-radius:8px}
 .mi-espacio.me-approved-workspace .me-approved-affiliations{margin-top:10px;border-left:2px solid #a5c9b7;padding-left:12px;max-width:700px}
+.mi-espacio.me-approved-workspace .me-v42-affiliations-title{display:block;font-size:11px;font-weight:700;line-height:1.5;letter-spacing:.06em;color:#5c7b72;margin-bottom:5px}
+.mi-espacio.me-approved-workspace .me-approved-affiliations .me-approved-affiliation-label{font-size:12px;letter-spacing:0;text-transform:none;color:#55766c}
+.mi-espacio.me-approved-workspace .me-approved-affiliations .me-v28-disclosure-toggle{font-size:13px;line-height:1.4;min-height:44px}
 .mi-espacio.me-approved-workspace .me-approved-affiliations ul{list-style:none;margin:0;padding:0}
 .mi-espacio.me-approved-workspace .me-approved-affiliations li{display:flex;flex-direction:column;gap:3px;padding:3px 0;border:0}
 .mi-espacio.me-approved-workspace .me-approved-affiliations li>span{font-size:13px;line-height:1.5;font-weight:400}

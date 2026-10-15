@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..'),view=fs.readFileSync(path.join(root,'mi-
 test('Mi Espacio training state requires authenticated resident staff role',()=>{
  assert.match(view,/const isResident=Vue\.computed/);
  assert.match(view,/state\.context\?\.staff\?\.staffType/);
- assert.match(view,/No constan rotaciones ni guardias vinculadas a tu cuenta/);
+ assert.match(view,/Ahora mismo no aparecen rotaciones ni guardias en tu espacio/);
  assert.match(view,/Esto no confirma que no existan asignaciones/);
  assert.match(view,/reportMissingRotation/);
  assert.match(view,/state\.report\.subject_type='rotation'/);
