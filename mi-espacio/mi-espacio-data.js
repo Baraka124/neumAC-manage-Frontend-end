@@ -30,7 +30,10 @@
         name: safe(linked.full_name),
         staffType: safe(linked.staff_type),
         specialization: safe(linked.specialization),
-        professionalEmail: safe(linked.professional_email)
+        professionalEmail: safe(linked.professional_email),
+        // Canonical public photo (same source the website uses), carried in the
+        // eager identity context so the avatar shows it without the profile editor.
+        photo: safe(linked.public_photo_url)
       }) : null,
       linkState: !staffId ? 'unlinked' : validLinked ? 'linked' : 'unavailable',
       testSession: !!raw.test_session
