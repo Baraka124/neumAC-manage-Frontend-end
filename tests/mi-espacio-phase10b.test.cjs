@@ -4,7 +4,7 @@ const src=fs.readFileSync('mi-espacio/mi-espacio.js','utf8');
 test('scholarly preview retains verified record details and a personal expansion control',()=>{
  assert.match(src,/hasPublicationOverflow/);
  assert.match(src,/state.publicationsExpanded=!state.publicationsExpanded/);
- assert.match(src,/Mostrar todas las publicaciones/);
+ assert.match(src,/listControlText\('publications'/);
  assert.match(src,/p\.byline/);
  assert.match(src,/p\.order/);
 });

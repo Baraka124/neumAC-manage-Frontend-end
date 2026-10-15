@@ -123,8 +123,8 @@ for(const viewport of [
   await expect(page.locator('.me-inline-detail')).toHaveCount(0);
   await assertNoHorizontalClipping(page);
   await testInfo.attach('overview-'+viewport.label+'.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
-  await page.getByRole('button',{name:/Comunicaciones y gestiones/}).click();
-  await page.getByRole('button',{name:'Reivindicar una publicación'}).click();
+  await page.getByRole('button',{name:/Ver solicitudes y correcciones/}).click();
+  await page.getByRole('button',{name:'Solicitar vinculación de una publicación'}).click();
   await expect(page.locator('#me-report-subject')).toHaveValue('publication');
   await expect(page.locator('#me-report-subject')).toBeFocused();
   await assertNoHorizontalClipping(page);

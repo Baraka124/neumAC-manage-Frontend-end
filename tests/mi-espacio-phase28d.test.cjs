@@ -13,7 +13,7 @@ test('rotations unfold independently and resets remain account-scoped',()=>{
  assert.match(source,/aria-controls="me-v28d-other-rotations"/);
 });
 test('resident rotation content uses only existing normalized fields',()=>{
- for(const s of ["r.unit||'Rotación asignada'","fmtPeriod(r.start,r.end)","Estado registrado: {{r.status}}"])assert.ok(source.includes(s),s);
+ for(const s of ["r.unit||'Rotación asignada'","fmtPeriod(r.start,r.end)","Estado: {{rotationStatusLabel(r.status)}}"])assert.ok(source.includes(s),s);
  assert.match(data,/id: id\(r && r.id\), unit: safe\(r && r.unit\), resident: safe\(r && r.resident\)/);
  assert.doesNotMatch(source,/r\.supervisorName|r\.supervisingClinician|r\.supervisor_email/);
 });

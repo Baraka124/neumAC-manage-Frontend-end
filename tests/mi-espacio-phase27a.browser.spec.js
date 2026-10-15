@@ -57,7 +57,7 @@ for(const kind of Object.keys(cases)){
    if(kind==='clinician'){
      await expect(app.locator('.me-approved-date')).toHaveAttribute('datetime','2026-10-21');
      await expect(app.locator('.me-v8-agenda')).toContainText('Residente de prueba');
-     await app.getByRole('button',{name:/Ver guardias/}).first().click();
+     await app.getByRole('button',{name:/Consultar guardias/}).first().click();
      await expect(app.locator('.me-v26g-duties')).toBeVisible();
      await app.locator('.me-v26g-duty-row').first().click();
      await expect(app.locator('.me-v26g-duty-detail')).toContainText('Guardia presencial');
@@ -68,7 +68,7 @@ for(const kind of Object.keys(cases)){
    if(kind==='resident'){
      await expect(app.locator('.me-v10-rotation-feature')).toContainText('Unidad de prueba UCI');
      await expect(app.locator('.me-v8-research')).toHaveCount(0);
-     await expect(app.getByRole('button',{name:/Ver guardias/})).toHaveCount(0);
+     await expect(app.getByRole('button',{name:/Consultar guardias/})).toHaveCount(0);
    }
    const result=await page.evaluate(()=>({errors:window.__errors,requests:window.__requests,width:document.documentElement.scrollWidth,viewport:window.innerWidth}));
    expect(result.errors).toEqual([]);
