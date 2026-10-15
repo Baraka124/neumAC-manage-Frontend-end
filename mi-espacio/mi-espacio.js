@@ -253,7 +253,7 @@
         }
         // ── Phase 15: profile panel ──
         const profileCompleteness=Vue.computed(()=>state.profile.data?.profileCompleteness ?? 0);
-        const profilePhotoUrl=Vue.computed(()=>state.profile.data?.publicPhotoUrl || '');
+        const profilePhotoUrl=Vue.computed(()=>state.profile.data?.publicPhotoUrl || state.context?.staff?.photo || '');
         // Exactly one secondary workspace at a time; core activity stays authoritative.
         const workspaceNav=root.NeumMiEspacioWorkspace?.create?.() || null;
         const workspaceState=Vue.ref(workspaceNav?.get() || {view:'overview',workspace:null,detail:null,origin:null});
