@@ -54,10 +54,8 @@ test('clinical commitment appears once and personal indicators stay optional',as
  await expect(app.locator('.me-v8-upnext')).toBeVisible();
  await expect(app.locator('.me-v23-event').filter({hasText:'Guardia'})).toHaveCount(0);
  await expect(app.locator('.me-v23-photo-nudge')).toHaveCount(0);
- await expect(app.locator('.me-v39-metrics')).toBeVisible();
- await expect(app.locator('.me-v39-metrics')).not.toHaveAttribute('open',/.+/);
- await app.locator('.me-v39-metrics>summary').click();
- await expect(app.locator('.me-v39-metrics')).toHaveAttribute('open','');
+ await expect(app.locator('.me-v39-metrics')).toHaveCount(0);
+ await expect(app.locator('.me-v8-agenda')).toBeVisible();
  expect(await page.evaluate(()=>window.__phase39)).toEqual([]);
 });
 test('research-only engineer gets prioritized inline evidence without empty publication cards',async({page})=>{

@@ -1831,11 +1831,64 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .me-v9-panel-heading h3{font-size:clamp(20px,1.8vw,23px);line-height:1.32;font-weight:600}
 .mi-espacio.me-approved-workspace .me-v9-feature{padding:23px;border:1px solid #d4e3d8;border-left:3px solid #188779;border-radius:13px;background:linear-gradient(130deg,#e1efe7,#edf4ee);box-shadow:none;gap:12px}
 .mi-espacio.me-approved-workspace .me-v8-kicker{font-size:11px;letter-spacing:.11em;color:#3b6e61}
-.mi-espacio.me-approved-workspace .me-approved-date{display:flex;align-items:center;gap:19px;margin:6px 0 10px}
-.mi-espacio.me-approved-workspace .me-approved-date>b{font-size:64px;line-height:1;font-weight:450;letter-spacing:-3px;color:#205c4d}
-.mi-espacio.me-approved-workspace .me-approved-date strong{font-size:20px;text-transform:capitalize;line-height:1.4}
-.mi-espacio.me-approved-workspace .me-approved-date small{display:block;font-size:13px;margin-top:4px;color:#50766a}
+.mi-espacio.me-approved-workspace .me-approved-date{display:flex;align-items:center;gap:16px;margin:10px 0 12px}
+.mi-espacio.me-approved-workspace .me-approved-date>b{font-size:clamp(50px,4.3vw,60px);line-height:1;font-weight:500;letter-spacing:-.065em;color:#205c4d;font-variant-numeric:tabular-nums}
+.mi-espacio.me-approved-workspace .me-approved-date strong{font-size:clamp(18px,1.5vw,20px);text-transform:capitalize;line-height:1.3;font-weight:600;letter-spacing:-.018em}
+.mi-espacio.me-approved-workspace .me-approved-date small{display:block;font-size:14px;line-height:1.5;margin-top:4px;color:#466b5e;font-weight:450}
 .mi-espacio.me-approved-workspace .me-v9-feature>span:last-child{font-size:14px;line-height:1.55}
+
+/* Phase 44B — duty presentation: one recorded date feature, two concise rows
+   and incremental in-place disclosure. No change to clinical assignment data. */
+.mi-espacio.me-approved-workspace .me-v44b-next-duty{
+ background:linear-gradient(125deg,#e5f0e8,#f0f5ef);
+ border:1px solid #cee2d6;border-left:3px solid #247c66;
+ border-radius:12px;padding:clamp(18px,2vw,23px);box-shadow:none;
+ display:flex;flex-direction:column;align-items:flex-start;gap:9px;min-width:0;
+}
+.mi-espacio.me-approved-workspace .me-v44b-next-duty .me-v8-kicker{
+ font-size:11px;font-weight:700;letter-spacing:.11em;color:#326e5b;line-height:1.5;
+}
+.mi-espacio.me-approved-workspace .me-v44b-date{display:flex;gap:17px;align-items:center;min-width:0;margin:6px 0 8px}
+.mi-espacio.me-approved-workspace .me-v44b-date>b{flex:none}
+.mi-espacio.me-approved-workspace .me-v44b-date-context{display:flex;flex-direction:column;min-width:0;align-items:flex-start}
+.mi-espacio.me-approved-workspace .me-v44b-date-context>small{font-size:14px;line-height:1.55;overflow-wrap:normal}
+.mi-espacio.me-approved-workspace .me-v44b-duty-description{
+ font-size:14px;line-height:1.5;font-weight:500;color:#365f53;overflow-wrap:anywhere;
+}
+.mi-espacio.me-approved-workspace .me-v44b-guardias{margin:7px 0 0;padding:0;list-style:none}
+.mi-espacio.me-approved-workspace .me-v44b-guardias li{
+ display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
+ align-items:baseline;gap:8px 14px;padding:14px 0;
+ border-bottom:1px solid #dbe5df;
+}
+.mi-espacio.me-approved-workspace .me-v44b-guardias time{
+ color:#1a4145;font-size:14px;font-weight:600;line-height:1.5;min-width:0;
+ text-transform:none;font-variant-numeric:tabular-nums;
+}
+.mi-espacio.me-approved-workspace .me-v44b-guardias small{
+ color:#5c7370;font-size:13px;line-height:1.5;min-width:0;text-align:right;
+}
+.mi-espacio.me-approved-workspace .me-v44b-guardias-toggle{
+ display:flex;justify-content:space-between;align-items:center;gap:14px;
+ width:100%;max-width:100%;min-height:48px;margin:9px 0 0;
+ font-weight:600;color:#246b59;padding:6px 0;text-align:left;
+}
+.mi-espacio.me-approved-workspace .me-v44b-guardias-toggle>span{font-size:13px}
+.mi-espacio.me-approved-workspace .me-v44b-guardias-toggle>.me-v28-chevron{flex:none}
+.mi-espacio.me-approved-workspace .me-v8-commitments>.me-v9-inline-action{
+ margin-top:12px;display:inline-flex;align-items:center;min-height:44px;
+ font-size:13px;font-weight:500;color:#51766c;
+}
+@media(max-width:1000px){
+ .mi-espacio.me-approved-workspace .me-v44b-guardias li{grid-template-columns:minmax(0,1fr);gap:3px}
+ .mi-espacio.me-approved-workspace .me-v44b-guardias small{text-align:left}
+}
+@media(max-width:480px){
+ .mi-espacio.me-approved-workspace .me-v44b-next-duty{padding:18px}
+ .mi-espacio.me-approved-workspace .me-v44b-date{gap:14px}
+ .mi-espacio.me-approved-workspace .me-v44b-date-context>small{font-size:13px}
+}
+
 .mi-espacio.me-approved-workspace .me-v8-secondary-agenda{margin-top:18px;gap:15px}
 .mi-espacio.me-approved-workspace .me-v8-secondary-agenda>.me-v28-disclosure{background:#fff;border:1px solid var(--me30-line);border-radius:10px;padding:12px 16px}
 .mi-espacio.me-approved-workspace .me-v8-research-groups{gap:18px}
@@ -1881,7 +1934,7 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .me-v9-overview{gap:clamp(24px,3vw,45px)}
 .mi-espacio.me-approved-workspace.me-v34-research-only .me-v8-research{max-width:940px}
 .mi-espacio.me-approved-workspace .me-v9-feature{padding:clamp(16px,2vw,22px)}
-.mi-espacio.me-approved-workspace .me-approved-date>b{font-size:clamp(49px,4.7vw,60px)}
+.mi-espacio.me-approved-workspace .me-approved-date>b{font-size:clamp(50px,4.3vw,60px)}
 .mi-espacio.me-approved-workspace .me-v9-lower-grid.me-v39-secondary-solo{grid-template-columns:minmax(0,1fr);gap:0;max-width:940px}
 .mi-espacio.me-approved-workspace .me-v39-secondary-solo .me-v9-services{border:0;padding:12px 0 2px}
 .mi-espacio.me-approved-workspace .me-v39-secondary-solo .me-v9-services>.me-v9-panel-heading{display:none}
@@ -1925,4 +1978,70 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 }
 @media(prefers-reduced-motion:reduce){
  .mi-espacio.me-approved-workspace .me-v8-research-groups .me-v28-disclosure-toggle *{transition:none!important;animation:none!important}
+}
+
+
+/* Phase 44C — collection-led information hierarchy.
+   The section heading is static; only large collections get their own labelled
+   disclosure below their list. Real role/status data is unchanged. */
+.mi-espacio.me-approved-workspace .me-v44c-collection{
+ display:block;min-width:0;padding:0 0 15px;margin:0;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-head{
+ display:flex;align-items:baseline;flex-wrap:wrap;justify-content:space-between;
+ column-gap:16px;row-gap:5px;margin:0 0 11px;min-width:0;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-title{
+ display:flex;align-items:baseline;flex-wrap:wrap;gap:9px;min-width:0;
+ margin:0;font-size:15px;line-height:1.45;font-weight:650;
+ letter-spacing:-.01em;color:#276e68;text-transform:none;
+}
+.mi-espacio.me-approved-workspace .me-v44c-count{
+ font-size:13px;line-height:1.45;font-weight:500;color:#667b79;
+ font-variant-numeric:tabular-nums;
+}
+.mi-espacio.me-approved-workspace .me-v44c-context-metrics{
+ display:flex;gap:6px 13px;flex-wrap:wrap;align-items:baseline;
+ color:#637775;font-size:12px;font-weight:450;line-height:1.6;
+}
+.mi-espacio.me-approved-workspace .me-v44c-context-metrics>span{
+ white-space:normal;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection .me-approved-record-main strong{
+ font-size:clamp(15px,1.3vw,17px);line-height:1.48;
+ font-weight:600;letter-spacing:-.012em;text-wrap:pretty;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection .me-approved-record>summary{
+ padding:15px 0;gap:13px;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-toggle{
+ display:inline-flex;align-items:center;justify-content:flex-start;gap:11px;
+ min-height:48px;margin:7px 0 0;width:auto;max-width:100%;
+ padding:6px 0;border:0;background:transparent;
+ color:#246a60;text-align:left;cursor:pointer;
+ font-size:13px;font-weight:600;line-height:1.5;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-toggle>.me-v28-chevron{
+ flex:0 0 32px;
+}
+.mi-espacio.me-approved-workspace .me-v44c-agenda-summary{
+ display:flex;gap:5px 12px;flex-wrap:wrap;justify-content:flex-end;
+ min-width:0;color:#687e7c;
+}
+.mi-espacio.me-approved-workspace .me-v44c-quiet-stat{
+ font-size:12px;line-height:1.5;font-weight:400;
+}
+.mi-espacio.me-approved-workspace .me-v44c-pub-metric{
+ color:#677f7d;font-size:12px;font-weight:450;
+}
+@media(max-width:750px){
+ .mi-espacio.me-approved-workspace .me-v44c-collection-head{
+  flex-direction:column;align-items:flex-start;gap:3px;
+ }
+ .mi-espacio.me-approved-workspace .me-v44c-agenda-summary{
+  justify-content:flex-start;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .mi-espacio.me-approved-workspace .me-v44c-collection-toggle .me-v28-chevron{transition:none!important}
 }

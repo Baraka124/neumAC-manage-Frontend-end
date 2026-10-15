@@ -10,6 +10,6 @@ test('recorded completion is green, active work yellow, other states stay neutra
  for(const status of ['',null,'cancelled','suspended','archived','closed','planned','unknown'])assert.equal(researchTone(status),'neutral');
 });
 test('compact duty date preserves the recorded calendar date and rejects invalid dates',()=>{
- const p=dutyDateParts('2026-11-02');assert.equal(p.day,'02');assert.equal(p.weekday,'lunes');assert.match(p.month,/noviembre.*2026/);
+ const p=dutyDateParts('2026-11-02');assert.equal(p.day,'2');assert.equal(p.weekday,'lunes');assert.match(p.month,/noviembre.*2026/);
  assert.equal(dutyDateParts('2026-02-31').day,'');assert.equal(dutyDateParts('').day,'');
 });

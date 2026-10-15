@@ -35,8 +35,8 @@ for(const width of [390,1366]){
  test('44A institutional disclosure controls: keyboard, focus, independent lists '+width,async({page})=>{
   const app=await mount(page,width);
   const studies=app.locator('#me-v28-studies>li'),projects=app.locator('#me-v28-projects>li');
-  await expect(studies).toHaveCount(2);await expect(projects).toHaveCount(2);
-  const toggle=app.getByRole('button',{name:/Estudios 10/});
+  await expect(studies).toHaveCount(5);await expect(projects).toHaveCount(5);
+  const toggle=app.locator('.me-v44c-collection-toggle').first();
   await toggle.focus();await expect(toggle).toBeFocused();
   const style=await toggle.evaluate(el=>{
    const icon=el.querySelector('svg.me-v28-chevron'),c=getComputedStyle(icon),focus=getComputedStyle(el);
@@ -46,15 +46,15 @@ for(const width of [390,1366]){
   expect(style.transition.split(',').every(s=>s.trim()==='0s')).toBe(true);
   expect(style.outline).not.toBe('none');expect(parseFloat(style.outlineWidth)).toBeGreaterThanOrEqual(2);
   await page.keyboard.press('Enter');await expect(toggle).toHaveAttribute('aria-expanded','true');
-  await expect(studies).toHaveCount(7);await expect(projects).toHaveCount(2);
+  await expect(studies).toHaveCount(10);await expect(projects).toHaveCount(5);
   const record=studies.first().locator('.me-approved-record');const summary=record.locator('summary');
   await summary.focus();await page.keyboard.press('Enter');
   await expect(record).toHaveAttribute('open','');
   await expect(record.locator('dl')).toBeVisible();
   expect(await summary.locator('svg.me-approved-plus').count()).toBe(1);
   await page.keyboard.press('Enter');await expect(record).not.toHaveAttribute('open',/.+/);
+  await toggle.click();await expect(studies).toHaveCount(5);
   await toggle.click();await expect(studies).toHaveCount(10);
-  await toggle.click();await expect(studies).toHaveCount(2);
   const state=await page.evaluate(()=>({errors:window.__errors44,overflow:document.documentElement.scrollWidth-innerWidth}));
   expect(state.errors).toEqual([]);expect(state.overflow).toBeLessThanOrEqual(2);
  });

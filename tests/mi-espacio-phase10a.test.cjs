@@ -12,7 +12,7 @@ test('verified scientific profiles not forced into clinically empty panels',()=>
 });
 test('research previews expand in place without global navigation',()=>{
  assert.match(src,/me-v28-disclosure-toggle/);
- assert.match(src,/state.researchOpen.studies=!state.researchOpen.studies/);
+ assert.match(src,/stepLargeList\('studies',state.activity.research.studies.length\)/);
  assert.match(src,/can\('oncall_schedule'\)/);
  assert.match(src,/function resolveItem\(reportId, status\)/);
 });

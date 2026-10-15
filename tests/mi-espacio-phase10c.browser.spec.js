@@ -166,11 +166,10 @@ for(const [name,scenario] of Object.entries(cases)){
      expect(sizes.research).toBeGreaterThan(sizes.agenda);
    }
    if(name==='head'){
-    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(5);
-    await page.getByRole('button',{name:/Estudios 4/}).click();
-    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(7);
-    await page.getByRole('button',{name:/Proyectos 3/}).click();
     await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(8);
+    await expect(page.locator('#me-v28-studies>li')).toHaveCount(4);
+    await expect(page.locator('#me-v28-projects>li')).toHaveCount(3);
+    await expect(page.locator('.me-v44c-collection-toggle')).toHaveCount(0);
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(3);
     await page.locator('.me-v10-publications-toggle').click();
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(4);

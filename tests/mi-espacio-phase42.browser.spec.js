@@ -25,9 +25,9 @@ for(const width of [390,768,1366,1920])for(const item of fixtures){
   if(item.kind==='research'){
     await expect(app.locator('.me-v42-affiliations-title')).toHaveText('LÍNEAS DE INVESTIGACIÓN');
     await expect(app.locator('.me-approved-affiliations li')).toHaveCount(1);
-    await expect(app.locator('#me-v28-studies>li')).toHaveCount(2);
-    await app.getByRole('button',{name:/Estudios 11/}).click();
-    await expect(app.locator('#me-v28-studies>li')).toHaveCount(7);
+    await expect(app.locator('#me-v28-studies>li')).toHaveCount(5);
+    await app.getByRole('button',{name:/Ver 5 estudios más/}).click();
+    await expect(app.locator('#me-v28-studies>li')).toHaveCount(10);
     await app.locator('#me-v28-studies>li').first().locator('summary').click();
     await expect(app.locator('#me-v28-studies>li').first().locator('dl')).toBeVisible();
   }
