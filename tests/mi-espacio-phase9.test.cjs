@@ -6,7 +6,7 @@ test('one verified identity, two primary areas and an independent scholarly list
  for(const val of ['me-v9-identity','me-v9-overview','me-v9-panel','me-v9-publications','me-v9-services'])assert.ok(js.includes(val),val);
  assert.match(js,/v-if="upcomingGuardias.length"/);
  assert.match(js,/const upcomingGuardias=Vue\.computed/);
- assert.match(js,/v-if="state.activity.research.lines.length"/);
+ assert.match(js,/v-if="state.activity && state.activity.research.lines.length"/);
  assert.match(js,/v-if="state.activity.publications.items.length"/);
 });
 test('secondary management stays available without dominating overview',()=>{

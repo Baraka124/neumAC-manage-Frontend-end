@@ -118,7 +118,7 @@ for(const viewport of [
   await mountPersonalSpace(page);
   await expect(page.locator('.mi-espacio-person-main h3')).toContainText('Persona de Prueba');
   await expect(page.locator('.me-v8-upnext')).toContainText('Guardia presencial');
-  await expect(page.locator('.me-v8-research-groups')).toContainText('Investigación traslacional');
+  await expect(page.locator('.me-approved-affiliations')).toContainText('Investigación traslacional');
   await expect(page.locator('.me-v8-publication-list li')).toHaveCount(2);
   await expect(page.locator('.me-inline-detail')).toHaveCount(0);
   await assertNoHorizontalClipping(page);

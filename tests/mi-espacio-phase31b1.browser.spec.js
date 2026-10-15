@@ -31,12 +31,12 @@ for(const width of [390,768,1024,1366]){
   await app.getByRole('button',{name:'Directorio',exact:true}).click();
   await expect(app.locator('#me-v26b-directory')).toBeVisible();
   const css=await app.evaluate(el=>({
-   quick:getComputedStyle(el.querySelector('.me-v20-quick-bar')).gridTemplateColumns.split(' ').length,
+   quickDisplay:getComputedStyle(el.querySelector('.me-v20-quick-bar')).display,
    listBorder:getComputedStyle(el.querySelector('.me-v20-colleague-card')).borderTopWidth,
    split:getComputedStyle(el.querySelector('.me-v26b-split')).gridTemplateColumns.split(' ').length,
    overflow:document.documentElement.scrollWidth-innerWidth,errors:window.__errors
   }));
-  expect(css.quick).toBe(width<=480?2:width<=1120?3:5);
+  expect(css.quickDisplay).toBe('flex');
   expect(css.listBorder).toBe('0px');
   expect(css.split).toBe(width<=799?1:2);
   expect(css.overflow).toBeLessThanOrEqual(2);expect(css.errors).toEqual([]);

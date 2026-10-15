@@ -55,7 +55,7 @@ for(const kind of Object.keys(cases)){
      await expect(app.locator('.me-v8-upnext')).toHaveCount(0);
    }
    if(kind==='clinician'){
-     await expect(app.locator('.me-v8-agenda')).toContainText('21 de octubre de 2026');
+     await expect(app.locator('.me-approved-date')).toHaveAttribute('datetime','2026-10-21');
      await expect(app.locator('.me-v8-agenda')).toContainText('Residente de prueba');
      await app.getByRole('button',{name:/Ver guardias/}).first().click();
      await expect(app.locator('.me-v26g-duties')).toBeVisible();

@@ -62,7 +62,7 @@ for(const [name,scenario] of Object.entries(cases)){
    const a=scenario().a;
    await expect(page.locator('.me-v9-identity')).toBeVisible();
    if(name==='dutyOrder'){
-     await expect(page.locator('.me-v8-upnext')).toContainText('18 de octubre de 2026');
+     await expect(page.locator('.me-approved-date')).toHaveAttribute('datetime','2026-10-18');
      await expect(page.locator('.me-v9-timeline li').first()).toContainText('20 de octubre de 2026');
    }
    if(name==='resident'){await expect(page.locator('.me-v10-rotation-feature')).toContainText('UCI');await expect(page.locator('.me-v9-identity')).toContainText('Médico/a residente');}
@@ -93,24 +93,26 @@ for(const [name,scenario] of Object.entries(cases)){
       return {agenda:agenda.width,research:research.width,publications:publications.width,communications:communications.width};
     });
     if(viewport.width>850){
-      expect(Math.abs(measurements.research-measurements.agenda)).toBeLessThanOrEqual(2);
+      expect(measurements.research).toBeGreaterThan(measurements.agenda);
       expect(Math.abs(measurements.publications-measurements.communications)).toBeLessThanOrEqual(2);
     }else{
       expect(Math.abs(measurements.research-measurements.agenda)).toBeLessThanOrEqual(2);
       expect(Math.abs(measurements.publications-measurements.communications)).toBeLessThanOrEqual(2);
     }
    }
-   // Phase 22: context pills replaced the old .me-v12c-context plain text line
-   const contextPills=page.locator('.me-v22-context-pills');
-   const nonempty=(a.agenda.guardias.length?1:0)+(a.agenda.rotations.filter(r=>r.role==='resident').length?1:0)+(a.agenda.rotations.filter(r=>r.role==='supervisor').length?1:0)+(a.research.studies.length?1:0)+(a.research.projects.length?1:0)+(a.research.lines.length?1:0)+(a.publications.items.length?1:0);
-   if(nonempty===0)await expect(contextPills).toHaveCount(0);
-   else {
-     await expect(contextPills).toBeVisible();
-     const pills=await page.locator('.me-v22-context-pill').count();
-     expect(pills).toBe(Math.min(nonempty,3));
-     const overflow=page.locator('.me-v22-context-more');
-     if(nonempty>3)await expect(overflow).toContainText('+'+(nonempty-3)+' áreas vinculadas');
-     else await expect(overflow).toHaveCount(0);
+   // Superseded count pills are replaced by verified research affiliations in identity.
+   await expect(page.locator('.me-v22-context-pills')).toHaveCount(0);
+   const affiliations=page.locator('.me-approved-affiliations');
+   if(a.research.lines.length){
+     await expect(affiliations).toBeVisible();
+     await expect(affiliations.locator('li')).toHaveCount(Math.min(2,a.research.lines.length));
+     await expect(affiliations).toContainText(a.research.lines[0].name);
+   }else await expect(affiliations).toHaveCount(0);
+   if(a.research.studies.length){
+     const first=page.locator('.me-v8-research .me-approved-record').first();
+     await expect(first).toContainText(a.research.studies[0].title);
+     await first.locator('summary').click();
+     await expect(first.locator('dl')).toContainText('Participación');
    }
    if(name==='head' || name==='clinician'){
      const app=page.locator('.mi-espacio');
@@ -164,11 +166,11 @@ for(const [name,scenario] of Object.entries(cases)){
      expect(sizes.research).toBeGreaterThan(sizes.agenda);
    }
    if(name==='head'){
-    await expect(page.locator('.me-v8-research-groups li')).toHaveCount(5);
+    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(5);
     await page.getByRole('button',{name:/Estudios 4/}).click();
-    await expect(page.locator('.me-v8-research-groups li')).toHaveCount(7);
+    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(7);
     await page.getByRole('button',{name:/Proyectos 3/}).click();
-    await expect(page.locator('.me-v8-research-groups li')).toHaveCount(8);
+    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(8);
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(3);
     await page.getByRole('button',{name:/Mostrar todas las publicaciones/}).click();
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(4);
