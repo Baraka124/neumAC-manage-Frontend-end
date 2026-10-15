@@ -6566,7 +6566,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const innovationProjectModal = reactive({ show: false, mode: 'add', baseline: '', form: {
         title: '', category: 'Dispositivo', current_stage: 'development',
         description: '', clinical_rationale: '', research_line_id: '',
-        lead_investigator_id: '', co_investigators: [],
+        lead_investigator_id: '', technical_lead_id: '', co_investigators: [],
         partner_needs: [], partner_found: false, partner_name: '',
         funding_status: 'not_applicable', funding_source: '',
         budget: null, trl_level: null, ip_status: '',
@@ -6871,7 +6871,7 @@ document.addEventListener('DOMContentLoaded', () => {
         innovationProjectModal.mode = 'add'
         Object.assign(innovationProjectModal.form, {
           title: '', category: 'Dispositivo', current_stage: 'concept', description: '', clinical_rationale: '',
-          research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [],
+          research_line_id: line?.id || '', lead_investigator_id: '', technical_lead_id: '', co_investigators: [], partner_needs: [],
           partner_found: false, partner_name: '', funding_status: 'not_applicable', funding_source: '', budget: null,
           trl_level: null, ip_status: '', keywords: [], keywordsInput: '', tags: [], milestones: [], additional_line_ids: [],
           featured_in_website: false, is_featured: false, display_order: innovationProjects.value.length + 1,
