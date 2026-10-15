@@ -1104,7 +1104,7 @@
       },
       template: `
       <section class="mi-espacio mi-espacio--v8 mi-espacio--v9 me-approved-workspace" :class="{'me-v25-leadership':leadershipFocus,'me-v34-research-only':hasResearch && !showAgenda,'me-v34-clinical-first':hasAgenda && !hasResearch,'me-v34-mixed':hasAgenda && hasResearch,'me-v34-no-work':!hasAgenda && !hasResearch}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape" @click.capture="anchorInlineDisclosure">
-        <header class="mi-espacio-head me-v9-accessible-head"><span class="me-approved-eyebrow">TU ENTORNO PROFESIONAL</span><h2 id="mi-espacio-title" tabindex="-1">Mi espacio<span aria-hidden="true" class="me-approved-title-accent">.</span></h2></header>
+        <header class="mi-espacio-head me-v9-accessible-head"><span class="me-approved-eyebrow">TU ENTORNO PROFESIONAL</span><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">

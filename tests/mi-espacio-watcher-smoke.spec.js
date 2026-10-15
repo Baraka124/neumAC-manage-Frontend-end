@@ -3,6 +3,7 @@ const fs=require('fs'),path=require('path');
 const source=fs.readFileSync(path.join(__dirname,'..','mi-espacio','mi-espacio.js'),'utf8');
 test('Mi espacio immediate watcher mounts without an iterable previous value',async({page})=>{
  await page.setContent('<div id="app"></div>');
+ await page.addStyleTag({content:fs.readFileSync(path.join(__dirname,'..','mi-espacio','mi-espacio.css'),'utf8')});
  await page.addScriptTag({content:fs.readFileSync(require.resolve('vue/dist/vue.global.prod.js'),'utf8')});
  await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,'..','mi-espacio','mi-espacio-data.js'),'utf8')});
  await page.addScriptTag({content:source});
@@ -12,8 +13,10 @@ test('Mi espacio immediate watcher mounts without an iterable previous value',as
   const app=Vue.createApp(component,{active:false,user:null,canOpenView:()=>true});
   app.config.errorHandler=e=>errors.push(String(e));
   app.mount('#app');
-  return {errors,heading:document.querySelector('#mi-espacio-title')?.textContent};
+  const heading=document.querySelector('#mi-espacio-title');
+  return {errors,heading:heading?.textContent,accent:getComputedStyle(heading,'::after').content};
  });
  expect(result.errors).toEqual([]);
  expect(result.heading).toBe('Mi espacio');
+ expect(result.accent).toBe('"."');
 });

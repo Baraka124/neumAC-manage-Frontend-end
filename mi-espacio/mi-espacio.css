@@ -1765,7 +1765,7 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .mi-espacio-head{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:0;padding:0 0 26px}
 .mi-espacio.me-approved-workspace .me-approved-eyebrow{color:#5b8377;font-size:10px;line-height:1.5;font-weight:700;letter-spacing:.15em}
 .mi-espacio.me-approved-workspace .mi-espacio-head h2{font-size:clamp(30px,3.1vw,40px);line-height:1.18;letter-spacing:-.045em;font-weight:600;margin:5px 0 0}
-.mi-espacio.me-approved-workspace .me-approved-title-accent{color:#81a99a}
+.mi-espacio.me-approved-workspace .mi-espacio-head h2::after{content:'.';color:#81a99a}
 .mi-espacio.me-approved-workspace .me-v22-identity{background:transparent;border:0;border-bottom:1px solid var(--me30-line);border-radius:0;padding:0;box-shadow:none}
 .mi-espacio.me-approved-workspace .me-v22-identity-top{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:18px;align-items:start;padding:8px 0 21px}
 .mi-espacio.me-approved-workspace :is(.me-v22-avatar-btn,.me-v22-avatar,.me-v22-avatar-img){width:48px;height:48px;min-width:48px;min-height:48px;max-width:48px;max-height:48px;font-size:16px;border-radius:50%;box-shadow:none;padding:0}
