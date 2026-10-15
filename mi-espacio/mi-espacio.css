@@ -1979,3 +1979,69 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 @media(prefers-reduced-motion:reduce){
  .mi-espacio.me-approved-workspace .me-v8-research-groups .me-v28-disclosure-toggle *{transition:none!important;animation:none!important}
 }
+
+
+/* Phase 44C — collection-led information hierarchy.
+   The section heading is static; only large collections get their own labelled
+   disclosure below their list. Real role/status data is unchanged. */
+.mi-espacio.me-approved-workspace .me-v44c-collection{
+ display:block;min-width:0;padding:0 0 15px;margin:0;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-head{
+ display:flex;align-items:baseline;flex-wrap:wrap;justify-content:space-between;
+ column-gap:16px;row-gap:5px;margin:0 0 11px;min-width:0;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-title{
+ display:flex;align-items:baseline;flex-wrap:wrap;gap:9px;min-width:0;
+ margin:0;font-size:15px;line-height:1.45;font-weight:650;
+ letter-spacing:-.01em;color:#276e68;text-transform:none;
+}
+.mi-espacio.me-approved-workspace .me-v44c-count{
+ font-size:13px;line-height:1.45;font-weight:500;color:#667b79;
+ font-variant-numeric:tabular-nums;
+}
+.mi-espacio.me-approved-workspace .me-v44c-context-metrics{
+ display:flex;gap:6px 13px;flex-wrap:wrap;align-items:baseline;
+ color:#637775;font-size:12px;font-weight:450;line-height:1.6;
+}
+.mi-espacio.me-approved-workspace .me-v44c-context-metrics>span{
+ white-space:normal;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection .me-approved-record-main strong{
+ font-size:clamp(15px,1.3vw,17px);line-height:1.48;
+ font-weight:600;letter-spacing:-.012em;text-wrap:pretty;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection .me-approved-record>summary{
+ padding:15px 0;gap:13px;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-toggle{
+ display:inline-flex;align-items:center;justify-content:flex-start;gap:11px;
+ min-height:48px;margin:7px 0 0;width:auto;max-width:100%;
+ padding:6px 0;border:0;background:transparent;
+ color:#246a60;text-align:left;cursor:pointer;
+ font-size:13px;font-weight:600;line-height:1.5;
+}
+.mi-espacio.me-approved-workspace .me-v44c-collection-toggle>.me-v28-chevron{
+ flex:0 0 32px;
+}
+.mi-espacio.me-approved-workspace .me-v44c-agenda-summary{
+ display:flex;gap:5px 12px;flex-wrap:wrap;justify-content:flex-end;
+ min-width:0;color:#687e7c;
+}
+.mi-espacio.me-approved-workspace .me-v44c-quiet-stat{
+ font-size:12px;line-height:1.5;font-weight:400;
+}
+.mi-espacio.me-approved-workspace .me-v44c-pub-metric{
+ color:#677f7d;font-size:12px;font-weight:450;
+}
+@media(max-width:750px){
+ .mi-espacio.me-approved-workspace .me-v44c-collection-head{
+  flex-direction:column;align-items:flex-start;gap:3px;
+ }
+ .mi-espacio.me-approved-workspace .me-v44c-agenda-summary{
+  justify-content:flex-start;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .mi-espacio.me-approved-workspace .me-v44c-collection-toggle .me-v28-chevron{transition:none!important}
+}
