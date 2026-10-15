@@ -54,12 +54,12 @@ for(const [role,identity] of Object.entries(roleCases)){
    });
    expect(css.font).toContain('DM Sans');
    expect(css.line).toBeGreaterThanOrEqual(22);
-   expect(css.quickDisplay).toBe('grid');
+   expect(css.quickDisplay).toBe('flex');
    expect(css.doc).toBeLessThanOrEqual(css.viewport+2);
    expect(css.errors).toEqual([]);
    const buttons=await app.locator('.me-v20-quick-bar>button').all();
    for(const b of buttons){const rect=await b.boundingBox();expect(rect.height).toBeGreaterThanOrEqual(44)}
-   if(width<=768)expect(css.panelBorderLeft).toBe('0px');
+   expect(css.panelBorderLeft).toBe('0px');
    await app.getByRole('button',{name:'Perfil profesional',exact:true}).click();
    await expect(app.locator('#me-v28-profile-panel')).toBeVisible();
    await expect(app.locator('#me-v26c-profile-trigger')).toHaveAttribute('aria-expanded','true');

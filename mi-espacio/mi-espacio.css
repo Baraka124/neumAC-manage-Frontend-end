@@ -1761,7 +1761,11 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 
 /* Approved Mi Espacio composition, 15 October 2026.
    Scoped to the personal view; existing contextual editors retain their contracts. */
-.mi-espacio.me-approved-workspace{--me30-reading:#16383d;--me30-secondary:#657879;--me30-line:#dce5e2;max-width:1400px;margin-inline:auto;padding:24px 32px;color:var(--me30-reading)}
+.mi-espacio.me-approved-workspace{--me30-reading:#16383d;--me30-secondary:#657879;--me30-line:#dce5e2;max-width:1400px;margin-inline:auto;padding:28px 32px 72px;color:var(--me30-reading)}
+.mi-espacio.me-approved-workspace .mi-espacio-head{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:0;padding:0 0 26px}
+.mi-espacio.me-approved-workspace .me-approved-eyebrow{color:#5b8377;font-size:10px;line-height:1.5;font-weight:700;letter-spacing:.15em}
+.mi-espacio.me-approved-workspace .mi-espacio-head h2{font-size:clamp(30px,3.1vw,40px);line-height:1.18;letter-spacing:-.045em;font-weight:600;margin:5px 0 0}
+.mi-espacio.me-approved-workspace .me-approved-title-accent{color:#81a99a}
 .mi-espacio.me-approved-workspace .me-v22-identity{background:transparent;border:0;border-bottom:1px solid var(--me30-line);border-radius:0;padding:0;box-shadow:none}
 .mi-espacio.me-approved-workspace .me-v22-identity-top{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:18px;align-items:start;padding:8px 0 21px}
 .mi-espacio.me-approved-workspace :is(.me-v22-avatar-btn,.me-v22-avatar,.me-v22-avatar-img){width:48px;height:48px;min-width:48px;min-height:48px;max-width:48px;max-height:48px;font-size:16px;border-radius:50%;box-shadow:none;padding:0}
@@ -1771,7 +1775,7 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .mi-espacio-link-state.is-linked{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%)}
 .mi-espacio.me-approved-workspace .me-v22-designation{font-size:14px;line-height:1.5}
 .mi-espacio.me-approved-workspace .mi-espacio-person-email{font-size:14px;line-height:1.5;margin:3px 0 0}
-.mi-espacio.me-approved-workspace .me-v28-identity-actions{align-self:center;display:flex;gap:12px}
+.mi-espacio.me-approved-workspace .me-v28-identity-actions{align-self:center;display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
 .mi-espacio.me-approved-workspace .me-v28-identity-actions button{min-height:44px;padding:8px 12px;font-size:13px;background:transparent;box-shadow:none;border:1px solid var(--me30-line);border-radius:8px}
 .mi-espacio.me-approved-workspace .me-approved-affiliations{margin-top:10px;border-left:2px solid #a5c9b7;padding-left:12px;max-width:700px}
 .mi-espacio.me-approved-workspace .me-approved-affiliations ul{list-style:none;margin:0;padding:0}
@@ -1805,7 +1809,7 @@ html body #app .mi-espacio .me-v20-quick-bar>button{min-height:44px!important}
 .mi-espacio.me-approved-workspace .me-approved-record>summary::-webkit-details-marker{display:none}
 .mi-espacio.me-approved-workspace .me-approved-record-main{display:flex;flex-direction:column;align-items:flex-start;gap:9px;min-width:0}
 .mi-espacio.me-approved-workspace .me-approved-record-main strong{font-size:17px;line-height:1.5;font-weight:550;color:#16383d;overflow-wrap:anywhere}
-.mi-espacio.me-approved-workspace .me-approved-record-main>small{font-size:12px;background:#eaf0ed;padding:3px 8px;border-radius:5px}
+.mi-espacio.me-approved-workspace .me-approved-record-main>small{font-size:12px;background:transparent;padding:0;border-radius:0;color:#627a74}
 .mi-espacio.me-approved-workspace .me-approved-status{display:inline-flex;align-items:center;gap:6px;font-size:11px!important;font-weight:500;padding:3px 8px;border-radius:5px;background:#edf0ee;color:#5d6d65;line-height:1.5}
 .mi-espacio.me-approved-workspace .me-approved-status:before{content:'';width:5px;height:5px;flex:none;border-radius:50%;background:currentColor}
 .mi-espacio.me-approved-workspace .me-approved-status[data-tone=ongoing]{background:#fff2be;color:#795c09}

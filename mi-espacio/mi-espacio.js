@@ -22,6 +22,10 @@
     if(['active','activo','activa','ongoing','in_progress','development','en_desarrollo','en_curso','recruiting','recruitment','enrollment_open','execution','en_ejecucion','pilot','piloto','prototype','prototipo','validation','validacion','scale_up','en_reclutamiento','reclutamiento_abierto'].includes(key))return 'ongoing';
     return 'neutral';
   }
+  // Label only source-recorded lifecycle values; unknown remains unknown.
+  function researchStatusLabel(value, absent='Estado no registrado') {
+    return String(value||'').trim() ? root.NeumMiEspacioData.participationStatus(value) : absent;
+  }
   function dutyDateParts(iso) {
     if(!fmtDutyDate(iso))return {day:'',weekday:'',month:''};
     const [y,m,d]=iso.slice(0,10).split('-').map(Number), date=new Date(y,m-1,d);
@@ -1066,7 +1070,7 @@
           else if(target.closest('.me-portfolio:not(.me-publications)') && selectedResearch.value){closeResearch();event.stopPropagation();}
         }
         return {
-          state,linked,initials,can,refresh:load,selectedDuty,researchTone,dutyDateParts,
+          state,linked,initials,can,refresh:load,selectedDuty,researchTone,researchStatusLabel,dutyDateParts,
           professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           editProfileDirect,profileActive,profileDirty,profileConfirm,profileErrors,profileNotice,cancelDiscard,discardProfile,focusProfileEditor,
@@ -1100,7 +1104,7 @@
       },
       template: `
       <section class="mi-espacio mi-espacio--v8 mi-espacio--v9 me-approved-workspace" :class="{'me-v25-leadership':leadershipFocus,'me-v34-research-only':hasResearch && !showAgenda,'me-v34-clinical-first':hasAgenda && !hasResearch,'me-v34-mixed':hasAgenda && hasResearch,'me-v34-no-work':!hasAgenda && !hasResearch}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape" @click.capture="anchorInlineDisclosure">
-        <header class="mi-espacio-head me-v9-accessible-head"><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
+        <header class="mi-espacio-head me-v9-accessible-head"><span class="me-approved-eyebrow">TU ENTORNO PROFESIONAL</span><h2 id="mi-espacio-title" tabindex="-1">Mi espacio<span aria-hidden="true" class="me-approved-title-accent">.</span></h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">
@@ -1566,11 +1570,11 @@
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
                     <div v-if="state.activity.research.studies.length" class="me-v28-disclosure">
                       <button v-if="state.activity.research.studies.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.studies" aria-controls="me-v28-studies" @click="state.researchOpen.studies=!state.researchOpen.studies"><span>Estudios <small>{{state.activity.counts.studies}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                      <h4 v-if="state.activity.research.studies.length<=2" class="me-approved-group-title">Estudios</h4><ul id="me-v28-studies"><li v-for="st in state.activity.research.studies.slice(0,state.researchOpen.studies?state.activity.research.studies.length:2)" :key="st.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(st.status)">{{st.status||'Estado no registrado'}}</span><strong>{{st.title}}</strong><small>{{studyRole(st.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div v-if="st.code"><dt>Protocolo</dt><dd>{{st.code}}</dd></div><div><dt>Participación</dt><dd>{{studyRole(st.role)}}</dd></div><div><dt>Estado registrado</dt><dd>{{st.status||'No registrado'}}</dd></div></dl></details></li></ul>
+                      <h4 v-if="state.activity.research.studies.length<=2" class="me-approved-group-title">Estudios</h4><ul id="me-v28-studies"><li v-for="st in state.activity.research.studies.slice(0,state.researchOpen.studies?state.activity.research.studies.length:2)" :key="st.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(st.status)">{{researchStatusLabel(st.status)}}</span><strong>{{st.title}}</strong><small>{{studyRole(st.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div v-if="st.code"><dt>Protocolo</dt><dd>{{st.code}}</dd></div><div><dt>Participación</dt><dd>{{studyRole(st.role)}}</dd></div><div><dt>Estado registrado</dt><dd>{{researchStatusLabel(st.status,'No registrado')}}</dd></div></dl></details></li></ul>
                     </div>
                     <div v-if="state.activity.research.projects.length" class="me-v28-disclosure">
                       <button v-if="state.activity.research.projects.length>2" type="button" class="me-v28-disclosure-toggle" :aria-expanded="!!state.researchOpen.projects" aria-controls="me-v28-projects" @click="state.researchOpen.projects=!state.researchOpen.projects"><span>Proyectos <small>{{state.activity.counts.projects}}</small></span><svg class="me-v28-chevron me-v28e-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                      <h4 v-if="state.activity.research.projects.length<=2" class="me-approved-group-title">Proyectos</h4><ul id="me-v28-projects"><li v-for="p in state.activity.research.projects.slice(0,state.researchOpen.projects?state.activity.research.projects.length:2)" :key="p.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(p.stage)">{{p.stage||'Etapa no registrada'}}</span><strong>{{p.title}}</strong><small>{{projectRole(p.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div><dt>Participación</dt><dd>{{projectRole(p.role)}}</dd></div><div><dt>Etapa registrada</dt><dd>{{p.stage||'No registrada'}}</dd></div><div v-if="p.category"><dt>Categoría</dt><dd>{{p.category}}</dd></div></dl></details></li></ul>
+                      <h4 v-if="state.activity.research.projects.length<=2" class="me-approved-group-title">Proyectos</h4><ul id="me-v28-projects"><li v-for="p in state.activity.research.projects.slice(0,state.researchOpen.projects?state.activity.research.projects.length:2)" :key="p.id"><details class="me-approved-record"><summary><span class="me-approved-record-main"><span class="me-approved-status" :data-tone="researchTone(p.stage)">{{researchStatusLabel(p.stage,'Etapa no registrada')}}</span><strong>{{p.title}}</strong><small>{{projectRole(p.role)}}</small></span><span class="me-approved-plus" aria-hidden="true">＋</span></summary><dl><div><dt>Participación</dt><dd>{{projectRole(p.role)}}</dd></div><div><dt>Etapa registrada</dt><dd>{{researchStatusLabel(p.stage,'No registrada')}}</dd></div><div v-if="p.category"><dt>Categoría</dt><dd>{{p.category}}</dd></div></dl></details></li></ul>
                     </div>
                   </div>
 
