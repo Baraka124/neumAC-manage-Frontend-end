@@ -81,6 +81,8 @@ jobs:
         run: node --test tests/mi-espacio-phase28d.test.cjs
       - name: Mi espacio Phase 28E final inline disclosure UI contract
         run: node --test tests/mi-espacio-phase28e.test.cjs
+      - name: Approved Mi espacio status and date semantics
+        run: node --test tests/mi-espacio-approved.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |

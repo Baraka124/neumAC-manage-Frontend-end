@@ -62,7 +62,7 @@ for(const [name,scenario] of Object.entries(cases)){
    const a=scenario().a;
    await expect(page.locator('.me-v9-identity')).toBeVisible();
    if(name==='dutyOrder'){
-     await expect(page.locator('.me-v8-upnext')).toContainText('18 de octubre de 2026');
+     await expect(page.locator('.me-approved-date')).toHaveAttribute('datetime','2026-10-18');
      await expect(page.locator('.me-v9-timeline li').first()).toContainText('20 de octubre de 2026');
    }
    if(name==='resident'){await expect(page.locator('.me-v10-rotation-feature')).toContainText('UCI');await expect(page.locator('.me-v9-identity')).toContainText('Médico/a residente');}
@@ -164,11 +164,11 @@ for(const [name,scenario] of Object.entries(cases)){
      expect(sizes.research).toBeGreaterThan(sizes.agenda);
    }
    if(name==='head'){
-    await expect(page.locator('.me-v8-research-groups li')).toHaveCount(5);
+    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(5);
     await page.getByRole('button',{name:/Estudios 4/}).click();
-    await expect(page.locator('.me-v8-research-groups li')).toHaveCount(7);
+    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(7);
     await page.getByRole('button',{name:/Proyectos 3/}).click();
-    await expect(page.locator('.me-v8-research-groups li')).toHaveCount(8);
+    await expect(page.locator('.me-approved-affiliations li, .me-v8-research-groups li')).toHaveCount(8);
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(3);
     await page.getByRole('button',{name:/Mostrar todas las publicaciones/}).click();
     await expect(page.locator('.me-v8-publication-list li')).toHaveCount(4);

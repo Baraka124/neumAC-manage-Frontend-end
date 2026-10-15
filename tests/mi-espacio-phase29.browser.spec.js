@@ -30,7 +30,7 @@ for(const kind of ['clinician','biomedical_engineer'])for(const width of [390,76
   },kind);
   const app=page.locator('.mi-espacio');
   await expect(app.locator('.me-v9-overview')).toBeVisible();
-  for(const selector of ['.me-v22-designation','.mi-espacio-person-email','.me-v22-name-line h3','.me-v8-research-groups li span']){
+  for(const selector of ['.me-v22-designation','.mi-espacio-person-email','.me-v22-name-line h3','.me-approved-record-main strong']){
    const type=await app.locator(selector).first().evaluate(el=>({family:getComputedStyle(el).fontFamily,size:parseFloat(getComputedStyle(el).fontSize)}));
    expect(type.family).toContain('DM Sans');expect(type.family).not.toMatch(/Mono|monospace/);expect(type.size).toBeGreaterThanOrEqual(14);
   }
