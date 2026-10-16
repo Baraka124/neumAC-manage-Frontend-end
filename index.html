@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-ops-room-orc">
+<link rel="stylesheet" href="access.css?v=20261017-ops-room-orr">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4434,6 +4434,7 @@
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='units'}]" @click="opsSection('units')">Unidades</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='interconsults'}]" @click="opsSection('interconsults')">Interconsultas</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='objectives'}]" @click="opsSection('objectives')">¿Cumplimos? · Objetivos</button>
+                        <button type="button" :class="['opsr-section',{active:opsRoom.section==='reports'}]" @click="opsSection('reports')">Informes</button>
                         <button v-if="opsIsAdmin" type="button" :class="['opsr-section',{active:opsRoom.section==='config'}]" @click="opsSection('config')">Configuración</button>
                     </nav>
                     <p v-if="opsRoom.error" class="sync-check-error">Could not load the Ops Room: {{ opsRoom.error }}</p>
@@ -4463,6 +4464,7 @@
                         <div class="opsr-unit-head">
                             <button type="button" class="btn btn-secondary btn-sm" @click="opsClose">← Units</button>
                             <div><span class="opsr-card-code">{{ opsRoom.unit.unit_code }}<template v-if="opsRoom.unit.location"> · {{ opsRoom.unit.location }}</template></span><h3>{{ opsRoom.unit.unit_name }}</h3></div>
+                            <button type="button" class="btn btn-secondary btn-sm opsr-head-btn" @click="opsRepFromUnit">Informes de la unidad</button>
                         </div>
                         <nav class="opsr-tabs" role="tablist" aria-label="Six questions">
                             <button v-for="q in OPS_QUESTIONS" :key="q.key" type="button" role="tab" :aria-selected="opsRoom.tab===q.key" :class="['opsr-tab',{active:opsRoom.tab===q.key,off:!opsQuestionOn(opsRoom.unit,q)}]" :disabled="!opsQuestionOn(opsRoom.unit,q)" :title="opsQuestionOn(opsRoom.unit,q)?q.hint:'Not used by this unit'" @click="opsTab(q.key)">{{ q.q }}<small>{{ q.hint }}</small></button>
@@ -4570,18 +4572,22 @@
                                 <select v-model.number="opsRoom.meas.days" class="form-select form-select-sm opsr-period" aria-label="Period" @change="opsLoadMeas"><option :value="7">Last 7 days</option><option :value="30">Last 30 days</option><option :value="90">Last 90 days</option><option :value="365">Last 12 months</option></select>
                             </div>
                             <table class="sync-table opsr-table"><thead><tr><th scope="col">Activity</th><th scope="col">Total</th><th scope="col">Days recorded</th></tr></thead><tbody>
-                                <tr v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="m.type_id"><td><strong>{{ m.label }}</strong></td><td><strong>{{ m.total }}</strong></td><td>{{ m.days_recorded }}</td></tr>
+                                <tr v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="m.type_id"><td><strong>{{ m.label }}</strong><small v-if="m.breakdown">by {{ opsBdName(m.breakdown) }}</small>
+                                    <span v-if="m.breakdown &amp;&amp; m.by_category" class="opsr-bd"><span v-for="c in opsBdList(m.by_category,m.breakdown)" :key="c.code" class="opsr-bd-item"><span class="opsr-bd-bar" :style="{width:c.pct+'%'}"></span><span class="opsr-bd-text">{{ c.label }} <b>{{ c.count }}</b> · {{ c.pct }} %</span></span></span></td><td><strong>{{ m.total }}</strong></td><td>{{ m.days_recorded }}</td></tr>
                                 <tr v-if="!opsRoom.meas.loading && !opsRoom.meas.summary.some(x=>x.kind==='flow')"><td colspan="3" class="sync-empty">No activity measures for this unit.</td></tr>
                             </tbody></table>
                             <form v-if="opsCanManage && opsRoom.meas.summary.some(x=>x.kind==='flow')" class="opsr-add" @submit.prevent="opsSaveFlows">
                                 <p class="admin-kicker">RECORD A DAY</p>
                                 <label>Day <input type="date" v-model="opsRoom.meas.date" :max="opsRoom.today" class="form-control" @change="opsLoadMeas"></label>
-                                <label v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="'v'+m.type_id">{{ m.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.values[m.type_id]" class="form-control opsr-num"></label>
+                                <label v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow' &amp;&amp; !x.breakdown)" :key="'v'+m.type_id">{{ m.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.values[m.type_id]" class="form-control opsr-num"></label>
+                                <fieldset v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow' &amp;&amp; x.breakdown &amp;&amp; opsRoom.meas.bd[x.type_id])" :key="'b'+m.type_id" class="opsr-bd-entry"><legend>{{ m.label }} · by {{ opsBdName(m.breakdown) }} <b>= {{ opsBdSum(opsRoom.meas.bd[m.type_id]) }}</b></legend>
+                                    <label v-for="c in opsBdItems(m.breakdown)" :key="c.code">{{ c.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.bd[m.type_id][c.code]" class="form-control opsr-num"></label></fieldset>
                                 <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.meas.busy">Save day</button>
                                 <small class="ac-meta">Counts only — no patient data. Saving a day again replaces its values.</small>
                             </form>
                             <details v-if="opsCanManage" class="opsr-history"><summary>Add a measure to this unit</summary>
-                                <form class="opsr-add" @submit.prevent="opsAddMeasure"><input v-model="opsRoom.meas.newType.label" class="form-control" maxlength="80" placeholder="Name (e.g. Prick test)" aria-label="Measure name"><select v-model="opsRoom.meas.newType.kind" class="form-select" aria-label="Measure kind"><option value="flow">Activity (counted per day)</option><option value="stock">Pending (snapshot)</option></select><button type="submit" class="btn btn-secondary btn-sm" :disabled="!opsRoom.meas.newType.label||opsRoom.meas.busy">Add</button></form>
+                                <form class="opsr-add" @submit.prevent="opsAddMeasure"><input v-model="opsRoom.meas.newType.label" class="form-control" maxlength="80" placeholder="Name (e.g. Prick test)" aria-label="Measure name"><select v-model="opsRoom.meas.newType.kind" class="form-select" aria-label="Measure kind"><option value="flow">Activity (counted per day)</option><option value="stock">Pending (snapshot)</option></select><select v-model="opsRoom.meas.newType.breakdown" class="form-select" aria-label="Breakdown"><option value="">Total only</option><option value="clinical_condition">By condition</option><option value="age_band">By age band</option><option value="sex">By sex</option></select><button type="submit" class="btn btn-secondary btn-sm" :disabled="!opsRoom.meas.newType.label||opsRoom.meas.busy">Add</button></form>
+                                <small class="ac-meta">One breakdown per measure, counts only (e.g. “Ingresos hospitalarios” by condition). Need two views? Add two measures. The lists are in Configuración.</small>
                             </details>
                         </div>
 
@@ -4596,10 +4602,12 @@
                                         <small>as of {{ formatDateShort(m.latest.date) }}<template v-if="m.previous"> · before: {{ m.previous.value }} ({{ formatDateShort(m.previous.date) }})</template></small>
                                         <small v-if="m.latest.oldest_pending_on" :class="{'sync-check-error':opsDaysAgo(m.latest.oldest_pending_on)>60}">Oldest pending: {{ formatDateShort(m.latest.oldest_pending_on) }} ({{ opsDaysAgo(m.latest.oldest_pending_on) }} days)</small>
                                         <small v-if="m.history.length>1" class="opsr-spark">{{ m.history.slice().reverse().map(h=>h.value).join(' · ') }}</small>
+                                        <span v-if="m.breakdown &amp;&amp; m.latest.breakdown" class="opsr-bd"><span v-for="c in opsBdList(m.latest.breakdown,m.breakdown)" :key="c.code" class="opsr-bd-item"><span class="opsr-bd-bar" :style="{width:c.pct+'%'}"></span><span class="opsr-bd-text">{{ c.label }} <b>{{ c.count }}</b></span></span></span>
                                     </template>
                                     <p v-else class="ac-meta">Nothing recorded yet.</p>
                                     <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsSaveSnap(m)">
-                                        <label>Today <input type="number" min="0" step="1" v-model="opsRoom.meas.snap[m.type_id].value" class="form-control opsr-num" required></label>
+                                        <label v-if="!m.breakdown">Today <input type="number" min="0" step="1" v-model="opsRoom.meas.snap[m.type_id].value" class="form-control opsr-num" required></label>
+                                        <fieldset v-else-if="opsRoom.meas.bd[m.type_id]" class="opsr-bd-entry"><legend>Today by {{ opsBdName(m.breakdown) }} <b>= {{ opsBdSum(opsRoom.meas.bd[m.type_id]) }}</b></legend><label v-for="c in opsBdItems(m.breakdown)" :key="c.code">{{ c.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.bd[m.type_id][c.code]" class="form-control opsr-num"></label></fieldset>
                                         <label>Oldest pending since <input type="date" v-model="opsRoom.meas.snap[m.type_id].oldest" :max="opsRoom.today" class="form-control"></label>
                                         <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.meas.busy">Save</button>
                                     </form>
@@ -4668,6 +4676,7 @@
                                 <input v-model="opsRoom.ind.form.name" class="form-control opsr-grow" maxlength="120" placeholder="Name" aria-label="Indicator name" required>
                                 <select v-model="opsRoom.ind.form.kind" class="form-select" aria-label="Type"><option v-for="k in opsIndKindsFor(opsRoom.ind.kinds,'unit')" :key="k.key" :value="k.key">{{ k.label }}</option></select>
                                 <select v-if="opsIndNeedsType(opsRoom.ind.form.kind)" v-model="opsRoom.ind.form.type_id" class="form-select" aria-label="Measure" required><option value="">— Measure —</option><option v-for="t in opsIndTypesFor(opsRoom.ind.types,opsRoom.ind.form.kind)" :key="t.id" :value="t.id">{{ t.label }}</option></select>
+                                <select v-if="opsRoom.ind.form.kind==='calls_total'" v-model="opsRoom.ind.form.outcome" class="form-select" aria-label="Call outcome"><option value="">All outcomes</option><option value="advice">Consejo / orientación</option><option value="seen">Paciente valorado</option><option value="converted">Pasó a interconsulta formal</option></select>
                                 <select v-if="opsRoom.ind.form.kind.startsWith('interconsult')" v-model="opsRoom.ind.form.priority" class="form-select" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgente</option><option value="preferente">Preferente</option><option value="ordinary">Ordinaria</option></select>
                                 <select v-model="opsRoom.ind.form.period" class="form-select" aria-label="Period"><option value="week">Per week</option><option value="month">Per month</option><option value="quarter">Per quarter</option></select>
                                 <select v-model="opsRoom.ind.form.direction" class="form-select" aria-label="Direction"><option value="min">Target is a minimum (≥)</option><option value="max">Target is a maximum (≤)</option></select>
@@ -4694,19 +4703,25 @@
                             <div class="opsr-kpi"><span>Follow-up</span><b>{{ opsRoom.ic.stats.follow_up }}</b></div>
                             <div class="opsr-kpi"><span>Last {{ opsRoom.ic.days }} days</span><b>{{ opsRoom.ic.stats.received }}</b><small>received · {{ opsRoom.ic.stats.answered }} answered</small></div>
                             <div class="opsr-kpi"><span>Median response</span><b>{{ opsHours(opsRoom.ic.stats.median_hours) }}</b><small>{{ opsRoom.ic.stats.within_target_pct===null ? 'no answers yet' : opsRoom.ic.stats.within_target_pct+' % within target' }}</small></div>
+                            <div v-if="opsRoom.ic.calls" class="opsr-kpi opsr-kpi--calls"><span>Calls · last {{ opsRoom.ic.days }} days</span><b>{{ opsRoom.ic.calls.total }}</b><small>{{ opsRoom.ic.calls.minutes }} min · not in response times</small></div>
                         </div>
                         <p class="ac-meta">Targets (provisional, to be confirmed by the department): urgent {{ opsRoom.ic.targets.urgent }} h · preferente {{ opsRoom.ic.targets.preferente }} h · ordinaria {{ opsRoom.ic.targets.ordinary }} h.</p>
 
                         <form v-if="opsCanLogIc" class="opsr-add" @submit.prevent="opsIcLog">
-                            <p class="admin-kicker">LOG AN INTERCONSULTA</p>
+                            <p class="admin-kicker">{{ opsRoom.ic.form.channel==='formal' ? 'LOG AN INTERCONSULTA' : 'LOG A CALL FROM ANOTHER DEPARTMENT' }}</p>
+                            <span class="opsr-seg" role="radiogroup" aria-label="How it arrived"><label v-for="(l,k) in (Object.keys(opsRoom.ic.channels).length ? opsRoom.ic.channels : {formal:'Interconsulta formal',phone:'Llamada',in_person:'En persona'})" :key="k" :class="{active:opsRoom.ic.form.channel===k}"><input type="radio" :value="k" v-model="opsRoom.ic.form.channel"> {{ l }}</label></span>
                             <select v-model="opsRoom.ic.form.requesting_service" class="form-select" aria-label="Requesting service" required><option value="">— Requesting service —</option><option v-for="sv in opsRoom.ic.services.filter(x=>x.active)" :key="sv.code" :value="sv.code">{{ sv.label }}</option></select>
                             <select v-model="opsRoom.ic.form.priority" class="form-select" aria-label="Priority"><option v-for="(l,k) in opsRoom.ic.priorities" :key="k" :value="k">{{ l }}</option></select>
                             <select v-model="opsRoom.ic.form.reason_category" class="form-select" aria-label="Reason"><option value="">— Reason (optional) —</option><option v-for="k in opsRoom.ic.reasons_active" :key="k" :value="k">{{ opsRoom.ic.reasons[k] }}</option></select>
                             <label>Received <input type="datetime-local" v-model="opsRoom.ic.form.received_at" class="form-control"></label>
-                            <label v-if="opsMyStaffId" class="opsr-check"><input type="checkbox" v-model="opsRoom.ic.form.take"> I take it</label>
+                            <label v-if="opsMyStaffId &amp;&amp; opsRoom.ic.form.channel==='formal'" class="opsr-check"><input type="checkbox" v-model="opsRoom.ic.form.take"> I take it</label>
+                            <template v-if="opsRoom.ic.form.channel!=='formal'">
+                                <select v-model="opsRoom.ic.form.outcome" class="form-select" aria-label="How it ended"><option v-for="(l,k) in (Object.keys(opsRoom.ic.outcomes).length ? opsRoom.ic.outcomes : {advice:'Consejo / orientación',seen:'Paciente valorado',converted:'Pasó a interconsulta formal'})" :key="k" :value="k">{{ l }}</option></select>
+                                <label>Minutes <input type="number" min="1" max="600" step="1" v-model="opsRoom.ic.form.duration_min" class="form-control opsr-num"></label>
+                            </template>
                             <input v-model="opsRoom.ic.form.notes" class="form-control opsr-grow" maxlength="300" placeholder="Note (no patient data)" aria-label="Note">
                             <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.ic.form.requesting_service||opsRoom.ic.busy">Log</button>
-                            <small class="ac-meta">Leave “Received” empty for now. No patient names or record numbers.</small>
+                            <small class="ac-meta">{{ opsRoom.ic.form.channel==='formal' ? 'Leave “Received” empty for now.' : 'Logged as already resolved, by you. Calls are counted on their own and never change interconsulta response times.' }} No patient names or record numbers.</small>
                         </form>
 
                         <p class="admin-kicker">WAITING AND IN FOLLOW-UP</p>
@@ -4740,9 +4755,100 @@
                                 <ul class="opsr-list"><li v-for="(b,k) in opsRoom.ic.stats.by_priority" :key="k"><strong>{{ opsRoom.ic.priorities[k] }}</strong> {{ b.answered }} · median {{ opsHours(b.median_hours) }} · {{ b.within_target_pct===null ? '—' : b.within_target_pct+' % in ≤ '+opsHours(b.target_hours) }}</li></ul>
                                 <p class="admin-kicker">ANSWERED BY</p>
                                 <ul class="opsr-list"><li v-for="c in opsRoom.ic.stats.by_clinician" :key="c.key"><strong>{{ c.count }}</strong> {{ opsStaffName(c.key) }}</li><li v-if="!opsRoom.ic.stats.by_clinician.length" class="ac-meta">None yet.</li></ul></div>
+                            <div v-if="opsRoom.ic.calls"><p class="admin-kicker">CALLS AND IN-PERSON REQUESTS · LAST {{ opsRoom.ic.days }} DAYS</p>
+                                <ul class="opsr-list"><li v-for="o in opsRoom.ic.calls.by_outcome" :key="'o'+o.key"><strong>{{ o.count }}</strong> {{ opsRoom.ic.outcomes[o.key] || o.key }}</li><li v-for="sv in opsRoom.ic.calls.by_service" :key="'s'+sv.key" class="ac-meta">{{ sv.count }} from {{ opsRoom.ic.service_labels[sv.key] || sv.key }}</li><li v-for="c in opsRoom.ic.calls.by_clinician" :key="'c'+c.key" class="ac-meta">{{ c.count }} taken by {{ c.key }}</li><li v-if="!opsRoom.ic.calls.total" class="ac-meta">No calls logged yet.</li></ul></div>
                         </div>
                         <details v-if="opsRoom.ic.recent.length" class="opsr-history"><summary>Answered and closed recently ({{ opsRoom.ic.recent.length }})</summary>
-                            <ul class="opsr-list"><li v-for="ic in opsRoom.ic.recent" :key="'r'+ic.id"><span :class="['opsr-prio','opsr-prio--'+ic.priority]">{{ opsRoom.ic.priorities[ic.priority] }}</span> {{ opsRoom.ic.service_labels[ic.requesting_service] || ic.requesting_service }} · {{ opsFmtTs(ic.received_at) }} · {{ ic.clock.answered ? opsHours(ic.clock.hours) : '—' }} <span :class="ic.clock.over ? 'sync-check-error' : 'opsr-ok'">{{ ic.clock.over ? 'over target' : 'within target' }}</span><template v-if="ic.answerer"> · {{ ic.answerer.full_name }}</template> · {{ opsRoom.ic.statuses[ic.status] }}<button v-if="opsIcCanAct(ic) &amp;&amp; ic.status==='closed'" type="button" class="btn btn-secondary btn-sm" @click="opsIcAct(ic,'reopen')">Reopen</button></li></ul></details>
+                            <ul class="opsr-list"><li v-for="ic in opsRoom.ic.recent" :key="'r'+ic.id"><span v-if="opsIcIsCall(ic)" class="opsr-cap opsr-cap--call">{{ opsRoom.ic.channels[ic.channel] || ic.channel }}<template v-if="ic.outcome"> · {{ opsRoom.ic.outcomes[ic.outcome] }}</template><template v-if="ic.duration_min"> · {{ ic.duration_min }} min</template></span><span v-else :class="['opsr-prio','opsr-prio--'+ic.priority]">{{ opsRoom.ic.priorities[ic.priority] }}</span> {{ opsRoom.ic.service_labels[ic.requesting_service] || ic.requesting_service }} · {{ opsFmtTs(ic.received_at) }} · <template v-if="!opsIcIsCall(ic)">{{ ic.clock.answered ? opsHours(ic.clock.hours) : '—' }} </template><span v-if="!opsIcIsCall(ic)" :class="ic.clock.over ? 'sync-check-error' : 'opsr-ok'">{{ ic.clock.over ? 'over target' : 'within target' }}</span><template v-if="ic.answerer"> · {{ ic.answerer.full_name }}</template> · {{ opsRoom.ic.statuses[ic.status] }}<button v-if="opsIcCanAct(ic) &amp;&amp; ic.status==='closed'" type="button" class="btn btn-secondary btn-sm" @click="opsIcAct(ic,'reopen')">Reopen</button></li></ul></details>
+                    </section>
+
+                    <!-- Informes (OR-R): weekly / monthly snapshots — one unit, or the department roll-up. Counts only. -->
+                    <section v-if="opsRoom.section==='reports'" class="opsr-panel opsr-reports" aria-label="Informes">
+                        <div class="opsr-row no-print">
+                            <select class="form-select opsr-rep-scope" aria-label="Report for" :value="opsRoom.rep.scope==='department' ? 'department' : opsRoom.rep.unitId" @change="opsRepScope($event.target.value)">
+                                <option value="department">Departamento (todas las unidades)</option>
+                                <option v-for="u in opsRoom.units" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
+                            </select>
+                            <form v-if="opsRepCanGenerate" class="opsr-inline" @submit.prevent="opsRepGenerate()">
+                                <select v-model="opsRoom.rep.gen.period" class="form-select form-select-sm" aria-label="Period"><option value="week">Week</option><option value="month">Month</option></select>
+                                <label>starting <input type="date" v-model="opsRoom.rep.gen.start" :max="opsRoom.today" class="form-control" :title="opsRoom.rep.gen.period==='week' ? 'A Monday' : 'The 1st of a month'"></label>
+                                <button type="submit" class="btn btn-secondary btn-sm" :disabled="opsRoom.rep.busy">Generate</button>
+                            </form>
+                        </div>
+                        <p class="ac-meta no-print">Reports are fixed snapshots: the last complete week and month appear on their own the first time someone opens this list. Empty “starting” = the last complete period; a running period can be generated as a preview.</p>
+                        <p v-if="opsRoom.rep.error" class="sync-check-error">{{ opsRoom.rep.error }}</p>
+                        <p v-if="!opsRoom.rep.migrated" class="sync-check-error">Reports need the OR-R database update (see OPS_ROOMS.md §8).</p>
+                        <div class="opsr-rep-layout">
+                            <ul class="opsr-rep-list no-print" aria-label="Reports">
+                                <li v-for="r in opsRoom.rep.list" :key="r.id"><button type="button" :class="['opsr-rep-item',{active:opsRoom.rep.open &amp;&amp; opsRoom.rep.open.id===r.id}]" @click="opsRepOpen(r)"><span class="opsr-cap">{{ r.period==='week' ? 'Semanal' : 'Mensual' }}</span> {{ opsRepTitle(r) }}<small>{{ r.generated_by ? 'generated on demand' : 'automatic' }} · {{ opsFmtTs(r.generated_at) }}</small></button></li>
+                                <li v-if="!opsRoom.rep.loading &amp;&amp; !opsRoom.rep.list.length" class="ac-meta">{{ opsRoom.rep.scope==='unit' &amp;&amp; !opsRoom.rep.unitId ? 'Choose a unit.' : 'No reports yet.' }}</li>
+                                <li v-if="opsRoom.rep.loading" class="ac-meta">Loading…</li>
+                            </ul>
+                            <article v-if="opsRoom.rep.open" class="opsr-report">
+                                <header class="opsr-rep-head">
+                                    <div><span class="module-header-kicker">PNEUMO OPS ROOM · {{ opsRoom.rep.open.period==='week' ? 'INFORME SEMANAL' : 'INFORME MENSUAL' }}</span>
+                                        <h3>{{ opsRoom.rep.open.scope==='department' ? 'Servicio de Neumología' : opsRoom.rep.open.content.unit.name }} — {{ opsRepTitle(opsRoom.rep.open) }}</h3>
+                                        <small>Compared with {{ formatDateShort(opsRoom.rep.open.content.previous.start) }} – {{ formatDateShort(opsRoom.rep.open.content.previous.end) }} · generated {{ opsFmtTs(opsRoom.rep.open.generated_at) }}<template v-if="opsRoom.rep.open.content.complete===false"> · <b>period still running (preview)</b></template> · counts only, no patient data</small></div>
+                                    <span class="no-print"><button type="button" class="btn btn-secondary btn-sm" @click="opsRepPrint">Print / PDF</button><button v-if="opsRepCanGenerate" type="button" class="btn btn-secondary btn-sm" :disabled="opsRoom.rep.busy" @click="opsRepGenerate(opsRoom.rep.open)">Regenerate</button></span>
+                                </header>
+
+                                <!-- Unit report -->
+                                <template v-if="opsRoom.rep.open.content.kind==='unit'">
+                                    <div class="opsr-ic-stats">
+                                        <div class="opsr-kpi"><span>Team</span><b>{{ opsRoom.rep.open.content.team ? opsRoom.rep.open.content.team.count : '—' }}</b><small v-if="opsRoom.rep.open.content.team">{{ opsRoom.rep.open.content.team.by_role.map(r=>r.count+' '+r.label).join(' · ') }}</small></div>
+                                        <div class="opsr-kpi"><span>Activity recorded</span><b>{{ opsRoom.rep.open.content.summary.activity_recorded }}/{{ opsRoom.rep.open.content.summary.activity_measures }}</b><small>measures with data</small></div>
+                                        <div :class="['opsr-kpi',{bad:opsRoom.rep.open.content.incidents.open_at_end}]"><span>Incidents</span><b>{{ opsRoom.rep.open.content.incidents.opened }}</b><small>opened · {{ opsRoom.rep.open.content.incidents.resolved }} resolved · {{ opsRoom.rep.open.content.incidents.open_at_end }} open at the end</small></div>
+                                        <div :class="['opsr-kpi',{bad:opsRoom.rep.open.content.summary.indicators_not_met}]"><span>Indicators</span><b>{{ opsRoom.rep.open.content.summary.indicators_met }} met</b><small>{{ opsRoom.rep.open.content.summary.indicators_not_met }} not met</small></div>
+                                    </div>
+                                    <p class="admin-kicker">¿QUÉ HEMOS HECHO?</p>
+                                    <table class="sync-table opsr-table"><thead><tr><th scope="col">Activity</th><th scope="col">This period</th><th scope="col">Previous</th><th scope="col">Change</th></tr></thead><tbody>
+                                        <tr v-for="(a,ai) in opsRoom.rep.open.content.activity" :key="'a'+ai"><td><strong>{{ a.label }}</strong><small v-if="!a.recorded">not recorded</small>
+                                            <span v-if="a.breakdown &amp;&amp; a.breakdown.length" class="opsr-bd"><span v-for="c in a.breakdown" :key="c.code" class="opsr-bd-item"><span class="opsr-bd-bar" :style="{width:(a.total ? Math.round(100*c.count/a.total) : 0)+'%'}"></span><span class="opsr-bd-text">{{ c.label }} <b>{{ c.count }}</b></span></span></span></td>
+                                            <td><strong>{{ a.total }}</strong></td><td>{{ a.previous }}</td><td><span :class="['opsr-trend',opsPctCls(a.change_pct)]">{{ opsPct(a.change_pct) }}</span></td></tr>
+                                        <tr v-if="!opsRoom.rep.open.content.activity.length"><td colspan="4" class="sync-empty">No activity measures.</td></tr>
+                                    </tbody></table>
+                                    <template v-if="opsRoom.rep.open.content.pending.length">
+                                        <p class="admin-kicker">¿QUÉ ESTÁ PENDIENTE? · LAST SNAPSHOT IN THE PERIOD</p>
+                                        <table class="sync-table opsr-table"><thead><tr><th scope="col">Pending</th><th scope="col">Value</th><th scope="col">Previous period</th><th scope="col">Oldest</th></tr></thead><tbody>
+                                            <tr v-for="(pd,pi) in opsRoom.rep.open.content.pending" :key="'p'+pi"><td><strong>{{ pd.label }}</strong><span v-if="pd.latest &amp;&amp; pd.latest.breakdown &amp;&amp; pd.latest.breakdown.length" class="opsr-bd-inline">{{ pd.latest.breakdown.map(c=>c.label+' '+c.count).join(' · ') }}</span></td>
+                                                <td>{{ pd.latest ? pd.latest.value : '—' }}<small v-if="pd.latest">{{ formatDateShort(pd.latest.date) }}</small></td><td>{{ pd.previous_value===null ? '—' : pd.previous_value }}</td><td>{{ pd.latest &amp;&amp; pd.latest.oldest_days!==null ? pd.latest.oldest_days+' d' : '—' }}</td></tr>
+                                        </tbody></table>
+                                    </template>
+                                    <template v-if="opsRoom.rep.open.content.incidents.by_category.length">
+                                        <p class="admin-kicker">¿QUÉ HA FALLADO? · OPENED IN THE PERIOD</p>
+                                        <ul class="opsr-list"><li v-for="c in opsRoom.rep.open.content.incidents.by_category" :key="c.code"><strong>{{ c.count }}</strong> {{ c.label }}</li></ul>
+                                    </template>
+                                    <p v-if="opsRoom.rep.open.content.resources_now" class="ac-meta">Resources at generation: {{ opsRoom.rep.open.content.resources_now.out_of_service }} out of service · {{ opsRoom.rep.open.content.resources_now.calibration_overdue }} calibration overdue · {{ opsRoom.rep.open.content.resources_now.loans_overdue }} loans overdue</p>
+                                </template>
+
+                                <!-- Department report -->
+                                <template v-else>
+                                    <div class="opsr-ic-stats">
+                                        <div class="opsr-kpi"><span>Interconsultas</span><b>{{ opsRoom.rep.open.content.interconsults.received }}</b><small>received (before: {{ opsRoom.rep.open.content.interconsults.received_previous }}) · {{ opsRoom.rep.open.content.interconsults.answered }} answered</small></div>
+                                        <div class="opsr-kpi"><span>Median response</span><b>{{ opsHours(opsRoom.rep.open.content.interconsults.median_hours) }}</b><small>{{ opsRoom.rep.open.content.interconsults.within_target_pct===null ? '—' : opsRoom.rep.open.content.interconsults.within_target_pct+' % within target' }}</small></div>
+                                        <div class="opsr-kpi opsr-kpi--calls"><span>Calls · in person</span><b>{{ opsRoom.rep.open.content.calls.total }}</b><small>{{ opsRoom.rep.open.content.calls.minutes }} min (before: {{ opsRoom.rep.open.content.calls.previous_total }})</small></div>
+                                    </div>
+                                    <div class="opsr-cols">
+                                        <div><p class="admin-kicker">INTERCONSULTAS BY SERVICE</p><ul class="opsr-list"><li v-for="sv in opsRoom.rep.open.content.interconsults.by_service" :key="sv.key"><strong>{{ sv.count }}</strong> {{ sv.label }}</li><li v-if="!opsRoom.rep.open.content.interconsults.by_service.length" class="ac-meta">None.</li></ul></div>
+                                        <div><p class="admin-kicker">CALLS BY SERVICE · OUTCOME</p><ul class="opsr-list"><li v-for="sv in opsRoom.rep.open.content.calls.by_service" :key="'s'+sv.key"><strong>{{ sv.count }}</strong> {{ sv.label }}</li><li v-for="o in opsRoom.rep.open.content.calls.by_outcome" :key="'o'+o.key" class="ac-meta">{{ o.count }} · {{ ({advice:'Consejo / orientación',seen:'Paciente valorado',converted:'Pasó a interconsulta formal'})[o.key] || o.key }}</li><li v-if="!opsRoom.rep.open.content.calls.total" class="ac-meta">None.</li></ul></div>
+                                    </div>
+                                    <p class="admin-kicker">UNITS</p>
+                                    <table class="sync-table opsr-table"><thead><tr><th scope="col">Unit</th><th scope="col">Main activity</th><th scope="col">Incidents</th><th scope="col">Indicators</th></tr></thead><tbody>
+                                        <tr v-for="u in opsRoom.rep.open.content.units" :key="u.id"><td><strong>{{ u.name }}</strong><small>{{ u.activity_recorded }}/{{ u.activity_measures }} measures recorded</small></td>
+                                            <td><span v-for="(h,hi) in u.headline" :key="hi" class="opsr-rep-head-line">{{ h.label }}: <b>{{ h.total }}</b> <span :class="['opsr-trend',opsPctCls(h.change_pct)]">{{ opsPct(h.change_pct) }}</span></span><span v-if="!u.headline.length" class="ac-meta">—</span></td>
+                                            <td>{{ u.incidents_opened }} opened · {{ u.incidents_open }} open</td><td>{{ u.indicators_met }} met · {{ u.indicators_not_met }} not met</td></tr>
+                                    </tbody></table>
+                                </template>
+
+                                <template v-if="opsRoom.rep.open.content.indicators &amp;&amp; opsRoom.rep.open.content.indicators.length">
+                                    <p class="admin-kicker">¿CUMPLIMOS? · TARGET IN FORCE AT THE END OF THE PERIOD</p>
+                                    <table class="sync-table opsr-table"><thead><tr><th scope="col">Indicator</th><th scope="col">Value</th><th scope="col">Target</th><th scope="col">Result</th></tr></thead><tbody>
+                                        <tr v-for="(i,ii) in opsRoom.rep.open.content.indicators" :key="'i'+ii"><td><strong>{{ i.name }}</strong><small v-if="i.iso_clause" class="opsr-iso">ISO {{ i.iso_clause }}</small></td><td>{{ opsIndFmt(i, i.value) }}</td><td>{{ i.target===null ? '—' : (i.direction==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.target) }}</td>
+                                            <td><span class="opsr-ind-status" :data-status="i.met===null ? (i.target===null ? 'no_target' : 'no_data') : (i.met ? 'met' : 'not_met')">{{ i.met===null ? (i.target===null ? 'No target' : 'No data') : (i.met ? 'Met' : 'Not met') }}</span></td></tr>
+                                    </tbody></table>
+                                </template>
+                            </article>
+                        </div>
                     </section>
 
                     <!-- ¿Cumplimos? · Objetivos — every unit's indicators + department-wide ones -->
@@ -4773,6 +4879,7 @@
                                 <input v-model="opsRoom.dept.form.name" class="form-control opsr-grow" maxlength="120" placeholder="Name" aria-label="Indicator name" required>
                                 <select v-model="opsRoom.dept.form.kind" class="form-select" aria-label="Type"><option v-for="k in opsIndKindsFor(opsRoom.dept.kinds,'dept')" :key="k.key" :value="k.key">{{ k.label }}</option></select>
                                 
+                                <select v-if="opsRoom.dept.form.kind==='calls_total'" v-model="opsRoom.dept.form.outcome" class="form-select" aria-label="Call outcome"><option value="">All outcomes</option><option value="advice">Consejo / orientación</option><option value="seen">Paciente valorado</option><option value="converted">Pasó a interconsulta formal</option></select>
                                 <select v-if="opsRoom.dept.form.kind.startsWith('interconsult')" v-model="opsRoom.dept.form.priority" class="form-select" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgente</option><option value="preferente">Preferente</option><option value="ordinary">Ordinaria</option></select>
                                 <select v-model="opsRoom.dept.form.period" class="form-select" aria-label="Period"><option value="week">Per week</option><option value="month">Per month</option><option value="quarter">Per quarter</option></select>
                                 <select v-model="opsRoom.dept.form.direction" class="form-select" aria-label="Direction"><option value="min">Target is a minimum (≥)</option><option value="max">Target is a maximum (≤)</option></select>
@@ -13081,7 +13188,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.37-20261017-ops-room-orc"></script>
+    <script src="app.js?v=5.4-production.38-20261017-ops-room-orr"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
