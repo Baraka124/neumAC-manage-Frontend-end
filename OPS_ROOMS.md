@@ -253,9 +253,7 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 2. `2026-10-16_ops_room_or2_resources_measures_incidents.sql` ✅ applied
 3. `2026-10-16_ops_room_or2b_or3_interconsults_indicators.sql` ✅ applied
 4. `2026-10-17_ops_room_orc_catalogues_targets.sql` ✅ applied (58 items)
-5. `2026-10-17_ops_room_orr_breakdowns_calls_reports.sql` — confirm with
-   `select count(*) from ops_catalog_items where catalog in ('clinical_condition','age_band','sex')` (expect 18)
-   and `select to_regclass('public.ops_reports')` (not null).
+5. `2026-10-17_ops_room_orr_breakdowns_calls_reports.sql` ✅ applied 17 Oct (18 breakdown items, 5 new columns, `ops_reports` with RLS + unique index + audit trigger)
 
 ### Open items
 - Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
