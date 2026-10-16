@@ -140,6 +140,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 | ✅ OR-2 | All units: resources + events, activity catalogue + counts, pending work, incidents (backend #52, frontend #181) |
 | ✅ OR-2b | **Interconsultas**: request record, board, take/assign/answer/follow-up/close, response-time stats |
 | ✅ OR-3 | Indicators (targets, owners, ISO 7101 clause, week/month/quarter, last 6 periods computed from records) |
+| OR-C | **Configuration** (agreed 16 Oct): (1) catalogues as data — interconsulta services/reasons/priorities/**targets**, incident categories, roster roles, device types with default calibration interval; (2) **target history** (valid-from dates; past periods judged with the target in force then); (3) unit **Ops profile inside the existing clinical units module** (see rule below); (4) alert rules (thresholds → owner notifications) |
 | OR-4 | Remaining Pulmonology units, each with only its capabilities |
 | OR-5 | Connections: Mi espacio, resident visibility, Grounded, leadership overview |
 | OR-6 | Hospital feed for high-frequency activity — only with an approved source |
@@ -206,6 +207,15 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 3. Open PRs, wait for CI green, merge **backend first**, then frontend; watch the Railway and GitHub Pages deploys.
    (Once, Pages skipped a merge — an empty commit on `main` re-triggered it.)
 4. Do not touch `.env` tracking without first moving the variables into Railway (two attempts broke the deploy and were reverted).
+
+### Rule: no second way to do the same thing
+- **Units are created and edited only in the clinical units module** (Units view, `/api/training-units`). Ops Room never
+  creates units. A unit's Ops settings (`ops_enabled`, `ops_capabilities`, profile preset) are edited in that same unit
+  form (OR-C step 3). `PUT /api/ops/units/:id/profile` is the API behind it; there must be no separate Ops Room screen for it.
+- Same for people (Staff module), rotations (Rotations), guardias (On-call): Ops Room links to them, never re-creates them.
+- Configuration principle: configure the *what* and *how much* (lists, capabilities, targets, thresholds, labels), never
+  the *how* that protects the data (privacy, one-rotation-at-a-time, audit, permissions, indicator formulas). Config changes
+  are audited and never rewrite the past (rename keeps the code, switch-off keeps history, targets carry valid-from dates).
 
 ### Open items
 - Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
