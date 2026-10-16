@@ -17,6 +17,7 @@ The six questions it answers, every day, for every unit:
 | 4 | **¿Qué está pendiente?** Waiting lists, studies to read, oldest pending date | Pending work |
 | 5 | **¿Qué ha fallado?** Incidents, cancellations, who is resolving them | Incidents |
 | 6 | **¿Cumplimos?** Each unit's objectives: target, trend, owner | Indicators |
+| + | **Interconsultas:** ¿cuántas pendientes, de quién, quién las lleva, en cuánto respondemos? | Interconsult requests (§3b) |
 
 Who it serves: the **unit coordinator** runs the unit from here · the **head of department** sees all units
 at a glance and spots problems early · **clinicians** see where they are needed and what is theirs to resolve ·
@@ -60,6 +61,36 @@ Only units **run by Pulmonology**. Units that exist only as rotation destination
 | Consultas Externas | Consulting rooms | First / follow-up visits | Wait time |
 | Asma grave | — | Patients in programme, visits | — |
 
+## 3b. Interconsultas — a department-wide service
+
+Requests from other services to Pulmonology. Not owned by one unit: a **service across the department**,
+with its own section in the Ops Room.
+
+Answers: how many are pending now and the oldest · which services ask most · who is handling each ·
+time to answer vs target (e.g. urgent: same day) · workload per clinician.
+
+**One record per request** (the exception to "counts only" — response time cannot be measured from daily
+counts), holding only operational data:
+
+| Field | Notes |
+|---|---|
+| requesting service | from a catalogue of hospital services |
+| priority | urgent / preferente / ordinary (to confirm) |
+| received at · assigned at · answered at · closed at | timestamps drive the response-time indicator |
+| assigned to / answered by | staff from neumDesk |
+| status | received → assigned → answered → follow-up / closed |
+| reason category (optional) | from a short catalogue, no free clinical text |
+
+**No patient identifiers** (no name, no NHC). If a reference to the hospital's own request number is ever
+needed, that is a separate, explicitly authorised decision.
+
+Connections: who covers interconsultas comes from the roster / guardias · Mi espacio shows "your pending
+interconsultas" · indicators such as **% answered within target** and **median response time** by priority.
+
+To confirm with the department before building: how requests arrive today (HIS electronic request, phone,
+paper) · whether there is a rota for answering them · target response times by priority · whether follow-up
+visits are tracked.
+
 Capabilities a unit can switch on: **Roster · Resources · Activity · Pending work · Incidents · Indicators**
 (+ type-specific: beds, device loans, calibration).
 
@@ -76,6 +107,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 | Pending work | unit, type, pending count, oldest pending date, snapshot date | Waiting lists, studies to read |
 | Incidents | unit, resource (optional), type (out of service, room closed, cancellation…), reason, opened/closed, owner | |
 | Indicators | definition (from activity/pending/resources), target, owner, unit, ISO 7101 clause (optional), values per period | Quality objectives live here |
+| **Interconsult requests** | requesting service, priority, received/assigned/answered/closed times, assignee, status, reason category | Department-wide; no patient identifiers (§3b) |
 
 ## 5. Connections — why this beats a stand-alone tool
 
@@ -103,6 +135,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 |---|---|
 | OR-1 | Unit identity cleanup + operational profile + **unit roster** |
 | OR-2 | First unit end to end: resources + events, activity catalogue + counts, pending work, incidents |
+| OR-2b | **Interconsultas**: request record, pending board, assignment, response-time indicators |
 | OR-3 | Indicators (targets, owners, values, optional ISO 7101 clause) |
 | OR-4 | Remaining Pulmonology units, each with only its capabilities |
 | OR-5 | Connections: Mi espacio, resident visibility, Grounded, leadership overview |
