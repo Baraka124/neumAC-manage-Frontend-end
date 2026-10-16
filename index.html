@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261016-ops-room">
+<link rel="stylesheet" href="access.css?v=20261016-ops-room-or2">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4440,6 +4440,13 @@
                             <strong class="opsr-card-name">{{ u.unit_name }}</strong>
                             <span class="opsr-card-line">{{ u.coordinators.length ? 'Coordina: ' + u.coordinators.join(', ') : 'No coordinator yet' }}</span>
                             <span class="opsr-card-stats"><span><b>{{ u.roster.current.length }}</b> in the team</span><span><b>{{ u.residents_this_week.length }}</b> residents this week</span></span>
+                            <span v-if="u.alerts" class="opsr-alerts">
+                                <span v-if="u.alerts.resources.out_of_service" class="opsr-alert">{{ u.alerts.resources.out_of_service }} out of service</span>
+                                <span v-if="u.alerts.resources.calibration_overdue" class="opsr-alert">{{ u.alerts.resources.calibration_overdue }} calibration overdue</span>
+                                <span v-if="u.alerts.resources.loans_overdue" class="opsr-alert">{{ u.alerts.resources.loans_overdue }} loan overdue</span>
+                                <span v-if="u.alerts.incidents.open" class="opsr-alert opsr-alert--inc">{{ u.alerts.incidents.open }} open incident{{ u.alerts.incidents.open===1?'':'s' }}</span>
+                                <span v-if="u.alerts.resources.beds" class="opsr-note">{{ u.alerts.resources.beds_available }}/{{ u.alerts.resources.beds }} beds available</span>
+                            </span>
                             <span class="opsr-caps"><span v-for="c in u.capabilities" :key="c" class="opsr-cap">{{ OPS_CAP_LABEL[c] || c }}</span></span>
                         </button>
                         <p v-if="!opsRoom.loading && !opsRoom.units.length && !opsRoom.error" class="ac-meta">No units are switched on for the Ops Room yet.</p>
@@ -4452,7 +4459,7 @@
                             <div><span class="opsr-card-code">{{ opsRoom.unit.unit_code }}<template v-if="opsRoom.unit.location"> · {{ opsRoom.unit.location }}</template></span><h3>{{ opsRoom.unit.unit_name }}</h3></div>
                         </div>
                         <nav class="opsr-tabs" role="tablist" aria-label="Six questions">
-                            <button v-for="q in OPS_QUESTIONS" :key="q.key" type="button" role="tab" :aria-selected="opsRoom.tab===q.key" :class="['opsr-tab',{active:opsRoom.tab===q.key,off:!opsQuestionOn(opsRoom.unit,q)}]" :disabled="!opsQuestionOn(opsRoom.unit,q)" :title="opsQuestionOn(opsRoom.unit,q)?q.hint:'Not used by this unit'" @click="opsRoom.tab=q.key">{{ q.q }}<small>{{ q.hint }}</small></button>
+                            <button v-for="q in OPS_QUESTIONS" :key="q.key" type="button" role="tab" :aria-selected="opsRoom.tab===q.key" :class="['opsr-tab',{active:opsRoom.tab===q.key,off:!opsQuestionOn(opsRoom.unit,q)}]" :disabled="!opsQuestionOn(opsRoom.unit,q)" :title="opsQuestionOn(opsRoom.unit,q)?q.hint:'Not used by this unit'" @click="opsTab(q.key)">{{ q.q }}<small>{{ q.hint }}</small></button>
                         </nav>
 
                         <!-- ¿Quién está? -->
@@ -4493,7 +4500,137 @@
                             </div>
                         </div>
 
-                        <!-- The other five questions: switched on for this unit, built in the next steps -->
+<!-- ¿Con qué contamos? -->
+                        <div v-else-if="opsRoom.tab==='resources'" class="opsr-panel">
+                            <p v-if="opsRoom.res.error" class="sync-check-error">{{ opsRoom.res.error }}</p>
+                            <div v-if="opsRoom.res.alerts" class="opsr-alerts opsr-alerts--bar">
+                                <span class="opsr-note">{{ opsRoom.res.alerts.total }} registered</span>
+                                <span v-if="opsHas('beds')" class="opsr-note">{{ opsRoom.res.alerts.beds_available }}/{{ opsRoom.res.alerts.beds }} beds available</span>
+                                <span v-if="opsRoom.res.alerts.out_of_service" class="opsr-alert">{{ opsRoom.res.alerts.out_of_service }} out of service / maintenance</span>
+                                <span v-if="opsRoom.res.alerts.calibration_overdue" class="opsr-alert">{{ opsRoom.res.alerts.calibration_overdue }} calibration overdue</span>
+                                <span v-if="opsRoom.res.alerts.calibration_soon" class="opsr-note">{{ opsRoom.res.alerts.calibration_soon }} calibration due in 14 days</span>
+                                <span v-if="opsRoom.res.alerts.loans_out" class="opsr-note">{{ opsRoom.res.alerts.loans_out }} lent out</span>
+                                <span v-if="opsRoom.res.alerts.loans_overdue" class="opsr-alert">{{ opsRoom.res.alerts.loans_overdue }} loan overdue</span>
+                            </div>
+                            <table class="sync-table opsr-table"><thead><tr><th scope="col">Resource</th><th scope="col">Status</th><th v-if="opsHas('calibration')" scope="col">Calibration</th><th v-if="opsHas('loans')" scope="col">Loan</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
+                                <template v-for="r in opsRoom.res.list" :key="r.id">
+                                <tr>
+                                    <td><strong>{{ r.name }}</strong><small>{{ OPS_RES_KIND[r.kind] }}<template v-if="r.identifier"> · {{ r.identifier }}</template><template v-if="r.location"> · {{ r.location }}</template></small></td>
+                                    <td><span class="opsr-status" :data-status="r.status">{{ OPS_RES_STATUS[r.status] }}</span></td>
+                                    <td v-if="opsHas('calibration')"><template v-if="r.next_calibration_due"><span :class="{'sync-check-error':r.next_calibration_due < opsRoom.today}">next {{ formatDateShort(r.next_calibration_due) }}</span></template><span v-else class="ac-meta">—</span><small v-if="r.last_calibrated_on">last {{ formatDateShort(r.last_calibrated_on) }}</small></td>
+                                    <td v-if="opsHas('loans')"><template v-if="r.status==='lent'"><span :class="{'sync-check-error':r.loan_due_back < opsRoom.today}">due back {{ formatDateShort(r.loan_due_back) }}</span></template><span v-else class="ac-meta">—</span></td>
+                                    <td class="opsr-actions"><button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsResToggle(r)">{{ opsRoom.res.open===r.id ? 'Close' : 'Record…' }}</button><button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsRemoveRes(r)">Remove</button><button v-if="opsIsAdmin" type="button" class="btn btn-secondary btn-sm" @click="opsRemoveRes(r,true)">Delete</button></td>
+                                </tr>
+                                <tr v-if="opsRoom.res.open===r.id" class="opsr-subrow"><td :colspan="3+(opsHas('calibration')?1:0)+(opsHas('loans')?1:0)">
+                                    <form class="opsr-add" @submit.prevent="opsResEvent(r)">
+                                        <select v-model="opsRoom.res.act.event_type" class="form-select" aria-label="What happened">
+                                            <option value="status" :disabled="r.status==='lent'">Change status</option>
+                                            <option v-if="opsHas('calibration')&&r.kind==='device'" value="calibration">Calibration done</option>
+                                            <option value="maintenance">Maintenance done</option>
+                                            <option v-if="r.kind==='device'&&r.status!=='lent'" value="loan_out">Lend out</option>
+                                            <option v-if="r.status==='lent'" value="loan_return">Returned</option>
+                                            <option value="note">Note</option>
+                                        </select>
+                                        <select v-if="opsRoom.res.act.event_type==='status'" v-model="opsRoom.res.act.to_status" class="form-select" aria-label="New status"><option v-for="k in ['available','in_use','out_of_service','maintenance']" :key="k" :value="k">{{ OPS_RES_STATUS[k] }}</option></select>
+                                        <label>Date <input type="date" v-model="opsRoom.res.act.event_on" :max="opsRoom.today" class="form-control"></label>
+                                        <label v-if="opsRoom.res.act.event_type==='loan_out'">Due back <input type="date" v-model="opsRoom.res.act.due_on" :min="opsRoom.today" class="form-control" required></label>
+                                        <label v-if="opsRoom.res.act.event_type==='calibration'">Next due <input type="date" v-model="opsRoom.res.act.next_due" class="form-control" :placeholder="r.calibration_interval_days ? 'auto' : ''"></label>
+                                        <input v-model="opsRoom.res.act.note" class="form-control opsr-grow" maxlength="500" placeholder="Note (no patient data)" aria-label="Note">
+                                        <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.res.busy">Save</button>
+                                        <small v-if="opsRoom.res.act.event_type==='calibration'&&r.calibration_interval_days" class="ac-meta">Next due is set {{ r.calibration_interval_days }} days after the date unless you choose one.</small>
+                                    </form>
+                                    <ul class="opsr-list opsr-events"><li v-for="e in opsResEvents(r)" :key="e.id"><span class="ac-meta">{{ formatDateShort(e.event_on) }}</span> {{ ({created:'Added',status:'Status → '+(OPS_RES_STATUS[e.to_status]||e.to_status),calibration:'Calibrated'+(e.due_on?' · next '+formatDateShort(e.due_on):''),maintenance:'Maintenance',loan_out:'Lent · due '+formatDateShort(e.due_on),loan_return:'Returned',note:'Note'})[e.event_type] }}<template v-if="e.note"> — {{ e.note }}</template></li><li v-if="!opsResEvents(r).length" class="ac-meta">No history yet.</li></ul>
+                                </td></tr>
+                                </template>
+                                <tr v-if="!opsRoom.res.loading && !opsRoom.res.list.length"><td :colspan="3+(opsHas('calibration')?1:0)+(opsHas('loans')?1:0)" class="sync-empty">No resources registered for this unit yet.</td></tr>
+                            </tbody></table>
+                            <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAddRes">
+                                <p class="admin-kicker">ADD A RESOURCE</p>
+                                <select v-model="opsRoom.res.form.kind" class="form-select" aria-label="Kind"><option value="device">Device</option><option value="room">Room</option><option v-if="opsHas('beds')" value="bed">Bed</option></select>
+                                <input v-model="opsRoom.res.form.name" class="form-control" maxlength="120" placeholder="Name (e.g. Pletismógrafo 1)" aria-label="Name" required>
+                                <input v-model="opsRoom.res.form.identifier" class="form-control" maxlength="80" placeholder="Serial / number" aria-label="Identifier">
+                                <input v-model="opsRoom.res.form.location" class="form-control" maxlength="120" placeholder="Location" aria-label="Location">
+                                <label v-if="opsHas('calibration')&&opsRoom.res.form.kind==='device'">Calibrate every (days) <input type="number" min="1" max="3650" v-model="opsRoom.res.form.calibration_interval_days" class="form-control"></label>
+                                <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.res.form.name||opsRoom.res.busy">Add</button>
+                            </form>
+                        </div>
+
+                        <!-- ¿Qué hemos hecho? -->
+                        <div v-else-if="opsRoom.tab==='activity'" class="opsr-panel">
+                            <p v-if="opsRoom.meas.error" class="sync-check-error">{{ opsRoom.meas.error }}</p>
+                            <div class="opsr-row">
+                                <p class="admin-kicker">ACTIVITY · {{ opsRoom.meas.from ? formatDateShort(opsRoom.meas.from)+' → '+formatDateShort(opsRoom.meas.to) : '' }}</p>
+                                <select v-model.number="opsRoom.meas.days" class="form-select form-select-sm opsr-period" aria-label="Period" @change="opsLoadMeas"><option :value="7">Last 7 days</option><option :value="30">Last 30 days</option><option :value="90">Last 90 days</option><option :value="365">Last 12 months</option></select>
+                            </div>
+                            <table class="sync-table opsr-table"><thead><tr><th scope="col">Activity</th><th scope="col">Total</th><th scope="col">Days recorded</th></tr></thead><tbody>
+                                <tr v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="m.type_id"><td><strong>{{ m.label }}</strong></td><td><strong>{{ m.total }}</strong></td><td>{{ m.days_recorded }}</td></tr>
+                                <tr v-if="!opsRoom.meas.loading && !opsRoom.meas.summary.some(x=>x.kind==='flow')"><td colspan="3" class="sync-empty">No activity measures for this unit.</td></tr>
+                            </tbody></table>
+                            <form v-if="opsCanManage && opsRoom.meas.summary.some(x=>x.kind==='flow')" class="opsr-add" @submit.prevent="opsSaveFlows">
+                                <p class="admin-kicker">RECORD A DAY</p>
+                                <label>Day <input type="date" v-model="opsRoom.meas.date" :max="opsRoom.today" class="form-control" @change="opsLoadMeas"></label>
+                                <label v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="'v'+m.type_id">{{ m.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.values[m.type_id]" class="form-control opsr-num"></label>
+                                <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.meas.busy">Save day</button>
+                                <small class="ac-meta">Counts only — no patient data. Saving a day again replaces its values.</small>
+                            </form>
+                            <details v-if="opsCanManage" class="opsr-history"><summary>Add a measure to this unit</summary>
+                                <form class="opsr-add" @submit.prevent="opsAddMeasure"><input v-model="opsRoom.meas.newType.label" class="form-control" maxlength="80" placeholder="Name (e.g. Prick test)" aria-label="Measure name"><select v-model="opsRoom.meas.newType.kind" class="form-select" aria-label="Measure kind"><option value="flow">Activity (counted per day)</option><option value="stock">Pending (snapshot)</option></select><button type="submit" class="btn btn-secondary btn-sm" :disabled="!opsRoom.meas.newType.label||opsRoom.meas.busy">Add</button></form>
+                            </details>
+                        </div>
+
+                        <!-- ¿Qué está pendiente? -->
+                        <div v-else-if="opsRoom.tab==='pending'" class="opsr-panel">
+                            <p v-if="opsRoom.meas.error" class="sync-check-error">{{ opsRoom.meas.error }}</p>
+                            <div class="opsr-stocks">
+                                <div v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='stock')" :key="m.type_id" class="opsr-stock">
+                                    <p class="admin-kicker">{{ m.label }}</p>
+                                    <template v-if="m.latest">
+                                        <div class="opsr-stock-value">{{ m.latest.value }}<span v-if="m.previous" :class="['opsr-trend', opsTrend(m).cls]">{{ opsTrend(m).text }}</span></div>
+                                        <small>as of {{ formatDateShort(m.latest.date) }}<template v-if="m.previous"> · before: {{ m.previous.value }} ({{ formatDateShort(m.previous.date) }})</template></small>
+                                        <small v-if="m.latest.oldest_pending_on" :class="{'sync-check-error':opsDaysAgo(m.latest.oldest_pending_on)>60}">Oldest pending: {{ formatDateShort(m.latest.oldest_pending_on) }} ({{ opsDaysAgo(m.latest.oldest_pending_on) }} days)</small>
+                                        <small v-if="m.history.length>1" class="opsr-spark">{{ m.history.slice().reverse().map(h=>h.value).join(' · ') }}</small>
+                                    </template>
+                                    <p v-else class="ac-meta">Nothing recorded yet.</p>
+                                    <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsSaveSnap(m)">
+                                        <label>Today <input type="number" min="0" step="1" v-model="opsRoom.meas.snap[m.type_id].value" class="form-control opsr-num" required></label>
+                                        <label>Oldest pending since <input type="date" v-model="opsRoom.meas.snap[m.type_id].oldest" :max="opsRoom.today" class="form-control"></label>
+                                        <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.meas.busy">Save</button>
+                                    </form>
+                                </div>
+                                <p v-if="!opsRoom.meas.loading && !opsRoom.meas.summary.some(x=>x.kind==='stock')" class="ac-meta">No pending-work measures for this unit. Add one under “¿Qué hemos hecho?” → Add a measure → Pending.</p>
+                            </div>
+                        </div>
+
+                        <!-- ¿Qué ha fallado? -->
+                        <div v-else-if="opsRoom.tab==='incidents'" class="opsr-panel">
+                            <p v-if="opsRoom.inc.error" class="sync-check-error">{{ opsRoom.inc.error }}</p>
+                            <div v-if="opsRoom.inc.summary" class="opsr-alerts opsr-alerts--bar"><span :class="opsRoom.inc.summary.open?'opsr-alert opsr-alert--inc':'opsr-note'">{{ opsRoom.inc.summary.open }} open</span><span v-if="opsRoom.inc.summary.oldest_open_days!==null" class="opsr-note">oldest open {{ opsRoom.inc.summary.oldest_open_days }} days</span><span v-if="opsRoom.inc.summary.unowned" class="opsr-alert">{{ opsRoom.inc.summary.unowned }} without owner</span></div>
+                            <ul class="opsr-incidents">
+                                <li v-for="i in opsRoom.inc.list.filter(x=>x.status!=='resolved')" :key="i.id" class="opsr-incident">
+                                    <div><span class="opsr-cap">{{ OPS_INC_CAT[i.category] }}</span> <strong>{{ i.title }}</strong><small>opened {{ formatDateShort(i.opened_on) }} ({{ opsDaysAgo(i.opened_on) }} days)<template v-if="i.resource_id && opsRoom.res.list.find(r=>r.id===i.resource_id)"> · {{ opsRoom.res.list.find(r=>r.id===i.resource_id).name }}</template></small><small v-if="i.details">{{ i.details }}</small></div>
+                                    <div class="opsr-incident-ctl">
+                                        <select v-if="opsCanManage" class="form-select form-select-sm" :value="i.owner_id||''" aria-label="Owner" @change="opsUpdInc(i,{owner_id:$event.target.value||null})"><option value="">— No owner —</option><option v-for="s in opsOwners" :key="s.id" :value="s.id">{{ s.full_name }}</option></select><span v-else>{{ i.owner?.full_name || 'No owner' }}</span>
+                                        <select v-if="opsCanManage" class="form-select form-select-sm" :value="i.status" aria-label="Status" @change="$event.target.value==='resolved'?(opsRoom.inc.resolving=i.id):opsUpdInc(i,{status:$event.target.value})"><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved…</option></select>
+                                        <button v-if="opsIsAdmin" type="button" class="btn btn-secondary btn-sm" @click="opsRemoveInc(i,true)">Delete</button>
+                                    </div>
+                                    <form v-if="opsRoom.inc.resolving===i.id" class="opsr-add" @submit.prevent="opsUpdInc(i,{status:'resolved',resolution:opsRoom.inc.resolution})"><input v-model="opsRoom.inc.resolution" class="form-control opsr-grow" maxlength="500" placeholder="How was it resolved?" aria-label="Resolution" required><button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.inc.resolution||opsRoom.inc.busy">Resolve</button><button type="button" class="btn btn-secondary btn-sm" @click="opsRoom.inc.resolving=''">Cancel</button></form>
+                                </li>
+                                <li v-if="!opsRoom.inc.loading && !opsRoom.inc.list.some(x=>x.status!=='resolved')" class="ac-meta">No open incidents.</li>
+                            </ul>
+                            <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAddInc">
+                                <p class="admin-kicker">RECORD AN INCIDENT</p>
+                                <select v-model="opsRoom.inc.form.category" class="form-select" aria-label="Category"><option v-for="(l,k) in OPS_INC_CAT" :key="k" :value="k">{{ l }}</option></select>
+                                <input v-model="opsRoom.inc.form.title" class="form-control opsr-grow" maxlength="140" placeholder="What happened (e.g. Broncoscopio 2 averiado)" aria-label="Title" required>
+                                <select v-model="opsRoom.inc.form.resource_id" class="form-select" aria-label="Resource"><option value="">— Resource (optional) —</option><option v-for="r in opsRoom.res.list" :key="r.id" :value="r.id">{{ r.name }}</option></select>
+                                <select v-model="opsRoom.inc.form.owner_id" class="form-select" aria-label="Owner"><option value="">— Owner (optional) —</option><option v-for="s in opsOwners" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
+                                <input v-model="opsRoom.inc.form.details" class="form-control opsr-grow" maxlength="500" placeholder="Details (no patient data)" aria-label="Details">
+                                <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.inc.form.title||opsRoom.inc.busy">Record</button>
+                            </form>
+                            <details v-if="opsRoom.inc.list.some(x=>x.status==='resolved')" class="opsr-history"><summary>Resolved in the last 90 days ({{ opsRoom.inc.list.filter(x=>x.status==='resolved').length }})</summary>
+                                <ul class="opsr-list"><li v-for="i in opsRoom.inc.list.filter(x=>x.status==='resolved')" :key="'r'+i.id"><span class="opsr-cap">{{ OPS_INC_CAT[i.category] }}</span> {{ i.title }} · {{ formatDateShort(i.opened_on) }} → {{ formatDateShort(i.resolved_on) }}<template v-if="i.resolution"> — {{ i.resolution }}</template><button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsUpdInc(i,{status:'open'})">Reopen</button></li></ul></details>
+                        </div>
+
+                        <!-- ¿Cumplimos?: built next (OR-3) -->
                         <div v-else class="opsr-panel opsr-next">
                             <p class="admin-kicker">NEXT STEP</p>
                             <h4>{{ OPS_QUESTIONS.find(q=>q.key===opsRoom.tab).q }}</h4>
@@ -12762,7 +12899,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.34-20261016-ops-room-or1"></script>
+    <script src="app.js?v=5.4-production.35-20261016-ops-room-or2"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
