@@ -9171,7 +9171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
         // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
-        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',remembered:[],layout:null,layoutChanges:[],rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
+        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false,provenance:[],removed:[],removeSel:{},removing:false,removeResult:null,swaps:[]})
         const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
         // Tint review rows by duty date: today/future = green (actionable), past = orange (historical import).
         const oncallSyncRowClass=(dateStr)=>{
@@ -9187,7 +9187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncCheckKey=computed(()=>JSON.stringify({shifts:oncallSyncPayload(),history:oncallSync.historyAccepted}))
         const oncallSyncChecked=computed(()=>oncallSyncSelected.value.length>0&&oncallSync.checkKey===oncallSyncCheckKey.value)
         const oncallSyncReady=computed(()=>oncallSyncChecked.value&&oncallSyncSelected.value.every(r=>oncallSync.checkResults[r.date]?.status==='ready'))
-        watch(oncallSyncCheckKey,()=>{oncallSync.checkKey='';oncallSync.checkResults={};oncallSync.checkError=''},{flush:'sync'})
+        watch(oncallSyncCheckKey,()=>{oncallSync.checkKey='';oncallSync.checkResults={};oncallSync.checkError='';oncallSync.review={rows:{},summary:null,error:''}},{flush:'sync'})
         const oncallSyncCheck=async()=>{
           if(oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.value.length||currentUser.value?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW')return
           const shifts=oncallSyncPayload(),key=oncallSyncCheckKey.value,history=oncallSync.historyAccepted
@@ -9195,7 +9195,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const checked={}
           try{
             for(let i=0;i<shifts.length;i+=10){const chunk=shifts.slice(i,i+10);const result=await API.request('/api/oncall/batch',{method:'POST',body:{shifts:chunk,dry_run:true,acknowledge_history:history}});if(result.dry_run!==true||!Array.isArray(result.results)||result.results.length!==chunk.length||chunk.some(r=>result.results.filter(x=>x.date===r.duty_date&&['ready','needs_attention'].includes(x.status)).length!==1))throw Error('Check could not be confirmed. Refresh and try again.');for(const row of result.results)checked[row.date]=row}
-            if(key===oncallSyncCheckKey.value){oncallSync.checkResults=checked;oncallSync.checkKey=key}
+            const rev=await importReview('oncall',shifts.map(x=>({key:x.duty_date,duty_date:x.duty_date,primary_physician_id:x.primary_physician_id,resident_physician_id:x.resident_physician_id||null,shift_type:x.shift_type})))
+            if(key===oncallSyncCheckKey.value){oncallSync.checkResults=checked;oncallSync.checkKey=key;oncallSync.review=rev}
           }catch(e){oncallSync.checkError=e.message}finally{oncallSync.checking=false}
         }
         const oncallSyncMonths=computed(()=>[...new Set(oncallSync.rows.map(r=>r.date?.slice(0,7)).filter(Boolean))].sort())
@@ -9204,21 +9205,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncSelectNew=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const next={...oncallSync.selection};oncallSyncVisible.value.filter(r=>r.status==='new').forEach(r=>next[r.key]=true);oncallSync.selection=next}
         watch(()=>JSON.stringify(oncallSync.filter),()=>{oncallSync.selection={}},{flush:'sync'})
         const SYNC_MAP_KEY='neumdesk_oncall_sync_mappings'
+        // Import cross-checks (Phase C): review the WHOLE selection (rest, workload, coverage, external
+        // rotations, in-file overlaps, gaps). Read-only; findings never block. A failed review is shown as such.
+        const importReview=async(kind,rows)=>{try{const r=await API.request('/api/imports/review',{method:'POST',body:{kind,rows}});return {rows:r?.rows||{},summary:r?.summary||null,error:''}}catch(e){return {rows:{},summary:null,error:e.message||'Review unavailable'}}}
+        // ✓ ready · ⚠ review · ✕ blocked — dry-run result decides blocked; review findings decide ⚠.
+        const importVerdict=(check,findings)=>!check?null:check.status!=='ready'?'blocked':(findings||[]).some(f=>f.severity==='review')?'review':'ready'
         // Import memory (Phase B): saved mappings + layout memory, shared across users and devices.
         const importMemory={
           async aliases(type){try{const r=await API.request('/api/import-aliases?type='+type,{skipCache:true});return r?.data||[]}catch{return []}},
           async save(type,aliases){if(!aliases.length)return null;try{const r=await API.request('/api/import-aliases',{method:'PUT',body:{type,aliases}});if(r?.rejected?.length)showToast('Some mappings were not saved',r.rejected.map(x=>x.label+': '+x.reason).join(' · '),'warning');return r}catch(e){showToast('Mapping not remembered',e.message,'warning');return null}},
           async forget(id){try{await API.request('/api/import-aliases/'+encodeURIComponent(id),{method:'DELETE'});return true}catch(e){showToast('Could not forget mapping',e.message,'error');return false}},
           async layoutCheck(type,layout){const M=window.NeumImportMemory;try{const r=await API.request('/api/import-layouts/'+type,{skipCache:true});const prev=r?.data;if(!prev||prev.fingerprint===M.fingerprint(layout))return {changes:[],prev};return {changes:M.diffLayout(prev.layout,layout),prev}}catch{return {changes:[],prev:null}}},
+          async existing(kind,body){const r=await API.request('/api/imports/existing',{method:'POST',body:{kind,...body}});return Array.isArray(r?.data)?r.data:[]},
+          async logRun(type,fileName,counts){try{await API.request('/api/import-runs',{method:'POST',body:{type,file_name:fileName,counts}})}catch{}},
           async layoutSave(type,layout,fileName){try{await API.request('/api/import-layouts/'+type,{method:'PUT',body:{fingerprint:window.NeumImportMemory.fingerprint(layout),layout,file_name:fileName}})}catch{}}
         }
         const syncRebuild=()=>{
           const p=window.NeumOncallSync.plan(oncallSync.rows,oncallSync.sourceStaff,oncallSync.existing,oncallSync.mappings,oncallSync.choices)
           Object.assign(oncallSync,p,{stats:{total:oncallSync.rows.length,sheet:oncallSync.rows[0]?.source_sheet||'',add:p.toAdd.length,update:p.toUpdate.length,unchanged:p.counts.unchanged,unmatchedRows:p.blocked.length,skipped:p.counts.skipped}})
+          // Phase D: trades between two dates shown as one change; earlier-imported guardias the file no longer lists.
+          oncallSync.swaps=window.NeumOncallSync.swaps(p.entries)
+          oncallSync.removed=window.NeumOncallSync.removedUpstream(oncallSync.rows,oncallSync.provenance)
         }
         const oncallSyncParse=async(file)=>{
           if(oncallSync.checking||oncallSync.committing)return
-          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',remembered:[],layout:null,layoutChanges:[],choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},summary:null,filter:{start:'',end:'',search:'',status:''}})
+          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},summary:null,filter:{start:'',end:'',search:'',status:''},provenance:[],removed:[],removeSel:{},removing:false,removeResult:null,swaps:[]})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const active=String(new Date().getFullYear());const sheet=wb.SheetNames.find(n=>n===active+'+'||n===active)||wb.SheetNames.find(n=>/^\d{4}\+?$/.test(n));if(!sheet)throw Error('No dated Guardias sheet found.')
             const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,raw:true});oncallSync.rows=window.NeumOncallSync.parse(aoa,sheet)
@@ -9230,6 +9241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const upcoming=dates.filter(d=>d>=todayStr).length;
             oncallSync.summary={min:dates[0],max:dates.at(-1),total:dates.length,upcoming,pastOnly:dates.at(-1)<todayStr};
             const [existing,staff]=await Promise.all([API.request('/api/oncall?start_date='+dates[0]+'&end_date='+dates.at(-1),{skipCache:true}),API.request('/api/identity/staff',{skipCache:true})]);oncallSync.existing=Array.isArray(existing)?existing:existing.data||[];oncallSync.sourceStaff=staff.data||[]
+            try{oncallSync.provenance=await importMemory.existing('oncall',{from:dates[0],to:dates.at(-1)})}catch{oncallSync.provenance=[]}
             // Saved mappings now live in the database; mappings left in this browser are migrated once.
             let legacy={};try{legacy=JSON.parse(localStorage.getItem(SYNC_MAP_KEY)||'{}')}catch{}
             const legacyItems=Object.entries(legacy).filter(([,v])=>v).map(([label,v])=>v==='skip'?{label,action:'skip'}:{label,action:'map',target_id:v})
@@ -9245,13 +9257,30 @@ document.addEventListener('DOMContentLoaded', () => {
             syncRebuild();oncallSyncPeriod(landMonth);oncallSync.done=true
           }catch(e){oncallSync.error=e.message}finally{oncallSync.parsing=false}
         }
-        const oncallSyncReset=()=>{if(!oncallSync.checking&&!oncallSync.committing)Object.assign(oncallSync,{done:false,fileName:'',error:'',rows:[],entries:[],selection:{},results:{},toAdd:[],toUpdate:[],conflicts:[],blocked:[],unmatched:[],choices:{},commitResult:null,committed:false})}
+        const oncallSyncReset=()=>{if(!oncallSync.checking&&!oncallSync.committing)Object.assign(oncallSync,{done:false,fileName:'',error:'',rows:[],entries:[],selection:{},results:{},toAdd:[],toUpdate:[],conflicts:[],blocked:[],unmatched:[],choices:{},commitResult:null,committed:false,provenance:[],removed:[],removeSel:{},removeResult:null,swaps:[]})}
         const oncallSyncFile=ev=>{const file=ev.target.files?.[0];if(file)oncallSyncParse(file);ev.target.value=''}
         const oncallSyncMap=(name,id)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={...oncallSync.mappings,[name]:id};syncRebuild();if(id)importMemory.save('oncall_staff',[id==='skip'?{label:name,action:'skip'}:{label:name,action:'map',target_id:id}]).then(r=>{const a=r?.saved?.[0];if(a)oncallSync.remembered=[...oncallSync.remembered.filter(x=>x.label!==name),{label:name,id:a.id,action:a.action,target_id:a.target_id}]})}
         const oncallSyncPools=computed(()=>window.NeumOncallSync.pools(oncallSync.sourceStaff))
+        const oncallSyncVerdict=r=>importVerdict(oncallSyncChecked.value?oncallSync.checkResults[r.date]:null,oncallSync.review.rows[r.date])
+        const importMonthLabel=m=>new Date(m+'-01T12:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'})
         const oncallSyncForget=async(item)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;if(!(await importMemory.forget(item.id)))return;const m={...oncallSync.mappings};delete m[item.label];oncallSync.mappings=m;oncallSync.remembered=oncallSync.remembered.filter(x=>x.id!==item.id);oncallSync.selection={};syncRebuild()}
         const oncallSyncChoice=(date,choice)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const selection={...oncallSync.selection};oncallSync.entries.filter(r=>r.date===date).forEach(r=>delete selection[r.key]);oncallSync.selection=selection;oncallSync.choices={...oncallSync.choices,[date]:choice};syncRebuild()}
         const oncallSyncClearMappings=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={};oncallSync.remembered=[];try{localStorage.removeItem(SYNC_MAP_KEY)}catch{};syncRebuild()}
+        const oncallSyncStaffName=id=>oncallSync.sourceStaff.find(s=>s.id===id)?.full_name||'Unknown'
+        // Accept a swap as one change: approve both replacements, then select both rows.
+        const oncallSyncAcceptSwap=sw=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.choices={...oncallSync.choices,[sw.dates[0]]:'replace',[sw.dates[1]]:'replace'};syncRebuild();oncallSync.selection={...oncallSync.selection,[sw.keys[0]]:true,[sw.keys[1]]:true}}
+        const oncallSyncRemoveCount=computed(()=>oncallSync.removed.filter(r=>oncallSync.removeSel[r.id]).length)
+        // Remove guardias that an earlier import created and the file no longer lists. Never pre-selected.
+        const oncallSyncRemoveSelected=async()=>{
+          const rows=oncallSync.removed.filter(r=>oncallSync.removeSel[r.id]);if(!rows.length||oncallSync.removing||oncallSync.committing)return
+          if(!window.confirm('Delete '+rows.length+' guardia(s) that are no longer in this file? They stay in the audit log.'))return
+          oncallSync.removing=true;const done=new Set(),failed=[]
+          try{for(const r of rows){try{await API.request('/api/oncall/'+encodeURIComponent(r.id),{method:'DELETE'});done.add(r.id)}catch(e){failed.push(r.duty_date+': '+e.message)}}}
+          finally{oncallSync.removing=false;API.clearCache();oncallSync.provenance=oncallSync.provenance.filter(x=>!done.has(x.id));oncallSync.existing=oncallSync.existing.filter(x=>!done.has(x.id));oncallSync.removeSel={};syncRebuild()
+            oncallSync.removeResult={ok:!failed.length,msg:done.size+' guardia(s) deleted'+(failed.length?' · '+failed.length+' failed: '+failed.join('; '):'')}
+            if(done.size)importMemory.logRun('oncall',oncallSync.fileName,{removed:done.size,failed:failed.length})
+            try{await onCallOps.loadOnCallSchedule()}catch{}}
+        }
         const oncallSyncConfirmCommit=()=>{
           if(oncallSync.checking||oncallSync.committing)return
           const n=oncallSyncSelected.value.length
@@ -9286,11 +9315,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const base=parts.length?parts.join(' · '):'No changes to save'
             oncallSync.commitResult={ok:skipped===0,msg:skipped===0?base+' · all saved ✓':base+' · '+skipped+' could not be saved (see the rows marked “Not saved”)',failures}
           }catch(e){oncallSync.commitResult={ok:false,msg:'Saved '+inserted+' and updated '+updated+' before the sync hit an error: '+e.message+' Reload the file before retrying — part of the request may have completed.',failures}}
-          finally{oncallSync.committed=true;oncallSync.committing=false;oncallSync.progress=null;API.clearCache();if(oncallSync.layout&&inserted+updated>0)importMemory.layoutSave('oncall',oncallSync.layout,oncallSync.fileName);try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
+          finally{oncallSync.committed=true;oncallSync.committing=false;oncallSync.progress=null;API.clearCache();if(oncallSync.layout&&inserted+updated>0)importMemory.layoutSave('oncall',oncallSync.layout,oncallSync.fileName);if(inserted+updated>0)importMemory.logRun('oncall',oncallSync.fileName,{inserted,updated,failed:skipped,swaps:oncallSync.swaps.filter(sw=>sw.keys.every(k=>oncallSync.selection[k])).length});try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
         }
 
         // ─── Rotations import (MIR matrix → resident_rotations) — mirrors the on-call sync ───
-        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null})
+        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null,existing:[],existingFor:{},existingError:'',removed:[],removeSel:{},removing:false,removeResult:null,syncCounts:{unchanged:0,changed:0,removed:0}})
         // Time bands: current + upcoming are the working set (highlighted, pre-selected); past is
         // history (importable on purpose); far = more than 12 months ahead (flagged, never pre-selected).
         const ROT_BAND_VIEW={now:['current','upcoming'],past:['past'],far:['far'],all:['past','current','upcoming','far']}
@@ -9307,12 +9336,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotationImportPayload = ()=>window.NeumRotationImport.payload(rotationImport.records,rotationImport.selection)
         const rotationImportCheckKey = computed(()=>JSON.stringify(rotationImportPayload()))
         const rotationImportReady = computed(()=>rotationImportSelectedKeys.value.length>0 && rotationImport.checkKey===rotationImportCheckKey.value && rotationImportSelectedKeys.value.every(r=>rotationImport.checkResults[r.key]?.status==='ready'))
-        const rotationImportRebuild = ()=>{const p=window.NeumRotationImport.plan(rotationImport.periods,rotationImport.staff,rotationImport.units,{residentMappings:rotationImport.residentMappings,unitChoices:rotationImport.unitChoices,today:Utils.localDateStr(new Date())});Object.assign(rotationImport,{records:p.records,unmatchedResidents:p.unmatchedResidents,unmatchedUnits:p.unmatchedUnits,counts:p.counts})
+        const rotationImportRebuild = ()=>{const p=window.NeumRotationImport.plan(rotationImport.periods,rotationImport.staff,rotationImport.units,{residentMappings:rotationImport.residentMappings,unitChoices:rotationImport.unitChoices,today:Utils.localDateStr(new Date())})
+          // Phase D: compare with what neumDesk holds → unchanged (nothing to send) / changed (replaces) / removed upstream.
+          const d=window.NeumRotationImport.diff(p.records,rotationImport.existing)
+          Object.assign(rotationImport,{records:d.records,removed:d.removed,syncCounts:d.counts,unmatchedResidents:p.unmatchedResidents,unmatchedUnits:p.unmatchedUnits,counts:{...p.counts,ready:p.counts.ready-d.counts.unchanged,unchanged:d.counts.unchanged}})
+          const keep={};for(const r of d.removed)if(rotationImport.removeSel[r.id])keep[r.id]=true;rotationImport.removeSel=keep
           // Pre-select the working set (ready rows that are current or upcoming). History and far-future are opt-in.
-          if(rotationImport.autoSelect){const next={};p.records.filter(r=>r.status==='ready'&&['current','upcoming'].includes(r.band)).forEach(r=>next[r.key]=true);rotationImport.selection=next}}
+          if(rotationImport.autoSelect){const next={};d.records.filter(r=>r.status==='ready'&&['current','upcoming'].includes(r.band)).forEach(r=>next[r.key]=true);rotationImport.selection=next}
+          if(rotationImport.done)rotationImportLoadExisting()}
+        // Loads existing rotations (with provenance) for residents not fetched yet, then re-plans. A new mapping
+        // brings in a new resident → one more small fetch. Failure is shown, never fatal (the dry run still blocks overlaps).
+        const rotationImportLoadExisting = async()=>{
+          const ids=[...new Set(rotationImport.records.map(r=>r.resident_id).filter(Boolean).map(String))].filter(id=>!rotationImport.existingFor[id])
+          if(!ids.length||!rotationImport.summary)return
+          const marks={...rotationImport.existingFor};ids.forEach(id=>marks[id]=true);rotationImport.existingFor=marks
+          try{const rows=await importMemory.existing('rotations',{resident_ids:ids,from:rotationImport.summary.span[0],to:rotationImport.summary.span[1]});const have=new Set(rotationImport.existing.map(x=>x.id));rotationImport.existing=[...rotationImport.existing,...rows.filter(x=>!have.has(x.id))];rotationImport.existingError=''}
+          catch(e){rotationImport.existingError=e.message;return}
+          rotationImportRebuild()
+        }
+        const rotationImportRemoveCount = computed(()=>rotationImport.removed.filter(r=>rotationImport.removeSel[r.id]).length)
+        // Remove imported rotations the file no longer lists (restorable; hidden everywhere). Never pre-selected.
+        const rotationImportRemoveSelected = async()=>{
+          const rows=rotationImport.removed.filter(r=>rotationImport.removeSel[r.id]);if(!rows.length||rotationImport.removing||rotationImport.committing||rotationImport.checking)return
+          if(!window.confirm('Remove '+rows.length+' rotation(s) that are no longer in this file? They can be restored later.'))return
+          rotationImport.removing=true;let removed=0;const failed=[]
+          try{for(const r of rows){try{await API.request('/api/rotations/'+encodeURIComponent(r.id)+'?mode=remove',{method:'DELETE'});removed++;rotationImport.existing=rotationImport.existing.filter(x=>x.id!==r.id)}catch(e){failed.push((r.resident_name||'')+' '+r.start_date+': '+e.message)}}}
+          finally{rotationImport.removing=false;rotationImport.removeSel={};API.clearCache();rotationImportRebuild()
+            rotationImport.removeResult={ok:!failed.length,msg:removed+' rotation(s) removed'+(failed.length?' · '+failed.length+' failed: '+failed.join('; '):'')}
+            if(removed)importMemory.logRun('rotations',rotationImport.fileName,{removed,failed:failed.length})}
+        }
         const rotationImportParse = async(file)=>{
           if(rotationImport.checking||rotationImport.committing)return
-          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[]})
+          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},existing:[],existingFor:{},existingError:'',removed:[],removeSel:{},removeResult:null,syncCounts:{unchanged:0,changed:0,removed:0}})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true})
             const sheets={};wb.SheetNames.forEach(n=>{sheets[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true})})
@@ -9330,7 +9385,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rotationImport.remembered=[...resMem.remembered.map(x=>({...x,kind:'resident'})),...unitMem.remembered.map(x=>({...x,kind:'unit'}))]
             rotationImport.layout=M.layoutRotations(sheets)
             rotationImport.layoutChanges=(await importMemory.layoutCheck('rotations',rotationImport.layout)).changes
-            rotationImportRebuild();rotationImport.done=true
+            rotationImportRebuild();await rotationImportLoadExisting();rotationImport.done=true
           }catch(e){rotationImport.error=e.message}finally{rotationImport.parsing=false}
         }
         const rotationImportFile = ev=>{const f=ev.target.files?.[0];if(f)rotationImportParse(f);ev.target.value=''}
@@ -9359,7 +9414,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotationImportUnitChoice = (code,choice)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.autoSelect=true;rotationImport.unitChoices={...rotationImport.unitChoices,[code]:choice};rotationImportRebuild();rotationImportRemember('unit',code,choice)}
         const rotationImportSelectReady = ()=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;const next={...rotationImport.selection};rotationImportVisible.value.filter(r=>r.status==='ready').forEach(r=>next[r.key]=true);rotationImport.selection=next}
         const rotationImportClearSel = ()=>{rotationImport.selection={};rotationImport.autoSelect=false}
-        const rotationImportReset = ()=>{if(!rotationImport.checking&&!rotationImport.committing)Object.assign(rotationImport,{done:false,fileName:'',error:'',periods:[],records:[],selection:{},residentMappings:{},unitChoices:{},commitResult:null,committed:false,checkResults:{},checkKey:'',summary:null})}
+        const rotationImportReset = ()=>{if(!rotationImport.checking&&!rotationImport.committing)Object.assign(rotationImport,{done:false,fileName:'',error:'',periods:[],records:[],selection:{},residentMappings:{},unitChoices:{},commitResult:null,committed:false,checkResults:{},checkKey:'',summary:null,existing:[],existingFor:{},removed:[],removeSel:{},removeResult:null})}
+        const rotationImportVerdict=r=>importVerdict(rotationImport.checkKey===rotationImportCheckKey.value?rotationImport.checkResults[r.key]:null,rotationImport.review.rows[r.key])
         const rotationImportCheck = async()=>{
           if(rotationImport.checking||rotationImport.committing||rotationImport.committed||!rotationImportCanCommit.value||!rotationImportSelectedKeys.value.length)return
           const recs=rotationImportSelectedKeys.value,body=rotationImportPayload(),key=rotationImportCheckKey.value
@@ -9372,7 +9428,8 @@ document.addEventListener('DOMContentLoaded', () => {
               if(result.dry_run!==true||!Array.isArray(result.results)||result.results.length!==chunk.length)throw Error('Check could not be confirmed. Refresh and try again.')
               result.results.forEach((row,j)=>{checked[chunkRecs[j].key]=row})
             }
-            if(key===rotationImportCheckKey.value){rotationImport.checkResults=checked;rotationImport.checkKey=key}
+            const rev=await importReview('rotations',recs.map(r=>({key:r.key,resident_id:r.resident_id,training_unit_id:r.training_unit_id||null,start_date:r.start_date,end_date:r.end_date})))
+            if(key===rotationImportCheckKey.value){rotationImport.checkResults=checked;rotationImport.checkKey=key;rotationImport.review=rev}
           }catch(e){rotationImport.checkError=e.message}finally{rotationImport.checking=false}
         }
         const rotationImportCommit = async()=>{
@@ -9380,21 +9437,22 @@ document.addEventListener('DOMContentLoaded', () => {
           if(!rotationImportCanCommit.value){showToast('Permission needed','Your account cannot commit a rotations import. Ask a system administrator.','error');return}
           if(!rotationImportReady.value){showToast('Not checked','Run “Check selected rotations” first.','info');return}
           const body=rotationImportPayload();if(!body.length){showToast('Nothing selected','Select at least one ready rotation.','info');return}
-          if(!window.confirm('Import '+body.length+' rotations into the system?'))return
+          const nRep=body.filter(r=>r.replaces).length
+          if(!window.confirm('Import '+body.length+' rotations into the system?'+(nRep?' '+nRep+' of them replace an earlier imported version (the old one is hidden, restorable).':'')))return
           const total=body.length;rotationImport.committing=true;rotationImport.commitResult=null;rotationImport.progress={done:0,total}
-          let inserted=0,skipped=0,unitsCreated=0;const failures=[]
+          let inserted=0,skipped=0,unitsCreated=0,replaced=0;const failures=[]
           try{
             for(let i=0;i<body.length;i+=20){
               const result=await API.request('/api/rotations/batch',{method:'POST',body:{rotations:body.slice(i,i+20),source_file:rotationImport.fileName}})
               if(!Number.isInteger(result.inserted)||!Number.isInteger(result.skipped))throw Error('Server returned unrecognised results. Reload before retrying.')
-              inserted+=result.inserted;skipped+=result.skipped;unitsCreated+=result.units_created||0
+              inserted+=result.inserted;skipped+=result.skipped;unitsCreated+=result.units_created||0;replaced+=(result.results||[]).filter(r=>r.status==='replaced').length
               failures.push(...(result.results||[]).filter(r=>r.status==='not_saved'))
               rotationImport.progress={done:Math.min(i+20,total),total}
             }
-            const base=inserted+(inserted===1?' rotation imported':' rotations imported')+(unitsCreated?' · '+unitsCreated+(unitsCreated===1?' unit created':' units created'):'')
+            const base=inserted+(inserted===1?' rotation imported':' rotations imported')+(replaced?' ('+replaced+' replacing an earlier version)':'')+(unitsCreated?' · '+unitsCreated+(unitsCreated===1?' unit created':' units created'):'')
             rotationImport.commitResult={ok:skipped===0,msg:skipped===0?base+' · all saved ✓':base+' · '+skipped+' could not be saved (see rows marked “Not saved”)',failures}
           }catch(e){rotationImport.commitResult={ok:false,msg:'Imported '+inserted+' before the import hit an error: '+e.message+' Reload the file before retrying.',failures}}
-          finally{rotationImport.committed=true;rotationImport.committing=false;rotationImport.progress=null;API.clearCache();if(rotationImport.layout&&inserted>0)importMemory.layoutSave('rotations',rotationImport.layout,rotationImport.fileName);if(rotationImport.commitResult)showToast(rotationImport.commitResult.ok?'Rotations import complete':'Import finished with issues',rotationImport.commitResult.msg,rotationImport.commitResult.ok?'success':'error')}
+          finally{rotationImport.committed=true;rotationImport.committing=false;rotationImport.progress=null;API.clearCache();if(rotationImport.layout&&inserted>0)importMemory.layoutSave('rotations',rotationImport.layout,rotationImport.fileName);if(inserted>0)importMemory.logRun('rotations',rotationImport.fileName,{inserted:inserted-replaced,replaced,units_created:unitsCreated,failed:skipped,unchanged:rotationImport.syncCounts.unchanged});if(rotationImport.commitResult)showToast(rotationImport.commitResult.ok?'Rotations import complete':'Import finished with issues',rotationImport.commitResult.msg,rotationImport.commitResult.ok?'success':'error')}
         }
         // Selections persist across views (person search, History, far-future) so the pre-selected working
         // set survives browsing; the UI always states how many selected rows are outside the current view.
@@ -19395,8 +19453,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
-          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportForget,rotationImportTargetName, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
+          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSyncStaffName, oncallSyncAcceptSwap, oncallSyncRemoveCount, oncallSyncRemoveSelected, oncallSyncVerdict, importMonthLabel, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportRemoveCount,rotationImportRemoveSelected,rotationImportForget,rotationImportTargetName,rotationImportVerdict,rotationImportCheckKey, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,

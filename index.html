@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261016-import-bands">
+<link rel="stylesheet" href="access.css?v=20261016-import-review">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4674,6 +4674,13 @@
                                     </div>
                                     <div  class="nd-l243 nd-v010">Your choices are saved for everyone who imports and rechecked against active staff (staff column → attendings, MIR column → residents).</div>
                                 </div>
+                                <div v-if="oncallSync.swaps.length" class="nd-l247 nd-v230 import-swaps" aria-label="Swaps detected">
+                                    <div class="nd-l090 nd-v225">Swaps detected ({{ oncallSync.swaps.length }}) — two people traded guardias</div>
+                                    <div v-for="sw in oncallSync.swaps" :key="'sw'+sw.keys.join()" class="nd-l246">
+                                        <span class="nd-l245 nd-v229">{{ oncallSyncStaffName(sw.people[0]) }} ⇄ {{ oncallSyncStaffName(sw.people[1]) }} <span class="nd-v228">({{ sw.role==='mir'?'MIR':'staff' }}) · {{ formatDateShort(sw.dates[0]) }} and {{ formatDateShort(sw.dates[1]) }}</span></span>
+                                        <button type="button" class="btn btn-secondary btn-sm" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||sw.keys.every(k=>oncallSync.selection[k])" @click="oncallSyncAcceptSwap(sw)">{{ sw.keys.every(k=>oncallSync.selection[k]) ? 'Swap accepted' : 'Accept swap' }}</button>
+                                    </div>
+                                </div>
                                 <div class="sync-review-heading"><div><p class="admin-kicker">02 / REVIEW ASSIGNMENTS</p><h3>{{oncallSyncVisible.length}} in view <span>of {{oncallSync.entries.length}} in this file</span></h3></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" @click="oncallSyncSelectNew">Select new in view</button><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" @click="oncallSync.selection={}">Clear selection</button></div>
                                 <p class="ac-meta">Nothing is selected automatically. Changing filters or mappings clears selection. Changing a conflict decision deselects that row. Current assignments stay until you approve and select a replacement.</p>
                                 <div class="sync-table-wrap" tabindex="0" aria-label="On-call import comparison">
@@ -4683,14 +4690,35 @@
                                       <td><strong>{{r.date||'Invalid date'}}</strong><small v-if="r.date">{{ new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long'}) }}</small><small>Source row {{r.source_row}}</small></td>
                                       <td><template v-if="r.current"><strong>{{r.currentName}}</strong><small>Resident: {{r.currentResident||'None'}}</small><small>{{oncallSyncType(r.current.shift_type)}}</small></template><span v-else>{{r.status==='conflict'?'Multiple assignments':'No assignment'}}</span></td>
                                       <td><strong :class="{'sync-difference':r.current&&r.current.primary_physician_id!==r.staffId}">{{r.staffName||r.surname}}</strong><small :class="{'sync-difference':r.current&&(r.current.resident_physician_id||null)!==(r.residentId||null)}">Resident: {{r.residentName||r.mir||'None'}}</small><small :class="{'sync-difference':r.current&&r.current.shift_type!==r.shiftType}">{{oncallSyncType(r.shiftType)}}</small></td>
-                                      <td><template v-if="oncallSync.results[r.date]"><span class="sync-status" :data-status="oncallSync.results[r.date].status">{{({inserted:'Added',updated:'Updated',not_saved:'Not saved'})[oncallSync.results[r.date].status]}}</span><small>{{oncallSync.results[r.date].message}}</small></template><template v-else><span class="sync-status" :data-status="r.status">{{({new:'New',conflict:'Conflict',replacement:'Replacement approved',matching:'Already matches',kept:'Keeping current',blocked:'Needs attention',skipped:'Skipped'})[r.status]}}</span><small v-if="r.issue&&['blocked','conflict'].includes(r.status)">{{r.issue}}</small><small v-if="oncallSyncChecked&&oncallSync.checkResults[r.date]" :class="{'sync-check-error':oncallSync.checkResults[r.date].status!=='ready'}">{{oncallSync.checkResults[r.date].status==='ready'?'Checked · Ready to apply':oncallSync.checkResults[r.date].message}}</small><div v-if="r.expected&&!oncallSync.committed" class="sync-row-actions"><button v-if="r.status!=='kept'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'keep')">Keep current</button><button v-if="r.status!=='replacement'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'replace')">Approve replacement</button><button v-if="r.status==='replacement'||r.status==='kept'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'')">Undo decision</button></div><small v-if="oncallSync.committed&&oncallSync.selection[r.key]">Not confirmed. Reload before retrying.</small></template></td>
+                                      <td><template v-if="oncallSync.results[r.date]"><span class="sync-status" :data-status="oncallSync.results[r.date].status">{{({inserted:'Added',updated:'Updated',not_saved:'Not saved'})[oncallSync.results[r.date].status]}}</span><small>{{oncallSync.results[r.date].message}}</small></template><template v-else><span class="sync-status" :data-status="r.status">{{({new:'New',conflict:'Conflict',replacement:'Replacement approved',matching:'Already matches',kept:'Keeping current',blocked:'Needs attention',skipped:'Skipped'})[r.status]}}</span><small v-if="r.issue&&['blocked','conflict'].includes(r.status)">{{r.issue}}</small><small v-if="oncallSync.swaps.some(sw=>sw.keys.includes(r.key))" class="import-sync-changed">⇄ Part of a swap with {{ formatDateShort(oncallSync.swaps.find(sw=>sw.keys.includes(r.key)).dates.find(d=>d!==r.date)) }}</small><small v-if="oncallSyncChecked&&oncallSync.checkResults[r.date]" :class="['import-verdict','import-verdict--'+oncallSyncVerdict(r),{'sync-check-error':oncallSync.checkResults[r.date].status!=='ready'}]">{{ ({ready:'✓ Ready to apply',review:'⚠ Ready · review below',blocked:'✕ '+(oncallSync.checkResults[r.date].message||'Blocked')})[oncallSyncVerdict(r)] }}</small><ul v-if="(oncallSync.review.rows[r.date]||[]).length" class="import-findings"><li v-for="(f,fi) in oncallSync.review.rows[r.date]" :key="fi" :data-severity="f.severity">{{ f.severity==='review' ? '⚠' : 'ℹ' }} {{ f.message }}</li></ul><div v-if="r.expected&&!oncallSync.committed" class="sync-row-actions"><button v-if="r.status!=='kept'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'keep')">Keep current</button><button v-if="r.status!=='replacement'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'replace')">Approve replacement</button><button v-if="r.status==='replacement'||r.status==='kept'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'')">Undo decision</button></div><small v-if="oncallSync.committed&&oncallSync.selection[r.key]">Not confirmed. Reload before retrying.</small></template></td>
                                     </tr>
                                     <tr v-if="!oncallSyncVisible.length"><td colspan="5" class="sync-empty">No assignments match this view. Adjust the period or filters.</td></tr>
                                   </tbody></table>
                                 </div>
                                 <p class="ac-meta">New shifts use the current default hours, 15:00–08:00. Existing times and coverage areas are preserved. Blank source assignments do not delete records.</p>
+                                <div v-if="oncallSync.removed.length" class="nd-l247 nd-v230 import-removed" aria-label="Guardias no longer in this file">
+                                    <div class="nd-l090 nd-v225">No longer in this file ({{ oncallSync.removed.length }})</div>
+                                    <p class="ac-meta">These guardias came from an earlier import and fall inside this file's dates, but the file no longer lists them. Nothing is deleted unless you tick it. Guardias entered by hand are never listed here.</p>
+                                    <label v-for="x in oncallSync.removed" :key="'or'+x.id" class="nd-l246"><input type="checkbox" v-model="oncallSync.removeSel[x.id]" :disabled="oncallSync.removing||oncallSync.committing||oncallSync.checking"> <span><strong>{{ formatDateShort(x.duty_date) }}</strong> · {{ oncallSyncStaffName(x.primary_physician_id) }}<template v-if="x.resident_physician_id"> · MIR {{ oncallSyncStaffName(x.resident_physician_id) }}</template></span></label>
+                                    <button class="btn btn-secondary" :disabled="!oncallSyncRemoveCount||oncallSync.removing||oncallSync.committing||oncallSync.checking" @click="oncallSyncRemoveSelected">{{ oncallSync.removing?'Deleting…':'Delete '+oncallSyncRemoveCount+' selected' }}</button>
+                                    <small v-if="oncallSync.removeResult" :class="oncallSync.removeResult.ok?'ac-meta':'sync-check-error'">{{ oncallSync.removeResult.msg }}</small>
+                                </div>
                                 <label><input type="checkbox" v-model="oncallSync.historyAccepted" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed"> Include historical assignments from this file (requires exception-approval permission)</label>
                                 <div class="sync-stickybar">
+<div v-if="oncallSyncChecked" class="import-impact" aria-label="Impact of this import">
+                                  <p class="admin-kicker">IMPACT OF THIS IMPORT</p>
+                                  <p v-if="oncallSync.review.error" class="sync-check-error">Cross-checks unavailable ({{ oncallSync.review.error }}). Per-shift checks still apply.</p>
+                                  <ul v-else-if="oncallSync.review.summary">
+                                    <li>{{ oncallSync.review.summary.shifts }} guardias · {{ oncallSync.review.summary.people }} people</li>
+                                    <li :class="{warn:oncallSync.review.summary.uncoveredDays.length}">{{ oncallSync.review.summary.uncoveredDays.length ? oncallSync.review.summary.uncoveredDays.length+' day(s) with no guardia in this period: '+oncallSync.review.summary.uncoveredDays.slice(0,8).map(d=>formatDateShort(d)).join(', ')+(oncallSync.review.summary.uncoveredDays.length>8?'…':'') : 'Every day in this period has a guardia' }}</li>
+                                    <li v-if="oncallSync.review.summary.consecutive" class="warn">{{ oncallSync.review.summary.consecutive }} assignment(s) with guardias on consecutive days</li>
+                                    <li v-for="o in oncallSync.review.summary.overload" :key="o.person+o.month" class="warn">{{ o.person }}: {{ o.count }} guardias in {{ importMonthLabel(o.month) }} (average {{ o.average }})</li>
+                                    <li v-if="oncallSync.review.summary.externalRotation" class="warn">{{ oncallSync.review.summary.externalRotation }} MIR assignment(s) during an external rotation</li>
+                                    <li v-if="oncallSync.review.summary.withoutMir">{{ oncallSync.review.summary.withoutMir }} guardia(s) without MIR</li>
+                                    <li v-if="oncallSync.review.summary.past">{{ oncallSync.review.summary.past }} in the past (history)</li>
+                                    <li v-if="oncallSync.review.summary.far" class="warn">{{ oncallSync.review.summary.far }} more than 12 months ahead</li>
+                                  </ul>
+                                </div>
                                 <div class="sync-preflight"><div><p class="admin-kicker">03 / CHECK BEFORE APPLYING</p><p>{{oncallSyncReady?'Selected assignments passed the current checks.':oncallSyncChecked?'Some selected assignments need attention. Resolve or deselect those rows, then check again.':'Check your selection for permissions, leave conflicts and overlapping duties.'}}</p><small>Checks do not save assignments. The server checks again when you apply.</small></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.length||currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'" @click="oncallSyncCheck">{{oncallSync.checking?'Checking…':'Check selected assignments'}}</button><small v-if="!oncallSyncSelected.length" class="sync-gate-hint">Select at least one assignment in the table above to run the check.</small><small v-else-if="currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'" class="sync-gate-hint">On-call sync requires system-administrator permission.</small></div>
                                 <p v-if="oncallSync.checkError" class="ac-alert" role="alert">{{oncallSync.checkError}}</p>
                                 <!-- COMMIT -->
@@ -4724,7 +4752,8 @@
                             <div v-if="rotationImport.error" class="nd-l250 nd-v240">⚠ {{ rotationImport.error }}</div>
                             <div v-if="rotationImport.done" class="nd-l121">
                                 <div class="nd-l149 nd-v202">{{ rotationImport.fileName }} · {{ rotationImport.summary.periods }} rotation periods · {{ rotationImport.summary.residents }} residents · {{ rotationImport.summary.span[0] }} → {{ rotationImport.summary.span[1] }}</div>
-                                <p class="ac-meta">Ready {{ rotationImport.counts.ready }} · Needs mapping {{ rotationImport.counts.blocked }} · Skipped {{ rotationImport.counts.skipped }}. Nothing is selected automatically.</p>
+                                <p class="ac-meta">Ready {{ rotationImport.counts.ready }}<template v-if="rotationImport.syncCounts.changed"> (incl. {{ rotationImport.syncCounts.changed }} changed since the last import)</template> · Already in neumDesk {{ rotationImport.counts.unchanged||0 }} · Needs mapping {{ rotationImport.counts.blocked }} · Skipped {{ rotationImport.counts.skipped }}<template v-if="rotationImport.removed.length"> · <strong>{{ rotationImport.removed.length }} no longer in the file</strong></template>. Current and upcoming ready rows are pre-selected; history and far-future are opt-in.</p>
+                                <p v-if="rotationImport.existingError" class="sync-check-error">Could not compare with existing rotations ({{ rotationImport.existingError }}). Every row is treated as new; the check still blocks overlaps.</p>
                                 <div v-if="rotationImport.layoutChanges.length" class="ac-alert" role="status">⚠ This file's layout differs from the last import: {{ rotationImport.layoutChanges.join(' · ') }}. Check the preview carefully before applying.</div>
                                 <details v-if="rotationImport.remembered.length" class="nd-l247 nd-v230">
                                     <summary class="nd-l090 nd-v225">Applied from saved mappings ({{ rotationImport.remembered.length }})</summary>
@@ -4768,7 +4797,7 @@
                                     </select>
                                     <input type="search" v-model="rotationImport.filter.person" class="form-control" placeholder="Find a person…" aria-label="Find a person" list="rot-import-people">
                                     <datalist id="rot-import-people"><option v-for="r in rotationImport.residents" :key="r" :value="r"></option></datalist>
-                                    <select v-model="rotationImport.filter.status" class="form-select"><option value="">All</option><option value="ready">Ready</option><option value="blocked">Needs mapping</option><option value="skipped">Skipped</option></select>
+                                    <select v-model="rotationImport.filter.status" class="form-select"><option value="">All</option><option value="ready">Ready</option><option value="unchanged">Already in neumDesk</option><option value="blocked">Needs mapping</option><option value="skipped">Skipped</option></select>
                                     <button class="btn btn-secondary" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportSelectReady">Select ready in view</button>
                                     <button class="btn btn-secondary" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportClearSel">Clear</button>
                                 </div>
@@ -4790,14 +4819,33 @@
                                         <tr v-for="r in rotationImportVisible" :key="r.key" :class="['import-band-'+(r.band||'upcoming'), {'sync-row-future':['current','upcoming'].includes(r.band), 'sync-row-past':r.band==='past', 'sync-selected':rotationImport.selection[r.key]}]">
                                             <td><input type="checkbox" v-model="rotationImport.selection[r.key]" :aria-label="'Import '+r.resident+' '+r.unit_excel" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed||r.status!=='ready'"></td>
                                             <td><strong>{{ r.resident_name||r.resident }}</strong><small v-if="r.resident_issue" class="sync-check-error">{{ r.resident_issue }}</small></td>
-                                            <td><strong>{{ r.unit_name||r.unit_excel }}</strong><small v-if="r.create_unit">will be created</small><small v-if="r.unit_issue" class="sync-check-error">{{ r.unit_issue }}</small><small v-if="r.split">split month</small></td>
+                                            <td><strong>{{ r.unit_name||r.unit_excel }}</strong><small v-if="r.create_unit">will be created</small><small v-if="r.unit_issue" class="sync-check-error">{{ r.unit_issue }}</small><small v-if="r.split">split month</small><small v-if="r.sync==='changed'" class="import-sync-changed">Changed · replaces {{ r.previous.unit_name||'earlier import' }} {{ formatDateShort(r.previous.start_date) }} → {{ formatDateShort(r.previous.end_date) }}</small></td>
                                             <td><strong>{{ formatDateShort(r.start_date) }} → {{ formatDateShort(r.end_date) }}</strong><small>{{ ({past:'History',current:'Now',upcoming:'Upcoming',far:'Beyond 12 months'})[r.band]||'' }} · {{ r.source_sheet }}</small></td>
-                                            <td><template v-if="rotationImport.checkResults[r.key]"><span class="sync-status" :data-status="rotationImport.checkResults[r.key].status==='ready'?'new':'conflict'">{{ rotationImport.checkResults[r.key].status==='ready'?'Checked · ready':rotationImport.checkResults[r.key].message }}</span></template><template v-else><span class="sync-status" :data-status="r.status==='ready'?'new':(r.status==='blocked'?'blocked':'skipped')">{{ ({ready:'Ready',blocked:'Needs mapping',skipped:'Skipped'})[r.status] }}</span></template></td>
+                                            <td><template v-if="rotationImport.checkResults[r.key]"><span class="sync-status" :data-status="({ready:'new',review:'replacement',blocked:'conflict'})[rotationImportVerdict(r)]||'new'">{{ ({ready:'✓ Ready',review:'⚠ Review',blocked:'✕ '+(rotationImport.checkResults[r.key].message||'Blocked')})[rotationImportVerdict(r)] || 'Checked' }}</span><ul v-if="(rotationImport.review.rows[r.key]||[]).length" class="import-findings"><li v-for="(f,fi) in rotationImport.review.rows[r.key]" :key="fi" :data-severity="f.severity">{{ f.severity==='review' ? '⚠' : 'ℹ' }} {{ f.message }}</li></ul></template><template v-else><span class="sync-status" :data-status="r.status==='ready'?(r.sync==='changed'?'replacement':'new'):(r.status==='blocked'?'blocked':r.status==='unchanged'?'matching':'skipped')">{{ ({ready:r.sync==='changed'?'Ready · update':'Ready',unchanged:'Already in neumDesk',blocked:'Needs mapping',skipped:'Skipped'})[r.status] }}</span></template></td>
                                         </tr>
                                         <tr v-if="!rotationImportVisible.length"><td colspan="5" class="sync-empty">No rotations match this view.</td></tr>
                                     </tbody></table>
                                 </div>
+                                <div v-if="rotationImport.removed.length" class="nd-l247 nd-v230 import-removed" aria-label="Rotations no longer in this file">
+                                    <div class="nd-l090 nd-v225">No longer in this file ({{ rotationImport.removed.length }})</div>
+                                    <p class="ac-meta">Created by an earlier import, inside this file's period for these residents, but the file no longer lists them. Nothing is removed unless you tick it. Rotations entered by hand are never listed here.</p>
+                                    <label v-for="x in rotationImport.removed" :key="'rr'+x.id" class="nd-l246"><input type="checkbox" v-model="rotationImport.removeSel[x.id]" :disabled="rotationImport.removing||rotationImport.committing||rotationImport.checking"> <span><strong>{{ x.resident_name||'Resident' }}</strong> · {{ x.unit_name||'Unit' }} · {{ formatDateShort(x.start_date) }} → {{ formatDateShort(x.end_date) }}<small v-if="x.file" class="ac-meta"> · from {{ x.file }}</small></span></label>
+                                    <button class="btn btn-secondary" :disabled="!rotationImportRemoveCount||rotationImport.removing||rotationImport.committing||rotationImport.checking||!rotationImportCanCommit" @click="rotationImportRemoveSelected">{{ rotationImport.removing?'Removing…':'Remove '+rotationImportRemoveCount+' selected' }}</button>
+                                    <small v-if="rotationImport.removeResult" :class="rotationImport.removeResult.ok?'ac-meta':'sync-check-error'">{{ rotationImport.removeResult.msg }}</small>
+                                </div>
                                 <p class="ac-meta">New units default to Department of Pulmonology with capacity 2. Imported rotations get the resident coordinator as supervisor; adjust later in Rotations.</p>
+<div v-if="rotationImport.checkKey && rotationImport.checkKey===rotationImportCheckKey" class="import-impact" aria-label="Impact of this import">
+                                    <p class="admin-kicker">IMPACT OF THIS IMPORT</p>
+                                    <p v-if="rotationImport.review.error" class="sync-check-error">Cross-checks unavailable ({{ rotationImport.review.error }}). Per-row checks still apply.</p>
+                                    <ul v-else-if="rotationImport.review.summary">
+                                        <li>{{ rotationImport.review.summary.rotations }} rotations · {{ rotationImport.review.summary.residents }} residents</li>
+                                        <li v-if="rotationImport.review.summary.inFileOverlaps" class="warn">{{ rotationImport.review.summary.inFileOverlaps }} pair(s) of rows in this file overlap each other</li>
+                                        <li v-for="g in rotationImport.review.summary.gaps" :key="'g'+g.resident" class="warn">{{ g.resident }}: no rotation in {{ g.months.map(importMonthLabel).join(', ') }}</li>
+                                        <li v-if="!rotationImport.review.summary.gaps.length">No gaps in the next 12 months for these residents</li>
+                                        <li v-if="rotationImport.review.summary.past">{{ rotationImport.review.summary.past }} already ended (history)</li>
+                                        <li v-if="rotationImport.review.summary.far" class="warn">{{ rotationImport.review.summary.far }} start more than 12 months ahead</li>
+                                    </ul>
+                                </div>
                                 <div class="sync-preflight"><div><p class="admin-kicker">CHECK BEFORE APPLYING</p><p>{{ rotationImportReady?'Selected rotations passed the check.':'Check your selection for overlaps and unit capacity.' }}</p><small>Checks do not save. The server checks again when you apply.</small></div>
                                     <button class="btn btn-secondary" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed||!rotationImportSelectedKeys.length||!rotationImportCanCommit" @click="rotationImportCheck">{{ rotationImport.checking?'Checking…':'Check selected rotations' }}</button>
                                     <small v-if="!rotationImportSelectedKeys.length" style="display:block;margin-top:6px;font-size:12px;color:#8a5a12;font-weight:600">Select at least one ready rotation.</small>
@@ -12598,9 +12646,9 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="grounded-core.js?v=5.3-production.2-entry3"></script>
     <script src="decision51.js?v=5.3-production.2-entry3"></script>
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
-    <script src="oncall-sync.js?v=20261016-role-aware"></script>
+    <script src="oncall-sync.js?v=20261016-import-sync"></script>
     <script src="import-memory.js?v=20261016-phase-b"></script>
-    <script src="rotation-import.js?v=20261016-alias-precedence"></script>
+    <script src="rotation-import.js?v=20261016-import-sync"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=20261011-invite-entry1"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
@@ -12613,7 +12661,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.28-20261016-import-memory"></script>
+    <script src="app.js?v=5.4-production.30-20261016-import-sync"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
