@@ -751,3 +751,32 @@ html #app .import-verdict--review,.sync-table small.import-verdict--review{color
   .opsr-add select,.opsr-add label,.opsr-add input{max-width:none;width:100%}
   .opsr-tab{min-width:0;flex:1 1 140px}
 }
+/* Ops Room OR-2 */
+.opsr-alerts{display:flex;flex-wrap:wrap;gap:4px}
+.opsr-alerts--bar{margin-bottom:12px;gap:6px}
+.opsr-alert{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(200,60,40,.10);color:#a2321f;font-weight:600}
+.opsr-alert--inc{background:rgba(201,162,39,.16);color:#7a5a00}
+.opsr-note{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(15,40,60,.06);color:#4a5a66}
+.opsr-status{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(15,40,60,.06)}
+.opsr-status[data-status=available]{background:rgba(14,143,143,.10);color:#0b6f6f}
+.opsr-status[data-status=out_of_service],.opsr-status[data-status=maintenance]{background:rgba(200,60,40,.10);color:#a2321f}
+.opsr-status[data-status=lent]{background:rgba(90,80,200,.10);color:#4b40a8}
+.opsr-subrow td{background:rgba(15,40,60,.025)}
+.opsr-events{margin-top:8px;font-size:13px}
+.opsr-grow{flex:1 1 220px}
+.opsr-num{width:90px}
+.opsr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.opsr-period{max-width:170px}
+.opsr-stocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.opsr-stock{border:1px solid rgba(15,40,60,.10);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:3px}
+.opsr-stock-value{font-size:28px;font-weight:700;color:#10283c;display:flex;align-items:baseline;gap:10px}
+.opsr-trend{font-size:12px;font-weight:600;color:#4a5a66}.opsr-trend.up{color:#a2321f}.opsr-trend.down{color:#0b6f6f}
+.opsr-spark{font-variant-numeric:tabular-nums;color:#5b6b78}
+.opsr-incidents{list-style:none;padding:0;margin:0 0 8px;display:flex;flex-direction:column;gap:8px}
+.opsr-incident{border:1px solid rgba(15,40,60,.10);border-radius:12px;padding:10px 12px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
+.opsr-incident>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:220px;flex:1}
+.opsr-incident small{color:#5b6b78}
+.opsr-incident-ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.opsr-incident-ctl select{max-width:200px}
+.opsr-incident .opsr-add{flex-basis:100%;margin-top:4px;padding-top:8px}
+.opsr-incident .opsr-cap{align-self:flex-start}

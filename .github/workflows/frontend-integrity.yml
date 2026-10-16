@@ -30,7 +30,7 @@ jobs:
       - name: Import Phase D sync diff
         run: node --test tests/import-phase-d.test.cjs
       - name: Ops Room OR-1 (units + roster)
-        run: node --test tests/ops-room-or1.test.cjs
+        run: node --test tests/ops-room-or1.test.cjs tests/ops-room-or2.test.cjs
       - name: Mi espacio identity and shell contract
         run: node --test tests/mi-espacio-phase1.test.cjs
       - name: Clinician access to Mi espacio

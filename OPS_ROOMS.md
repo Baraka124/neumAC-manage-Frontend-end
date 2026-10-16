@@ -1,6 +1,9 @@
 # Pneumo Ops Room — Sala de Operaciones de Neumología · plan of record
 
-Status: **design agreed 16 Oct 2026, nothing built yet.** This file is the reference for every Ops Room step.
+Status (16 Oct 2026): **OR-1 and OR-2 built.** Live: units, ¿Quién está? (roster + residents from Rotations),
+¿Con qué contamos? (resources, status, calibration, loans, history), ¿Qué hemos hecho? (activity per day from each unit's
+catalogue), ¿Qué está pendiente? (dated snapshots, oldest pending date), ¿Qué ha fallado? (incidents with owner and
+resolution). Next: **OR-2b interconsultas**, **OR-3 indicators (¿Cumplimos?)**. This file is the reference for every Ops Room step.
 
 ## 1. Purpose
 
