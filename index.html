@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261016-import-review">
+<link rel="stylesheet" href="access.css?v=20261016-ops-room">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -1382,17 +1382,24 @@
                         </span>
                         <span v-if="absenceKPIs.absentNow > 0" class="nmsb-badge nmsb-badge--alert">{{ absenceKPIs.absentNow }}</span>
                     </a>
-<a href="#" class="nmsb-item" aria-label="Ops Room" :aria-current="currentView === 'communications' ? 'page' : null" :class="{ active: currentView === 'communications' }"
+<a href="#" class="nmsb-item" aria-label="Ops Room" :aria-current="currentView === 'opsroom' ? 'page' : null" :class="{ active: currentView === 'opsroom' }"
+                       @click.prevent="switchView('opsroom'); mobileMenuOpen = false"
+                       v-if="hasPermission('training_units', 'read')"
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Ops Room' : null">
+                        <span class="nmsb-icon nmsb-icon--cyan">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h7M17.5 14v7"/></svg>
+                        </span>
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Ops Room</span>
+                    </a>
+<a href="#" class="nmsb-item" aria-label="Communications" :aria-current="currentView === 'communications' ? 'page' : null" :class="{ active: currentView === 'communications' }"
                        @click.prevent="switchView('communications'); mobileMenuOpen = false"
                        v-if="hasPermission('communications', 'read')"
-                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Ops Room' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Communications' : null">
                         <span class="nmsb-icon nmsb-icon--amber">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
                         </span>
                         <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
-                            Ops Room
-                            
-                            
+                            Communications
                         </span>
                         <span v-if="livebroadcasts && livebroadcasts.filter(b=>!b._dismissed).length > 0"
                               class="nmsb-badge nmsb-badge--live">{{ livebroadcasts.filter(b=>!b._dismissed).length }}</span>
@@ -4420,6 +4427,83 @@
                 </div>
 
                 <!-- ============ COMMUNICATIONS VIEW ============ -->
+<!-- ══ PNEUMO OPS ROOM — Sala de Operaciones de Neumología (OR-1: units + ¿Quién está?) ══ -->
+                <div v-if="currentView === 'opsroom'" class="opsr">
+                    <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">PNEUMO OPS ROOM</span><h2>Sala de Operaciones de Neumología</h2><p>Saber cada día cómo funciona cada unidad —quién está, con qué cuenta, qué se ha hecho y qué queda pendiente— y actuar antes de que un problema llegue al paciente.</p></div></header>
+                    <p v-if="opsRoom.error" class="sync-check-error">Could not load the Ops Room: {{ opsRoom.error }}</p>
+                    <div v-if="opsRoom.loading && !opsRoom.units.length" class="ac-meta">Loading units…</div>
+
+                    <!-- Units -->
+                    <section v-if="!opsRoom.unit" class="opsr-grid" aria-label="Pulmonology units">
+                        <button v-for="u in opsRoom.units" :key="u.id" type="button" class="opsr-card" @click="opsOpen(u)">
+                            <span class="opsr-card-code">{{ u.unit_code }}</span>
+                            <strong class="opsr-card-name">{{ u.unit_name }}</strong>
+                            <span class="opsr-card-line">{{ u.coordinators.length ? 'Coordina: ' + u.coordinators.join(', ') : 'No coordinator yet' }}</span>
+                            <span class="opsr-card-stats"><span><b>{{ u.roster.current.length }}</b> in the team</span><span><b>{{ u.residents_this_week.length }}</b> residents this week</span></span>
+                            <span class="opsr-caps"><span v-for="c in u.capabilities" :key="c" class="opsr-cap">{{ OPS_CAP_LABEL[c] || c }}</span></span>
+                        </button>
+                        <p v-if="!opsRoom.loading && !opsRoom.units.length && !opsRoom.error" class="ac-meta">No units are switched on for the Ops Room yet.</p>
+                    </section>
+
+                    <!-- One unit -->
+                    <section v-else class="opsr-unit" :aria-label="opsRoom.unit.unit_name">
+                        <div class="opsr-unit-head">
+                            <button type="button" class="btn btn-secondary btn-sm" @click="opsClose">← Units</button>
+                            <div><span class="opsr-card-code">{{ opsRoom.unit.unit_code }}<template v-if="opsRoom.unit.location"> · {{ opsRoom.unit.location }}</template></span><h3>{{ opsRoom.unit.unit_name }}</h3></div>
+                        </div>
+                        <nav class="opsr-tabs" role="tablist" aria-label="Six questions">
+                            <button v-for="q in OPS_QUESTIONS" :key="q.key" type="button" role="tab" :aria-selected="opsRoom.tab===q.key" :class="['opsr-tab',{active:opsRoom.tab===q.key,off:!opsQuestionOn(opsRoom.unit,q)}]" :disabled="!opsQuestionOn(opsRoom.unit,q)" :title="opsQuestionOn(opsRoom.unit,q)?q.hint:'Not used by this unit'" @click="opsRoom.tab=q.key">{{ q.q }}<small>{{ q.hint }}</small></button>
+                        </nav>
+
+                        <!-- ¿Quién está? -->
+                        <div v-if="opsRoom.tab==='who'" class="opsr-panel">
+                            <div class="opsr-cols">
+                                <div>
+                                    <p class="admin-kicker">UNIT TEAM</p>
+                                    <table class="sync-table opsr-table"><thead><tr><th scope="col">Role</th><th scope="col">Person</th><th scope="col">Since</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
+                                        <tr v-for="e in opsRoom.unit.roster.current" :key="'c'+e.id">
+                                            <td><select v-if="opsCanManage" class="form-select form-select-sm" :value="e.role" :aria-label="'Role of '+(e.staff?.full_name||'')" @change="opsSetRole(e,$event.target.value)"><option v-for="r in OPS_ROLES" :key="r.v" :value="r.v">{{ r.l }}</option></select><span v-else>{{ e.role_label }}</span></td>
+                                            <td><strong>{{ e.staff?.full_name || 'Unknown' }}</strong><small v-if="e.assigned_until">until {{ formatDateShort(e.assigned_until) }}</small></td>
+                                            <td>{{ e.assigned_from ? formatDateShort(e.assigned_from) : '—' }}</td>
+                                            <td class="opsr-actions"><button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsRemove(e)">End</button><button v-if="opsIsAdmin" type="button" class="btn btn-secondary btn-sm" title="Delete permanently (kept in the audit log)" @click="opsRemove(e,true)">Delete</button></td>
+                                        </tr>
+                                        <tr v-if="!opsRoom.unit.roster.current.length"><td colspan="4" class="sync-empty">Nobody is assigned to this unit yet.</td></tr>
+                                    </tbody></table>
+                                    <template v-if="opsRoom.unit.roster.upcoming.length"><p class="admin-kicker">JOINING SOON</p>
+                                        <ul class="opsr-list"><li v-for="e in opsRoom.unit.roster.upcoming" :key="'u'+e.id"><strong>{{ e.staff?.full_name }}</strong> · {{ e.role_label }} · from {{ formatDateShort(e.assigned_from) }}<button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsRemove(e)">Cancel</button></li></ul></template>
+                                    <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAdd">
+                                        <p class="admin-kicker">ADD TO THE TEAM</p>
+                                        <select v-model="opsRoom.form.staff_id" class="form-select" aria-label="Person" required><option value="">— Person —</option><option v-for="s in opsCandidates" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
+                                        <select v-model="opsRoom.form.role" class="form-select" aria-label="Role"><option v-for="r in OPS_ROLES" :key="r.v" :value="r.v">{{ r.l }}</option></select>
+                                        <label>From <input type="date" v-model="opsRoom.form.assigned_from" class="form-control"></label>
+                                        <label>Until <input type="date" v-model="opsRoom.form.assigned_until" class="form-control"></label>
+                                        <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.form.staff_id||opsRoom.saving">{{ opsRoom.saving ? 'Adding…' : 'Add' }}</button>
+                                        <small class="ac-meta">Residents join through Rotations, not here. Leave “From” empty for today.</small>
+                                    </form>
+                                    <details v-if="opsRoom.unit.roster.ended.length" class="opsr-history"><summary>History ({{ opsRoom.unit.roster.ended.length }})</summary>
+                                        <ul class="opsr-list"><li v-for="e in opsRoom.unit.roster.ended" :key="'h'+e.id">{{ e.staff?.full_name }} · {{ e.role_label }} · {{ e.assigned_from ? formatDateShort(e.assigned_from) : '—' }} → {{ formatDateShort(e.assigned_until) }}<button v-if="opsIsAdmin" type="button" class="btn btn-secondary btn-sm" @click="opsRemove(e,true)">Delete</button></li></ul></details>
+                                </div>
+                                <div>
+                                    <p class="admin-kicker">RESIDENTS THIS WEEK <span class="opsr-src">from Rotations</span></p>
+                                    <ul class="opsr-list"><li v-for="r in opsRoom.unit.residents_this_week" :key="'r'+r.rotation_id"><strong>{{ r.full_name || 'Resident' }}</strong> · {{ formatDateShort(r.start_date) }} → {{ formatDateShort(r.end_date) }}</li>
+                                        <li v-if="!opsRoom.unit.residents_this_week.length" class="ac-meta">No resident rotating here this week.</li></ul>
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="switchView('resident_rotations',{trainingUnit:opsRoom.unit.id})">Open in Rotations</button>
+                                    <p class="ac-meta">Maximum residents for this unit: {{ opsRoom.unit.maximum_residents ?? '—' }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- The other five questions: switched on for this unit, built in the next steps -->
+                        <div v-else class="opsr-panel opsr-next">
+                            <p class="admin-kicker">NEXT STEP</p>
+                            <h4>{{ OPS_QUESTIONS.find(q=>q.key===opsRoom.tab).q }}</h4>
+                            <p>This question is switched on for {{ opsRoom.unit.unit_name }}. It will track:</p>
+                            <ul class="opsr-list"><li v-for="(line,i) in opsPlanFor(opsRoom.unit, OPS_QUESTIONS.find(q=>q.key===opsRoom.tab))" :key="i">{{ line }}</li></ul>
+                            <p class="ac-meta">Not built yet — nothing here is simulated.</p>
+                        </div>
+                    </section>
+                </div>
+
                 <div v-if="currentView === 'communications'" class="ops-view">
                     <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">DEPARTMENT COMMUNICATION</span><h2>Keep the team informed</h2><p>Announcements, departmental updates and operational context.</p></div></header>
 
@@ -12667,7 +12751,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="import-memory.js?v=20261016-phase-b"></script>
     <script src="rotation-import.js?v=20261016-import-chain"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
-    <script src="access.js?v=20261011-invite-entry1"></script>
+    <script src="access.js?v=20261016-ops-room"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
@@ -12678,7 +12762,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.33-20261016-import-chain"></script>
+    <script src="app.js?v=5.4-production.34-20261016-ops-room-or1"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

@@ -13,7 +13,7 @@ const hasPermission=(access,module,action='read')=>{
   return action==='read'?legacy?.read===true:legacy?.write===true;
 };
 // Shared navigation policy: use the capability snapshot, never the role label.
-const VIEW_MODULES=Object.freeze({medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',communications:'communications',research_lines:'research_lines',research_hub:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects',news:'news_posts',analytics_dashboard:'analytics',analytics_performance:'analytics',analytics_partners:'analytics',research_intelligence:'analytics'});
+const VIEW_MODULES=Object.freeze({medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',opsroom:'training_units',communications:'communications',research_lines:'research_lines',research_hub:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects',news:'news_posts',analytics_dashboard:'analytics',analytics_performance:'analytics',analytics_partners:'analytics',research_intelligence:'analytics'});
 function canOpenView(access,view){
  if(!access)return false;
  if(view==='dashboard'||view==='mi_espacio')return true;
