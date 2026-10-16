@@ -3173,6 +3173,7 @@
                                 <option v-for="u in trainingUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
                             </select>
                             <input type="text" class="form-control" v-model="rotationFilters.search" placeholder="Search...">
+                            <label class="filter-result-count" title="Rotations that have already ended"><input type="checkbox" v-model="rotationFilters.history"> Historial ({{ rotationHistoryCount }})</label>
                             <span v-if="rotationFilters.resident || rotationFilters.status || rotationFilters.trainingUnit || rotationFilters.search" class="filter-result-count">{{ filteredRotations.length }} of {{ rotations.length }}</span>
                         </div>
                         <div v-if="rotationView === 'compact'" class="rot-compact">
@@ -3490,6 +3491,8 @@
                                             <div class="table-actions">
                                                 <button class="tbl-btn" @click.stop="editRotation(rotation)" v-if="canRecord('rotation.edit',rotation,'rotation')" title="Edit rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
                                                 <button class="tbl-btn tbl-btn--danger" @click.stop="deleteRotation(rotation)" v-if="canRecord('rotation.terminate',rotation,'rotation') && ['active','scheduled'].includes(rotation.rotation_status)" title="Terminate rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                <button class="tbl-btn tbl-btn--danger" @click.stop="removeRotation(rotation)" v-if="hasPermission('resident_rotations','delete')" title="Delete rotation" aria-label="Delete rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+                                                <button class="tbl-btn tbl-btn--danger" @click.stop="removeRotation(rotation, true)" v-if="canPurgeRecords" title="Delete permanently" aria-label="Delete rotation permanently"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11l4 4M14 11l-4 4"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -4006,9 +4009,13 @@
                                                         title="Cancel absence">
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                                                 </button>
-                                                <!-- Returned/Cancelled: admin delete only -->
+                                                <!-- Past absences: delete (hide everywhere, status kept) -->
+                                                <button class="tbl-btn tbl-btn--danger tbl-btn--icon" @click.stop="removeAbsence(absence)"
+                                                        v-if="hasPermission('staff_absence','delete') && ['returned_to_duty','cancelled'].includes(absence.current_status)"
+                                                        title="Delete absence record" aria-label="Delete absence record"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+                                                <!-- Returned/Cancelled: permanent delete for admins / head of department -->
                                                 <button class="tbl-btn tbl-btn--danger tbl-btn--icon" @click.stop="purgeAbsence(absence)"
-                                                        v-if="currentUser && currentUser.user_role === 'system_admin' && ['returned_to_duty','cancelled'].includes(absence.current_status)"
+                                                        v-if="currentUser && ['system_admin','department_head'].includes(currentUser.user_role) && ['returned_to_duty','cancelled'].includes(absence.current_status)"
                                                         title="Permanently delete">
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                                                 </button>
@@ -12568,7 +12575,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.25-20261016-residents-only"></script>
+    <script src="app.js?v=5.4-production.26-20261016-crud-integrity"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
