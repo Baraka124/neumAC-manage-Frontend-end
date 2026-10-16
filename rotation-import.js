@@ -21,19 +21,34 @@ const sheetYear=t=>{const m=/(\d{4})/.exec(String(t||''));return m?parseInt(m[1]
 const isCohort=t=>/^mir nml\s+\d{4}$/.test(norm(t));
 const nextDay=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+1);return x.toISOString().slice(0,10);};
 
-// Resolve a resident label against staff with saved mappings and ambiguity reporting.
-// Mirrors the Guardias resolver: one exact/first-token hit resolves; zero or many
-// are reported (with candidates) for the reviewer to choose — never auto-picked.
+// Only people registered as residents (MIR) can receive a rotation, so names are
+// matched against ACTIVE RESIDENTS ONLY — an attending who shares a first name is
+// never offered. Same staff-type rule as the decision engine (decision51.js).
+const RESIDENT_TYPE=/resident|fellow|mir/i;
+const isResident=s=>RESIDENT_TYPE.test(String(s&&s.staff_type||''));
+const isActive=s=>s&&!s.deleted_at&&(s.employment_status||'active')==='active';
+const residentPool=staff=>(staff||[]).filter(s=>isActive(s)&&isResident(s));
+function matchName(n,pool){
+ let hits=pool.filter(s=>norm(s.full_name)===n);                                  // exact
+ if(!hits.length)hits=pool.filter(s=>norm(s.full_name).split(' ').includes(n));   // one-word label ("Iria")
+ if(!hits.length){const t=n.split(' ');if(t.length>1)hits=pool.filter(s=>{const f=norm(s.full_name).split(' ');return t.every(x=>f.includes(x));});} // "Laura Yoris" → "Laura Yoris Marin"
+ return hits;
+}
+// Resolve a resident label with saved mappings and ambiguity reporting.
+// One hit resolves; zero or many are reported for the reviewer — never auto-picked.
 function resolveResident(label,staff,mappings={}){
  const n=norm(label); if(!n)return {empty:true};
- const active=(staff||[]).filter(s=>!s.deleted_at);
+ const residents=residentPool(staff);
  const chosen=mappings[label];
  if(chosen==='skip')return {skip:true};
- if(chosen){const s=active.find(s=>s.id===chosen);return s?{id:s.id,name:s.full_name}:{issue:'Saved mapping is no longer active'};}
- let hits=active.filter(s=>norm(s.full_name)===n);
- if(!hits.length)hits=active.filter(s=>norm(s.full_name).split(' ').includes(n));
- return hits.length===1?{id:hits[0].id,name:hits[0].full_name}
-   :{issue:hits.length?'Ambiguous name':'Name not matched',candidates:hits.map(s=>({id:s.id,name:s.full_name}))};
+ if(chosen){const s=residents.find(s=>s.id===chosen);return s?{id:s.id,name:s.full_name}:{issue:'Saved mapping is not an active resident'};}
+ const hits=matchName(n,residents);
+ if(hits.length===1)return {id:hits[0].id,name:hits[0].full_name};
+ if(hits.length)return {issue:'Ambiguous name',candidates:hits.map(s=>({id:s.id,name:s.full_name}))};
+ // Not a resident: say whether the name belongs to someone registered with another role.
+ const others=matchName(n,(staff||[]).filter(s=>isActive(s)&&!isResident(s)));
+ if(others.length)return {issue:'Registered, but not as a resident',candidates:[],nonResidents:others.map(s=>({id:s.id,name:s.full_name,staff_type:s.staff_type||''}))};
+ return {issue:'Not registered as a resident',candidates:[]};
 }
 
 // A cell may name several units ("UTB / SALA NML"): split into ordered codes.
@@ -104,7 +119,7 @@ function plan(periods,staff,units,opts={}){
   const rr=resolveResident(p.resident,staff,residentMappings);
   if(rr.skip){rec.status='skipped';skipped++;records.push(rec);continue;}
   rec.resident_id=rr.id||null; rec.resident_name=rr.name||null; rec.resident_issue=rr.issue||null;
-  if(rr.issue)(unmatchedResidents[p.resident]=unmatchedResidents[p.resident]||{label:p.resident,candidates:rr.candidates||[],count:0}).count++;
+  if(rr.issue)(unmatchedResidents[p.resident]=unmatchedResidents[p.resident]||{label:p.resident,issue:rr.issue,candidates:rr.candidates||[],nonResidents:rr.nonResidents||[],cohortYear:sheetYear(p.source_sheet),count:0}).count++;
   const choice=unitChoices[codeKey], unit=byCode[codeKey];
   if(unit){rec.training_unit_id=unit.id;rec.unit_name=unit.unit_name;}
   else if(choice==='skip'){rec.status='skipped';skipped++;records.push(rec);continue;}
@@ -130,6 +145,6 @@ function payload(records,selection){
  }));
 }
 
-root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,resolveResident,cellUnits,parseCohort,mergeContiguous,translate,plan,payload};
+root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,isResident,residentPool,resolveResident,cellUnits,parseCohort,mergeContiguous,translate,plan,payload};
 if(typeof module!=='undefined')module.exports=root.NeumRotationImport;
 })(typeof window!=='undefined'?window:globalThis);

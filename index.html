@@ -4713,11 +4713,13 @@
                                 <div v-if="rotationImport.unmatchedResidents.length" class="nd-l247 nd-v230">
                                     <div class="nd-l090 nd-v225">Match residents ({{ rotationImport.unmatchedResidents.length }}):</div>
                                     <div v-for="u in rotationImport.unmatchedResidents" :key="'r'+u.label" class="nd-l246">
-                                        <span class="nd-l245 nd-v229">{{ u.label }} <span class="nd-v228">({{ u.count }})</span></span>
+                                        <span class="nd-l245 nd-v229">{{ u.label }} <span class="nd-v228">({{ u.count }})</span>
+                                            <small v-if="u.issue" class="nd-v228"> · {{ u.issue }}<template v-if="u.nonResidents && u.nonResidents.length"> ({{ u.nonResidents.map(x=>x.name+(x.staff_type?' — '+x.staff_type:'')).join(', ') }}: change their staff type to resident in Staff, or register a new resident)</template></small></span>
                                         <select :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" :value="rotationImport.residentMappings[u.label]||''" @change="rotationImportResidentMap(u.label,$event.target.value)" class="nd-l244 nd-v227">
-                                            <option value="">— choose —</option>
+                                            <option value="">— choose a resident —</option>
+                                            <option value="register">＋ Register “{{ u.label }}” as new resident{{ u.cohortYear ? ' (MIR '+u.cohortYear+')' : '' }}</option>
                                             <option value="skip">Skip these</option>
-                                            <option v-for="s in rotationImport.staff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                            <option v-for="s in rotationImportResidents" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -12553,7 +12555,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="decision51.js?v=5.3-production.2-entry3"></script>
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
     <script src="oncall-sync.js?v=5.3-production.2-entry3"></script>
-    <script src="rotation-import.js?v=20261016-rotations-import2"></script>
+    <script src="rotation-import.js?v=20261016-residents-only"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=20261011-invite-entry1"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
@@ -12566,7 +12568,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.24-20261016-rotations-import"></script>
+    <script src="app.js?v=5.4-production.25-20261016-residents-only"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
