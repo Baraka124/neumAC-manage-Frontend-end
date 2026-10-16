@@ -1,7 +1,8 @@
 # Pneumo Ops Room — Sala de Operaciones de Neumología · plan of record
 
-Status (17 Oct 2026): **OR-1, OR-2, OR-2b, OR-3 and OR-C steps 1–2 built** — all six questions, Interconsultas,
-Objetivos and Configuración (department lists + target history) are live.
+Status (17 Oct 2026): **OR-1, OR-2, OR-2b, OR-3, OR-C steps 1–2 and OR-R built** — all six questions, Interconsultas
+(+ calls from other departments), Objetivos, **Informes** (weekly/monthly, unit + department) and Configuración are live.
+Clinical counts can be broken down by condition, age band or sex (counts only).
 **Next: the interface** (redesign of the Ops Room screens — see §9), then OR-C steps 3–4, OR-4, OR-5, OR-6.
 **§8 is the handoff** — read it first if you are continuing this work in a new session or with another assistant.
 
@@ -143,6 +144,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 | ✅ OR-2b | **Interconsultas**: request record, board, take/assign/answer/follow-up/close, response-time stats |
 | ✅ OR-3 | Indicators (targets, owners, ISO 7101 clause, week/month/quarter, last 6 periods computed from records) |
 | ◐ OR-C | **Configuration** — steps 1 ✅ and 2 ✅ built 17 Oct (see §8); steps 3–4 pending: (1) catalogues as data — interconsulta services/reasons/priorities/**targets**, incident categories, roster roles, device types with default calibration interval; (2) **target history** (valid-from dates; past periods judged with the target in force then); (3) unit **Ops profile inside the existing clinical units module** (see rule below); (4) alert rules (thresholds → owner notifications) |
+| ✅ OR-R | **Clinical counts + calls + reports** (17 Oct): a measure may carry ONE breakdown (`clinical_condition` / `age_band` / `sex`, catalogues; never crossed, counts only); phone / in-person calls from other departments logged in Interconsultas (channel, outcome, minutes; saved as resolved; excluded from response times; `calls_total` indicator); **Informes**: fixed weekly/monthly snapshots per unit and a department roll-up, generated lazily for the last complete week/month, regenerable, printable |
 | OR-4 | Remaining Pulmonology units, each with only its capabilities |
 | OR-5 | Connections: Mi espacio, resident visibility, Grounded, leadership overview |
 | OR-6 | Hospital feed for high-frequency activity — only with an approved source |
@@ -161,13 +163,14 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 | Layer | File / place | What |
 |---|---|---|
 | Backend rules (pure, tested) | `ops-room.js` | roster rules, resources/events, measures, incidents, interconsultas (`IC_*`), indicator engine (`IND_KINDS`, `periodBounds`, `computeIndicator`) |
-| Backend routes | `index.js`, blocks headed `PNEUMO OPS ROOM (OR-1)`, `(OR-2)`, `(OR-2b)`, `(OR-3)` | all under `/api/ops/...` |
-| Backend tests | `tests/ops-room.test.cjs`, `ops-room-or2.test.cjs`, `ops-room-or3.test.cjs`; CI `.github/workflows/ops-room.yml` | |
+| Backend routes | `index.js`, blocks headed `PNEUMO OPS ROOM (OR-1)`, `(OR-2)`, `(OR-2b)`, `(OR-3)`, `(OR-C)`, `(OR-R)` | all under `/api/ops/...` |
+| Report engine (pure) | `ops-room.js`: `reportPeriod`, `buildUnitReport`, `buildDepartmentReport`, `callRecord`, `callStats`, `BREAKDOWNS` | |
+| Backend tests | `tests/ops-room.test.cjs`, `-or2`, `-or3`, `-orc`, `-orr`; CI `.github/workflows/ops-room.yml` | |
 | Migrations (SQL, idempotent) | `migrations/2026-10-16_ops_room_or1_…sql`, `…or2_…sql`, `…or2b_or3_…sql` | |
 | Frontend logic | `app.js`, block starting `// ─── Pneumo Ops Room (OR-1)` (state `opsRoom`, functions `ops*`) | |
-| Frontend view | `index.html`, `<div v-if="currentView === 'opsroom'" class="opsr">` | sections: units / interconsults / objectives; unit tabs = six questions |
+| Frontend view | `index.html`, `<div v-if="currentView === 'opsroom'" class="opsr">` | sections: units / interconsults / objectives / reports (Informes) / config; unit tabs = six questions; unit header has “Informes de la unidad” |
 | Styles | `access.css`, blocks `/* ── Pneumo Ops Room (OR-1) ── */`, `/* Ops Room OR-2 */`, `/* Ops Room OR-2b / OR-3 */` | |
-| Frontend tests | `tests/ops-room-or1.test.cjs`, `ops-room-or2.test.cjs`, `ops-room-or3.test.cjs`; CI step in `frontend-integrity.yml` | |
+| Frontend tests | `tests/ops-room-or1.test.cjs`, `-or2`, `-or3`, `-orc`, `-orr`; CI step in `frontend-integrity.yml` | |
 | Access | `access.js` → `VIEW_MODULES.opsroom = 'training_units'` | |
 
 ### Database objects
@@ -178,6 +181,11 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
   · **OR-C:** `ops_catalog_items` (catalog, code, label, sort, active, locked, meta) for `ic_service, ic_reason, ic_priority,
   incident_category, roster_role, device_type`; `ops_targets` (scope `indicator`|`ic_priority`, ref, value, direction, valid_from, note).
   `unit_staff.role` and `ops_incidents.category` are no longer fixed lists in the schema: the API validates them against the catalogue.
+  **OR-R:** catalogues `clinical_condition` (11), `age_band` (4, locked), `sex` (3, locked); `ops_measure_types.breakdown`
+  (one list or null); `ops_measurements.breakdown` jsonb `{code: count}` (value = their sum); `ops_interconsults.channel`
+  (`formal`|`phone`|`in_person`), `outcome` (`advice`|`seen`|`converted`), `duration_min`; `ops_reports` (scope unit|department,
+  unit_id, period week|month, period_start/end, content jsonb, generated_at, generated_by null = automatic; one per
+  scope+unit+period+start).
   All: RLS on (API uses the service role), audit trigger `fn_audit_trigger`.
 
 ### API (all need a signed-in user)
@@ -196,6 +204,10 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 | `GET /api/ops/catalog` | Units read |
 | `POST /api/ops/catalog/:catalog`, `PUT /api/ops/catalog/:catalog/:code`, `POST /api/ops/targets/ic/:priority` | head of department / admin |
 | `POST/DELETE /api/ops/units/:unitId/indicators/:indId/targets[/:targetId]` · `POST/DELETE /api/ops/indicators/:indId/targets[/:targetId]` | Units write · head of department / admin |
+| `GET /api/ops/units/:unitId/reports` (lists; creates the last complete week + month if missing), `GET …/reports/:reportId`, `POST …/reports/generate` {period, period_start?} | Units read · read · Units write |
+| `GET /api/ops/reports`, `GET /api/ops/reports/:reportId`, `POST /api/ops/reports/generate` (department roll-up) | Units read · read · head of department / admin |
+Measures accept `breakdown` on `POST …/measure-types` and `{type_id, breakdown:{code:n}}` items on `PUT …/measures`;
+`POST /api/ops/interconsults` with `channel: phone|in_person` + `outcome` (+ `duration_min`) logs a resolved call.
 Every `…?permanent=true` delete is head of department / admin only; normal removes are soft (restorable; audit keeps all).
 
 ### Conventions that must hold (each has a test)
@@ -211,6 +223,11 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
   target valid the day it was received (`targetAt`). Changing a target adds a history row — never edit the past.
 - **Codes are fixed, labels editable**; switching an item off keeps it valid for records that already use it; `locked`
   items (used by logic: coordinator, priorities, "other") cannot be switched off; priorities cannot be added.
+- **Counts, never people**: a breakdown is one list per measure (condition × age × sex is never crossed, so no tiny
+  combinations can point to a patient). Reports contain counts and staff roles only.
+- **Calls never distort interconsulta response times**: stats and indicators use `channel = formal` only; calls have their own counts.
+- **Reports are snapshots**: they keep what the records said when generated; "Regenerate" replaces one period on purpose.
+- Routes keep working before a migration (`opsCompat` retries without new columns; reports answer `migrated:false`).
 - Bump cache keys in `index.html` (`app.js?v=…`, `access.css?v=…`) on every frontend change; `scripts/integrity_check.py` must pass.
 
 ### How changes have been shipped
@@ -235,12 +252,17 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 1. `2026-10-16_ops_room_or1_unit_profile_and_roster.sql` ✅ applied
 2. `2026-10-16_ops_room_or2_resources_measures_incidents.sql` ✅ applied
 3. `2026-10-16_ops_room_or2b_or3_interconsults_indicators.sql` ✅ applied
-4. `2026-10-17_ops_room_orc_catalogues_targets.sql` — check `select count(*) from ops_catalog_items` (expect 58) to confirm.
+4. `2026-10-17_ops_room_orc_catalogues_targets.sql` ✅ applied (58 items)
+5. `2026-10-17_ops_room_orr_breakdowns_calls_reports.sql` — confirm with
+   `select count(*) from ops_catalog_items where catalog in ('clinical_condition','age_band','sex')` (expect 18)
+   and `select to_regclass('public.ops_reports')` (not null).
 
 ### Open items
 - Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
   response targets, whether follow-ups are tracked.
 - Ask on the Urology visit (Monday): how the ADX data reaches them (export, API, manual), which ISO 7101 indicators they track.
+- "IIP" (mentioned for returning exacerbated patients) — meaning to confirm; no readmissions measure was pre-created. Units add their own (e.g. "Reingresos a 30 días" by condition).
+- The 11 conditions are a starting list for the department to rename / extend in Configuración.
 - OR-4: walk each unit with its coordinator — add/rename measures, set indicator targets, register resources.
 - OR-5: Mi espacio "your unit this week / your interconsultas", resident visibility of incidents, Grounded answers from Ops Room records.
 - Security (outside Ops Room): rotate the keys in the committed backend `.env`, move them to Railway Variables, then untrack `.env`.
