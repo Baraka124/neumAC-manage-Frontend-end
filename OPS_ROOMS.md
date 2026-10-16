@@ -1,10 +1,30 @@
-# Ops Rooms — Operaciones clínicas · plan of record
+# Pneumo Ops Room — Sala de Operaciones de Neumología · plan of record
 
-Status: **design agreed 16 Oct 2026, nothing built yet.** This file is the reference for every Ops Rooms step.
+Status: **design agreed 16 Oct 2026, nothing built yet.** This file is the reference for every Ops Room step.
 
 ## 1. Purpose
 
-Ops Rooms is where Pulmonology's clinical units are **run**: who works there, what they use, what they do,
+> **Saber cada día cómo funciona cada unidad de Neumología —quién está, con qué cuenta, qué se ha hecho y
+> qué queda pendiente— y actuar antes de que un problema llegue al paciente.**
+
+The six questions it answers, every day, for every unit:
+
+| | Question | Answered by |
+|---|---|---|
+| 1 | **¿Quién está?** Who works in the unit today and who is responsible | Unit roster (+ residents linked from Rotations) |
+| 2 | **¿Con qué contamos?** Beds, rooms, equipment: available, out of service, due for calibration, lent out | Resources + resource events |
+| 3 | **¿Qué hemos hecho?** Activity performed in the period | Activity counts |
+| 4 | **¿Qué está pendiente?** Waiting lists, studies to read, oldest pending date | Pending work |
+| 5 | **¿Qué ha fallado?** Incidents, cancellations, who is resolving them | Incidents |
+| 6 | **¿Cumplimos?** Each unit's objectives: target, trend, owner | Indicators |
+
+Who it serves: the **unit coordinator** runs the unit from here · the **head of department** sees all units
+at a glance and spots problems early · **clinicians** see where they are needed and what is theirs to resolve ·
+**residents** see what their unit has and what is happening that week.
+
+What it is not: not a health record (no patient data), not a copy of other modules, not a news feed.
+
+Ops Room is where Pulmonology's clinical units are **run**: who works there, what they use, what they do,
 what is waiting, what went wrong, and whether they meet their objectives.
 
 It **owns new operational records**. It is not a dashboard that re-displays staff, rotations, guardias or
