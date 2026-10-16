@@ -149,7 +149,7 @@ function plan(periods,staff,units,opts={}){
 
 // Commit/check payload from the ready records the reviewer selected.
 function payload(records,selection){
- return (records||[]).filter(r=>selection[r.key]&&r.status==='ready').map(r=>({
+ return (records||[]).filter(r=>selection[r.key]&&sendable(r)).map(r=>({
   resident_id:r.resident_id,
   training_unit_id:r.training_unit_id||undefined,
   create_unit:r.create_unit||undefined,
@@ -157,42 +157,57 @@ function payload(records,selection){
   rotation_category:'clinical_rotation',
   source_sheet:r.source_sheet,
   sync_key:'rotations:'+r.key,
-  replaces:r.replaces||undefined
+  replaces:r.replaces||undefined,
+  replace_confirmed:r.replaces&&r.replace_confirmed?true:undefined
  }));
 }
 
-// Re-import as sync (Phase D). Compares planned records with what neumDesk already holds for the
-// same residents (existing rows carry sync_source when an earlier import created them):
-//  - unchanged: same resident, unit and dates already exist → status 'unchanged' (nothing to send)
-//  - changed:   exactly one imported row of that resident overlaps exactly one ready file row →
-//               the file row carries `replaces` (the backend swaps them, with rollback)
-//  - removed:   imported rows of residents in this file, inside that resident's file span, that
-//               no file row covers any more → proposed for removal (never pre-selected)
-// Manually entered rows (no sync_source) are never replaced or proposed for removal.
-function diff(records,existing){
+// Re-import as sync (Phase D) — same model and words as the guardias import.
+// Each planned row is compared with what neumDesk already records for that resident on those dates:
+//  - Already matches  ('unchanged')   same resident, unit and dates → nothing to send
+//  - New              ('ready')       nothing recorded on those dates
+//  - Conflict         ('conflict')    something is recorded → the reviewer decides:
+//        Approve replacement ('replacement')  possible when exactly ONE recorded rotation overlaps and no
+//                                             other file row overlaps it; a hand-entered one is sent with
+//                                             replace_confirmed (the backend refuses it otherwise)
+//        Keep current        ('kept')
+//        Start <day after> instead → the app moves the start (trims) and the row becomes New
+//  A changed period of an earlier IMPORTED rotation is pre-approved as a replacement (Undo available).
+//  - No longer in this file: imported rows of residents in this file, inside that resident's file span,
+//    that no file row covers any more → proposed for removal (never pre-selected).
+// choices: { [row key]: 'replace' | 'keep' | '' }   ('' = undo → back to the default)
+function diff(records,existing,choices){
+ choices=choices||{};
  const s10=x=>String(x||'').slice(0,10), endOf=e=>s10(e.actual_end_date||e.end_date);
  const ex=(existing||[]).filter(e=>e&&e.id&&!e.deleted_at&&e.rotation_status!=='cancelled');
  const overlap=(r,e)=>s10(e.start_date)<=r.end_date&&r.start_date<=endOf(e);
- const out=(records||[]).map(r=>({...r})), claimed=new Set(); let unchanged=0,changed=0;
+ const view=e=>({id:e.id,rotation_id:e.rotation_id||null,unit_name:e.unit?.unit_name||null,start_date:s10(e.start_date),end_date:endOf(e),planned_end:s10(e.end_date),status:e.rotation_status||null,imported:!!e.sync_source});
+ const out=(records||[]).map(r=>({...r})), claimed=new Set(); let unchanged=0,changed=0,conflicts=0,kept=0;
  for(const r of out){
   if(!r.resident_id)continue;
   const same=ex.find(e=>String(e.resident_id)===String(r.resident_id)&&s10(e.start_date)===r.start_date&&s10(e.end_date)===r.end_date&&r.training_unit_id&&String(e.training_unit_id)===String(r.training_unit_id));
-  if(same){claimed.add(same.id);r.existing_id=same.id;if(r.status==='ready'){r.status='unchanged';r.sync='unchanged';unchanged++}}
+  if(same){claimed.add(same.id);r.existing_id=same.id;r.current=[view(same)];if(r.status==='ready'){r.status='unchanged';r.sync='unchanged';unchanged++}}
  }
- const fileRowsOver=e=>out.filter(r=>r.resident_id&&String(r.resident_id)===String(e.resident_id)&&r.status!=='skipped'&&overlap(r,e));
+ const fileRowsOver=e=>out.filter(r=>r.resident_id&&String(r.resident_id)===String(e.resident_id)&&!['skipped','unchanged'].includes(r.status)&&overlap(r,e));
  for(const r of out){
   if(r.status!=='ready'||!r.resident_id)continue;
   const over=ex.filter(e=>String(e.resident_id)===String(r.resident_id)&&!claimed.has(e.id)&&overlap(r,e));
-  if(over.length!==1||!over[0].sync_source)continue;
-  const e=over[0]; if(fileRowsOver(e).length!==1)continue;              // one-to-one only; anything else is a human call
-  claimed.add(e.id);changed++;
-  Object.assign(r,{replaces:e.id,sync:'changed',previous:{unit_name:e.unit?.unit_name||null,start_date:s10(e.start_date),end_date:s10(e.end_date),rotation_id:e.rotation_id||null}});
+  if(!over.length)continue;                                              // New
+  r.current=over.map(view);
+  const target=over.length===1&&fileRowsOver(over[0]).length===1?over[0]:null;
+  r.can_replace=!!target;
+  const choice=choices[r.key]!==undefined&&choices[r.key]!==''?choices[r.key]:(target&&target.sync_source?'replace':null);
+  if(choice==='replace'&&target){
+   claimed.add(target.id);changed++;r.status='replacement';r.replaces=target.id;r.replace_confirmed=!target.sync_source||undefined;
+   r.sync=target.sync_source?'changed':'manual';r.previous={unit_name:target.unit?.unit_name||null,start_date:s10(target.start_date),end_date:s10(target.end_date),rotation_id:target.rotation_id||null};
+   r.auto=choices[r.key]===undefined||choices[r.key]==='';
+  }else if(choice==='keep'){r.status='kept';kept++;}
+  else{r.status='conflict';conflicts++;r.issue=over.length>1?'Overlaps '+over.length+' recorded rotations':'Overlaps the current schedule';}
  }
- // A row whose first days collide with a rotation neumDesk already records (typically one that was
- // terminated early, or is still running) → suggest starting the day after that rotation's EFFECTIVE end.
- // Same rule as the DB: any non-cancelled rotation occupies the resident up to actual_end_date || end_date.
+ // Start-after suggestion for rows still colliding: the day after the recorded rotation's EFFECTIVE end
+ // (same rule as the DB: any non-cancelled rotation occupies the resident up to actual_end_date || end_date).
  for(const r of out){
-  if(!r.resident_id||r.replaces||r.status==='unchanged'||r.status==='skipped')continue;
+  if(!['conflict','kept'].includes(r.status))continue;
   const head=ex.filter(e=>String(e.resident_id)===String(r.resident_id)&&!claimed.has(e.id)&&overlap(r,e)&&s10(e.start_date)<=r.start_date);
   if(!head.length)continue;
   const last=head.reduce((a,b)=>endOf(b)>endOf(a)?b:a), from=nextDay(endOf(last));
@@ -201,12 +216,16 @@ function diff(records,existing){
   r.trim={start_date:from,because:{unit_name:last.unit?.unit_name||null,start_date:s10(last.start_date),end_date:endOf(last),status:last.rotation_status||null}};
  }
  const span={};for(const r of out){if(!r.resident_id||r.status==='skipped')continue;const k=String(r.resident_id),x=span[k]||(span[k]={from:r.start_date,to:r.end_date});if(r.start_date<x.from)x.from=r.start_date;if(r.end_date>x.to)x.to=r.end_date}
- const removed=ex.filter(e=>e.sync_source&&!claimed.has(e.id)&&span[String(e.resident_id)]&&s10(e.start_date)>=span[String(e.resident_id)].from&&s10(e.end_date)<=span[String(e.resident_id)].to&&!fileRowsOver(e).length)
+ const removed=ex.filter(e=>e.sync_source&&!claimed.has(e.id)&&span[String(e.resident_id)]&&s10(e.start_date)>=span[String(e.resident_id)].from&&s10(e.end_date)<=span[String(e.resident_id)].to&&!out.some(r=>r.resident_id&&String(r.resident_id)===String(e.resident_id)&&r.status!=='skipped'&&overlap(r,e)))
   .map(e=>({id:e.id,rotation_id:e.rotation_id||null,resident_id:e.resident_id,resident_name:(out.find(r=>String(r.resident_id)===String(e.resident_id))||{}).resident_name||null,unit_name:e.unit?.unit_name||null,start_date:s10(e.start_date),end_date:s10(e.end_date),file:e.sync_source&&e.sync_source.file||null}))
   .sort((a,b)=>a.start_date<b.start_date?-1:1);
- return {records:out,removed,counts:{unchanged,changed,removed:removed.length}};
+ return {records:out,removed,counts:{unchanged,changed,conflicts,kept,removed:removed.length}};
 }
 
-root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,isResident,residentPool,timeBand,resolveResident,cellUnits,parseCohort,mergeContiguous,translate,plan,diff,payload};
+// Rows that can be selected and sent: new rows and approved replacements.
+const SENDABLE=['ready','replacement'];
+const sendable=r=>SENDABLE.includes(r&&r.status);
+
+root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,isResident,residentPool,timeBand,resolveResident,cellUnits,parseCohort,mergeContiguous,translate,plan,diff,payload,sendable,SENDABLE};
 if(typeof module!=='undefined')module.exports=root.NeumRotationImport;
 })(typeof window!=='undefined'?window:globalThis);
