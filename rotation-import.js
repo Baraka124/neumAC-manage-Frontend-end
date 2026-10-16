@@ -208,11 +208,13 @@ function diff(records,existing,choices){
  // (same rule as the DB: any non-cancelled rotation occupies the resident up to actual_end_date || end_date).
  for(const r of out){
   if(!['conflict','kept'].includes(r.status))continue;
-  const head=ex.filter(e=>String(e.resident_id)===String(r.resident_id)&&!claimed.has(e.id)&&overlap(r,e)&&s10(e.start_date)<=r.start_date);
-  if(!head.length)continue;
-  const last=head.reduce((a,b)=>endOf(b)>endOf(a)?b:a), from=nextDay(endOf(last));
-  if(from>r.end_date)continue;                                           // fully covered: nothing sensible to trim to
-  if(ex.some(e=>String(e.resident_id)===String(r.resident_id)&&!claimed.has(e.id)&&s10(e.start_date)>r.start_date&&overlap({start_date:from,end_date:r.end_date},e)))continue;   // still collides later on
+  // Chain past every recorded rotation that touches the start (e.g. one ending on the 1st and another
+  // starting on the 2nd): keep moving the start until the day is free.
+  const mine=ex.filter(e=>String(e.resident_id)===String(r.resident_id)&&!claimed.has(e.id));
+  let from=r.start_date,last=null,moved=true;
+  while(moved&&from<=r.end_date){moved=false;for(const e of mine){if(s10(e.start_date)<=from&&endOf(e)>=from){last=e;from=nextDay(endOf(e));moved=true}}}
+  if(!last||from>r.end_date)continue;                                     // nothing at the start, or fully covered
+  if(mine.some(e=>overlap({start_date:from,end_date:r.end_date},e)))continue;   // still collides later on: a human call
   r.trim={start_date:from,because:{unit_name:last.unit?.unit_name||null,start_date:s10(last.start_date),end_date:endOf(last),status:last.rotation_status||null}};
  }
  const span={};for(const r of out){if(!r.resident_id||r.status==='skipped')continue;const k=String(r.resident_id),x=span[k]||(span[k]={from:r.start_date,to:r.end_date});if(r.start_date<x.from)x.from=r.start_date;if(r.end_date>x.to)x.to=r.end_date}

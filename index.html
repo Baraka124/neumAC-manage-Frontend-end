@@ -4829,7 +4829,7 @@
                                                     <small v-if="rotationImportCapacity(r).next_opening">No place before the end of this period. Next free place: {{ formatDateShort(rotationImportCapacity(r).next_opening) }}.</small>
                                                     <template v-if="rotationImportCapacity(r).open_units.length"><small>Open units for these dates:</small><div class="sync-row-actions"><button v-for="u in rotationImportCapacity(r).open_units" :key="'ou'+u.id" type="button" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportUseUnit(r,u.id)">{{ u.unit_name }} · {{ u.free }} free</button></div></template>
                                                     <small v-else>No other unit has a free place on all these dates.</small></template>
-                                                <template v-else-if="rotationImport.checkKey===rotationImportCheckKey&&rotationImport.checkResults[r.key]"><span class="sync-status" :data-status="({ready:'new',review:'replacement',blocked:'conflict'})[rotationImportVerdict(r)]||'new'">{{ ({ready:'✓ Ready',review:'⚠ Review',blocked:'✕ '+(rotationImport.checkResults[r.key].message||'Blocked')})[rotationImportVerdict(r)] || 'Checked' }}</span><ul v-if="(rotationImport.review.rows[r.key]||[]).length" class="import-findings"><li v-for="(f,fi) in rotationImport.review.rows[r.key]" :key="fi" :data-severity="f.severity">{{ f.severity==='review' ? '⚠' : 'ℹ' }} {{ f.message }}</li></ul></template>
+                                                <template v-else-if="rotationImport.checkKey===rotationImportCheckKey&&rotationImport.checkResults[r.key]"><span class="sync-status" :data-status="({ready:'new',review:'replacement',blocked:'conflict'})[rotationImportVerdict(r)]||'new'">{{ ({ready:'✓ Ready',review:'⚠ Review',blocked:'✕ '+(rotationImport.checkResults[r.key].message||'Blocked')})[rotationImportVerdict(r)] || 'Checked' }}</span><ul v-if="(rotationImport.review.rows[r.key]||[]).length||(rotationImport.checkResults[r.key].notes||[]).length" class="import-findings"><li v-for="(f,fi) in rotationImport.review.rows[r.key]||[]" :key="fi" :data-severity="f.severity">{{ f.severity==='review' ? '⚠' : 'ℹ' }} {{ f.message }}</li><li v-for="(n,ni) in rotationImport.checkResults[r.key].notes||[]" :key="'n'+ni" data-severity="info">ℹ {{ n }}</li></ul></template>
                                                 <template v-else><span class="sync-status" :data-status="({ready:'new',unchanged:'matching'})[r.status]||r.status">{{ ({ready:'New',conflict:'Conflict',replacement:'Replacement approved',kept:'Keeping current',unchanged:'Already matches',blocked:'Needs mapping',skipped:'Skipped'})[r.status] }}</span><small v-if="r.status==='conflict'">{{ r.issue }}</small><small v-if="r.status==='replacement'&&r.auto">This rotation came from an earlier import and the file changed it — replacement pre-approved.</small><small v-if="r.status==='replacement'&&r.sync==='manual'">The rotation entered by hand will be hidden (restorable) and replaced by the file's version.</small></template>
                                                 <div v-if="r.current&&r.current.length&&['conflict','replacement','kept'].includes(r.status)&&!rotationImport.committed" class="sync-row-actions">
                                                     <button v-if="r.status!=='kept'" type="button" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportChoice(r,'keep')">Keep current</button>
@@ -12661,11 +12661,11 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=5.3-production.2-entry3"></script>
     <script src="entry46.js?v=5.3-production.2-entry3"></script>
     <script src="grounded-core.js?v=5.3-production.2-entry3"></script>
-    <script src="decision51.js?v=20261016-capacity-parity"></script>
+    <script src="decision51.js?v=20261016-import-context"></script>
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
     <script src="oncall-sync.js?v=20261016-import-sync"></script>
     <script src="import-memory.js?v=20261016-phase-b"></script>
-    <script src="rotation-import.js?v=20261016-import-conflicts"></script>
+    <script src="rotation-import.js?v=20261016-import-chain"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=20261011-invite-entry1"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
@@ -12678,7 +12678,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.32-20261016-import-conflicts"></script>
+    <script src="app.js?v=5.4-production.33-20261016-import-chain"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
