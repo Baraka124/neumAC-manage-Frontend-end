@@ -133,11 +133,12 @@ function plan(periods,staff,units,opts={}){
   if(rr.skip){rec.status='skipped';skipped++;records.push(rec);continue;}
   rec.resident_id=rr.id||null; rec.resident_name=rr.name||null; rec.resident_issue=rr.issue||null;
   if(rr.issue)(unmatchedResidents[p.resident]=unmatchedResidents[p.resident]||{label:p.resident,issue:rr.issue,candidates:rr.candidates||[],nonResidents:rr.nonResidents||[],cohortYear:sheetYear(p.source_sheet),count:0}).count++;
-  const choice=unitChoices[codeKey], unit=byCode[codeKey];
-  if(unit){rec.training_unit_id=unit.id;rec.unit_name=unit.unit_name;}
-  else if(choice==='skip'){rec.status='skipped';skipped++;records.push(rec);continue;}
+  // A saved/explicit choice for the Excel code wins over the built-in code table.
+  const choice=unitChoices[p.unit_excel]!==undefined?unitChoices[p.unit_excel]:unitChoices[codeKey], unit=byCode[codeKey];
+  if(choice==='skip'){rec.status='skipped';skipped++;records.push(rec);continue;}
+  else if(choice&&choice!=='create'&&byId[choice]){rec.training_unit_id=choice;rec.unit_name=byId[choice].unit_name;}
+  else if(unit){rec.training_unit_id=unit.id;rec.unit_name=unit.unit_name;}
   else if(choice==='create'){rec.create_unit={unit_code:codeKey,unit_name:p.unit_excel};}
-  else if(choice&&byId[choice]){rec.training_unit_id=choice;rec.unit_name=byId[choice].unit_name;}
   else {rec.unit_issue='Unmapped unit';(unmatchedUnits[codeKey]=unmatchedUnits[codeKey]||{code:codeKey,count:0}).count++;}
   if(rec.resident_issue||rec.unit_issue){rec.status='blocked';blocked++;}
   else{rec.status='ready';ready++;}

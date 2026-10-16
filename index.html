@@ -4654,17 +4654,25 @@
                                 </fieldset>
                                 <p v-if="oncallSync.blocked.length" class="ac-notice">{{oncallSync.blocked.length}} rows in the file need attention. Rows with invalid dates are visible under Whole file.</p>
                                 <!-- unmatched names — now mappable -->
+                                <div v-if="oncallSync.layoutChanges.length" class="ac-alert" role="status">⚠ This file's layout differs from the last import: {{ oncallSync.layoutChanges.join(' · ') }}. Check the preview carefully before applying.</div>
+                                <details v-if="oncallSync.remembered.length" class="nd-l247 nd-v230">
+                                    <summary class="nd-l090 nd-v225">Applied from saved mappings ({{ oncallSync.remembered.length }})</summary>
+                                    <div v-for="m in oncallSync.remembered" :key="'om'+m.id" class="nd-l246">
+                                        <span class="nd-l245 nd-v229">{{ m.label }} <span class="nd-v228">→ {{ m.action==='skip' ? 'Skip' : (oncallSync.sourceStaff.find(x=>x.id===m.target_id)?.full_name || 'Person') }}</span></span>
+                                        <button type="button" class="btn btn-secondary btn-sm" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" @click="oncallSyncForget(m)">Forget</button>
+                                    </div>
+                                </details>
                                 <div v-if="oncallSync.unmatched.length"  class="nd-l247 nd-v230">
                                     <div  class="nd-l090 nd-v225">Match staff and resident names ({{ oncallSync.unmatched.length }}) — or skip:</div>
                                     <div v-for="u in oncallSync.unmatched" :key="u.surname"  class="nd-l246">
-                                        <span  class="nd-l245 nd-v229">{{ u.surname }} <span  class="nd-v228">({{ u.count }})</span></span>
+                                        <span  class="nd-l245 nd-v229">{{ u.surname }} <span  class="nd-v228">({{ u.count }}) · {{ u.role==='mir' ? 'MIR column' : u.role==='staff' ? 'Staff column' : 'both columns' }}<template v-if="u.issue"> · {{ u.issue }}</template></span></span>
                                         <select :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" :value="oncallSync.mappings[u.surname]||''" @change="oncallSyncMap(u.surname, $event.target.value)"  class="nd-l244 nd-v227">
                                             <option value="">— choose —</option>
                                             <option value="skip">Skip these shifts</option>
-                                            <option v-for="s in oncallSync.sourceStaff.filter(x=>x.employment_status==='active')" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                            <option v-for="s in (u.role==='mir' ? oncallSyncPools.mir : u.role==='staff' ? oncallSyncPools.staff : oncallSync.sourceStaff.filter(x=>x.employment_status==='active'))" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                                         </select>
                                     </div>
-                                    <div  class="nd-l243 nd-v010">Mappings are remembered in this browser and rechecked against active staff. <a href="#" @click.prevent="oncallSyncClearMappings()"  class="nd-v226">Clear saved mappings</a></div>
+                                    <div  class="nd-l243 nd-v010">Your choices are saved for everyone who imports and rechecked against active staff (staff column → attendings, MIR column → residents).</div>
                                 </div>
                                 <div class="sync-review-heading"><div><p class="admin-kicker">02 / REVIEW ASSIGNMENTS</p><h3>{{oncallSyncVisible.length}} in view <span>of {{oncallSync.entries.length}} in this file</span></h3></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" @click="oncallSyncSelectNew">Select new in view</button><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" @click="oncallSync.selection={}">Clear selection</button></div>
                                 <p class="ac-meta">Nothing is selected automatically. Changing filters or mappings clears selection. Changing a conflict decision deselects that row. Current assignments stay until you approve and select a replacement.</p>
@@ -4717,6 +4725,15 @@
                             <div v-if="rotationImport.done" class="nd-l121">
                                 <div class="nd-l149 nd-v202">{{ rotationImport.fileName }} · {{ rotationImport.summary.periods }} rotation periods · {{ rotationImport.summary.residents }} residents · {{ rotationImport.summary.span[0] }} → {{ rotationImport.summary.span[1] }}</div>
                                 <p class="ac-meta">Ready {{ rotationImport.counts.ready }} · Needs mapping {{ rotationImport.counts.blocked }} · Skipped {{ rotationImport.counts.skipped }}. Nothing is selected automatically.</p>
+                                <div v-if="rotationImport.layoutChanges.length" class="ac-alert" role="status">⚠ This file's layout differs from the last import: {{ rotationImport.layoutChanges.join(' · ') }}. Check the preview carefully before applying.</div>
+                                <details v-if="rotationImport.remembered.length" class="nd-l247 nd-v230">
+                                    <summary class="nd-l090 nd-v225">Applied from saved mappings ({{ rotationImport.remembered.length }})</summary>
+                                    <div v-for="m in rotationImport.remembered" :key="'rm'+m.id" class="nd-l246">
+                                        <span class="nd-l245 nd-v229">{{ m.label }} <span class="nd-v228">→ {{ rotationImportTargetName(m) }}</span></span>
+                                        <button type="button" class="btn btn-secondary btn-sm" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportForget(m)">Forget</button>
+                                    </div>
+                                    <div class="nd-l243 nd-v010">Saved mappings are shared by everyone who imports. Forget one to choose again.</div>
+                                </details>
                                 <div v-if="rotationImport.unmatchedResidents.length" class="nd-l247 nd-v230">
                                     <div class="nd-l090 nd-v225">Match residents ({{ rotationImport.unmatchedResidents.length }}):</div>
                                     <div v-for="u in rotationImport.unmatchedResidents" :key="'r'+u.label" class="nd-l246">
@@ -12581,8 +12598,9 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="grounded-core.js?v=5.3-production.2-entry3"></script>
     <script src="decision51.js?v=5.3-production.2-entry3"></script>
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
-    <script src="oncall-sync.js?v=5.3-production.2-entry3"></script>
-    <script src="rotation-import.js?v=20261016-time-bands"></script>
+    <script src="oncall-sync.js?v=20261016-role-aware"></script>
+    <script src="import-memory.js?v=20261016-phase-b"></script>
+    <script src="rotation-import.js?v=20261016-alias-precedence"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=20261011-invite-entry1"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
@@ -12595,7 +12613,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.27-20261016-import-phase-a"></script>
+    <script src="app.js?v=5.4-production.28-20261016-import-memory"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
