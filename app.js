@@ -9217,6 +9217,75 @@ document.addEventListener('DOMContentLoaded', () => {
           finally{oncallSync.committed=true;oncallSync.committing=false;oncallSync.progress=null;API.clearCache();try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
         }
 
+        // ─── Rotations import (MIR matrix → resident_rotations) — mirrors the on-call sync ───
+        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:''},checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null})
+        const rotationImportCanCommit = computed(()=>currentUser.value?.access?.decisions?.['sync.rotations.commit']?.all?.decision==='ALLOW' || (currentUser.value?.user_role||currentUser.value?.role)==='system_admin')
+        const rotationImportVisible = computed(()=>{const f=rotationImport.filter;return rotationImport.records.filter(r=>(!f.resident||r.resident===f.resident)&&(!f.status||r.status===f.status))})
+        const rotationImportSelectedKeys = computed(()=>rotationImport.records.filter(r=>rotationImport.selection[r.key]&&r.status==='ready'))
+        const rotationImportPayload = ()=>window.NeumRotationImport.payload(rotationImport.records,rotationImport.selection)
+        const rotationImportCheckKey = computed(()=>JSON.stringify(rotationImportPayload()))
+        const rotationImportReady = computed(()=>rotationImportSelectedKeys.value.length>0 && rotationImport.checkKey===rotationImportCheckKey.value && rotationImportSelectedKeys.value.every(r=>rotationImport.checkResults[r.key]?.status==='ready'))
+        const rotationImportRebuild = ()=>{const p=window.NeumRotationImport.plan(rotationImport.periods,rotationImport.staff,rotationImport.units,{residentMappings:rotationImport.residentMappings,unitChoices:rotationImport.unitChoices});Object.assign(rotationImport,{records:p.records,unmatchedResidents:p.unmatchedResidents,unmatchedUnits:p.unmatchedUnits,counts:p.counts})}
+        const rotationImportParse = async(file)=>{
+          if(rotationImport.checking||rotationImport.committing)return
+          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:''}})
+          try{
+            const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true})
+            const sheets={};wb.SheetNames.forEach(n=>{sheets[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true})})
+            const t=window.NeumRotationImport.translate(sheets)
+            if(!t.periods.length)throw Error('No “MIR NML <year>” cohort sheets with rotations were found in this file.')
+            const starts=t.periods.map(p=>p.start_date).sort(),ends=t.periods.map(p=>p.end_date).sort()
+            rotationImport.periods=t.periods;rotationImport.residents=t.residents
+            rotationImport.summary={periods:t.periods.length,residents:t.residents.length,span:[starts[0],ends.at(-1)]}
+            const [staff,units]=await Promise.all([API.request('/api/identity/staff',{skipCache:true}),API.request('/api/training-units',{skipCache:true})])
+            rotationImport.staff=staff.data||staff||[];rotationImport.units=units.data||units||[]
+            rotationImportRebuild();rotationImport.done=true
+          }catch(e){rotationImport.error=e.message}finally{rotationImport.parsing=false}
+        }
+        const rotationImportFile = ev=>{const f=ev.target.files?.[0];if(f)rotationImportParse(f);ev.target.value=''}
+        const rotationImportResidentMap = (label,id)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.residentMappings={...rotationImport.residentMappings,[label]:id};rotationImportRebuild()}
+        const rotationImportUnitChoice = (code,choice)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.unitChoices={...rotationImport.unitChoices,[code]:choice};rotationImportRebuild()}
+        const rotationImportSelectReady = ()=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;const next={...rotationImport.selection};rotationImportVisible.value.filter(r=>r.status==='ready').forEach(r=>next[r.key]=true);rotationImport.selection=next}
+        const rotationImportClearSel = ()=>{rotationImport.selection={}}
+        const rotationImportReset = ()=>{if(!rotationImport.checking&&!rotationImport.committing)Object.assign(rotationImport,{done:false,fileName:'',error:'',periods:[],records:[],selection:{},residentMappings:{},unitChoices:{},commitResult:null,committed:false,checkResults:{},checkKey:'',summary:null})}
+        const rotationImportCheck = async()=>{
+          if(rotationImport.checking||rotationImport.committing||rotationImport.committed||!rotationImportCanCommit.value||!rotationImportSelectedKeys.value.length)return
+          const recs=rotationImportSelectedKeys.value,body=rotationImportPayload(),key=rotationImportCheckKey.value
+          rotationImport.checking=true;rotationImport.checkKey='';rotationImport.checkResults={};rotationImport.checkError=''
+          const checked={}
+          try{
+            for(let i=0;i<body.length;i+=20){
+              const chunk=body.slice(i,i+20),chunkRecs=recs.slice(i,i+20)
+              const result=await API.request('/api/rotations/batch',{method:'POST',body:{rotations:chunk,dry_run:true}})
+              if(result.dry_run!==true||!Array.isArray(result.results)||result.results.length!==chunk.length)throw Error('Check could not be confirmed. Refresh and try again.')
+              result.results.forEach((row,j)=>{checked[chunkRecs[j].key]=row})
+            }
+            if(key===rotationImportCheckKey.value){rotationImport.checkResults=checked;rotationImport.checkKey=key}
+          }catch(e){rotationImport.checkError=e.message}finally{rotationImport.checking=false}
+        }
+        const rotationImportCommit = async()=>{
+          if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return
+          if(!rotationImportCanCommit.value){showToast('Permission needed','Your account cannot commit a rotations import. Ask a system administrator.','error');return}
+          if(!rotationImportReady.value){showToast('Not checked','Run “Check selected rotations” first.','info');return}
+          const body=rotationImportPayload();if(!body.length){showToast('Nothing selected','Select at least one ready rotation.','info');return}
+          if(!window.confirm('Import '+body.length+' rotations into the system?'))return
+          const total=body.length;rotationImport.committing=true;rotationImport.commitResult=null;rotationImport.progress={done:0,total}
+          let inserted=0,skipped=0,unitsCreated=0;const failures=[]
+          try{
+            for(let i=0;i<body.length;i+=20){
+              const result=await API.request('/api/rotations/batch',{method:'POST',body:{rotations:body.slice(i,i+20),source_file:rotationImport.fileName}})
+              if(!Number.isInteger(result.inserted)||!Number.isInteger(result.skipped))throw Error('Server returned unrecognised results. Reload before retrying.')
+              inserted+=result.inserted;skipped+=result.skipped;unitsCreated+=result.units_created||0
+              failures.push(...(result.results||[]).filter(r=>r.status==='not_saved'))
+              rotationImport.progress={done:Math.min(i+20,total),total}
+            }
+            const base=inserted+(inserted===1?' rotation imported':' rotations imported')+(unitsCreated?' · '+unitsCreated+(unitsCreated===1?' unit created':' units created'):'')
+            rotationImport.commitResult={ok:skipped===0,msg:skipped===0?base+' · all saved ✓':base+' · '+skipped+' could not be saved (see rows marked “Not saved”)',failures}
+          }catch(e){rotationImport.commitResult={ok:false,msg:'Imported '+inserted+' before the import hit an error: '+e.message+' Reload the file before retrying.',failures}}
+          finally{rotationImport.committed=true;rotationImport.committing=false;rotationImport.progress=null;API.clearCache();if(rotationImport.commitResult)showToast(rotationImport.commitResult.ok?'Rotations import complete':'Import finished with issues',rotationImport.commitResult.msg,rotationImport.commitResult.ok?'success':'error')}
+        }
+        watch(()=>JSON.stringify(rotationImport.filter),()=>{rotationImport.selection={}},{flush:'sync'})
+
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
 
@@ -19213,6 +19282,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
           oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
