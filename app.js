@@ -9046,6 +9046,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         const commsOps = useComms({ showToast, showConfirmation, medicalStaff, onCallSchedule, absences, rotations })
+
+        // ─── Pneumo Ops Room (OR-1): units + "¿Quién está?" ───────────────────────────────────
+        // Purpose: know every day how each Pulmonology unit is running. OR-1 delivers the units and
+        // their team (roster); the other five questions are switched on per unit and built next.
+        const OPS_QUESTIONS=[
+          {key:'who',cap:'roster',q:'¿Quién está?',hint:'Team, roles and residents this week'},
+          {key:'resources',cap:'resources',q:'¿Con qué contamos?',hint:'Beds, rooms and equipment'},
+          {key:'activity',cap:'activity',q:'¿Qué hemos hecho?',hint:'Activity in the period'},
+          {key:'pending',cap:'pending',q:'¿Qué está pendiente?',hint:'Waiting lists and backlog'},
+          {key:'incidents',cap:'incidents',q:'¿Qué ha fallado?',hint:'Incidents and cancellations'},
+          {key:'indicators',cap:'indicators',q:'¿Cumplimos?',hint:'Objectives and targets'}]
+        const OPS_CAP_LABEL={roster:'Team',resources:'Resources',beds:'Beds',calibration:'Calibration',loans:'Device loans',activity:'Activity',pending:'Pending work',incidents:'Incidents',indicators:'Indicators'}
+        const OPS_ROLES=[{v:'coordinator',l:'Coordinador/a'},{v:'primary',l:'Adjunto/a de la unidad'},{v:'secondary',l:'Colaborador/a'}]
+        const OPS_PLAN={resources:['Rooms and equipment with their status'],beds:['Beds: available, occupied, out of service'],calibration:['Equipment calibration: last done, next due'],loans:['Devices lent out: who has them, due back'],activity:['Activity counts per period, with source'],pending:['Waiting lists and backlog, oldest pending date'],incidents:['Equipment out of service, room closures, cancellations — with owner'],indicators:['Objectives with target, owner and trend']}
+        const opsEmptyForm=()=>({staff_id:'',role:'primary',assigned_from:'',assigned_until:''})
+        const opsRoom=reactive({loading:false,error:'',today:'',units:[],unit:null,unitLoading:false,tab:'who',staff:[],form:opsEmptyForm(),saving:false,showHistory:false})
+        const opsCanManage=computed(()=>hasPermission('training_units','write'))
+        const opsIsAdmin=computed(()=>['system_admin','department_head'].includes(currentUser.value?.user_role))
+        const opsLoad=async()=>{opsRoom.loading=true;opsRoom.error='';try{const r=await API.request('/api/ops/units',{skipCache:true});opsRoom.units=r.units||[];opsRoom.today=r.today||''}catch(e){opsRoom.error=e.message}finally{opsRoom.loading=false}}
+        const opsReloadUnit=async()=>{if(!opsRoom.unit)return;opsRoom.unitLoading=true;try{const r=await API.request('/api/ops/units/'+encodeURIComponent(opsRoom.unit.id),{skipCache:true});opsRoom.unit=r.unit;const i=opsRoom.units.findIndex(x=>x.id===r.unit.id);if(i>=0)opsRoom.units.splice(i,1,r.unit)}catch(e){showToast('Ops Room',e.message,'error')}finally{opsRoom.unitLoading=false}}
+        const opsOpen=async u=>{opsRoom.tab='who';opsRoom.unit={...u};opsRoom.showHistory=false;opsRoom.form=opsEmptyForm();await opsReloadUnit();if(opsCanManage.value&&!opsRoom.staff.length){try{const s=await API.request('/api/identity/staff',{skipCache:true});opsRoom.staff=s.data||s||[]}catch{}}}
+        const opsClose=()=>{opsRoom.unit=null}
+        // People who can join a unit's team: active, non-resident (residents come from Rotations), not already in it.
+        const opsCandidates=computed(()=>{const u=opsRoom.unit;if(!u||!u.roster)return [];const taken=new Set([...u.roster.current,...u.roster.upcoming].map(r=>r.staff?.id));return opsRoom.staff.filter(s=>s.employment_status==='active'&&!s.deleted_at&&!/resident|fellow|mir/i.test(s.staff_type||'')&&!taken.has(s.id)).sort((a,b)=>String(a.full_name).localeCompare(String(b.full_name),'es'))})
+        const opsStaffUrl=(entryId)=>'/api/ops/units/'+encodeURIComponent(opsRoom.unit.id)+'/staff'+(entryId?'/'+encodeURIComponent(entryId):'')
+        const opsAdd=async()=>{const f=opsRoom.form;if(!f.staff_id||opsRoom.saving)return;opsRoom.saving=true;try{await API.request(opsStaffUrl(),{method:'POST',body:{staff_id:f.staff_id,role:f.role,assigned_from:f.assigned_from||undefined,assigned_until:f.assigned_until||undefined}});opsRoom.form=opsEmptyForm();await opsReloadUnit()}catch(e){showToast('Could not add to the unit',e.message,'error')}finally{opsRoom.saving=false}}
+        const opsSetRole=async(entry,role)=>{if(!role||role===entry.role)return;try{await API.request(opsStaffUrl(entry.id),{method:'PUT',body:{role}})}catch(e){showToast('Could not change the role',e.message,'error')}await opsReloadUnit()}
+        const opsRemove=async(entry,permanent=false)=>{const name=entry.staff?.full_name||'this person';const msg=permanent?`Delete ${name}'s membership permanently? It stays in the audit log.`:entry.state==='upcoming'?`Cancel ${name}'s upcoming membership?`:`End ${name}'s membership today? It stays in the unit history.`;if(!window.confirm(msg))return;try{await API.request(opsStaffUrl(entry.id)+(permanent?'?permanent=true':''),{method:'DELETE'})}catch(e){showToast('Could not remove',e.message,'error')}await opsReloadUnit()}
+        const opsQuestionOn=(u,q)=>(u?.capabilities||[]).includes(q.cap)
+        const opsPlanFor=(u,q)=>{const caps=u?.capabilities||[];if(q.cap==='resources')return ['resources','beds','calibration','loans'].filter(c=>caps.includes(c)).flatMap(c=>OPS_PLAN[c]);return OPS_PLAN[q.cap]||[]}
         const liveOps = useLiveStatus({ showToast, showConfirmation, medicalStaff, currentUser })
         const analyticsOps = useAnalytics({ showToast, hasPermission, getResearch: () => researchOps })
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
@@ -11322,6 +11352,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentView.value = 'communications'
             commsOps.loadAnnouncements()
             commsOps.loadOpsMetrics()
+            return
+          }
+          if (view === 'opsroom') {
+            currentView.value = 'opsroom'
+            opsRoom.unit = null
+            opsLoad()
             return
           }
           if (view === 'system_settings') {
@@ -19467,6 +19503,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
           oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSyncStaffName, oncallSyncAcceptSwap, oncallSyncRemoveCount, oncallSyncRemoveSelected, oncallSyncVerdict, importMonthLabel, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          opsRoom, OPS_QUESTIONS, OPS_CAP_LABEL, OPS_ROLES, opsCanManage, opsIsAdmin, opsLoad, opsOpen, opsClose, opsCandidates, opsAdd, opsSetRole, opsRemove, opsQuestionOn, opsPlanFor,
           rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportRemoveCount,rotationImportRemoveSelected,rotationImportTrim,rotationImportUntrim,rotationImportChoice,rotationImportUseUnit,rotationImportCapacity,rotationImportForget,rotationImportTargetName,rotationImportVerdict,rotationImportCheckKey, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,

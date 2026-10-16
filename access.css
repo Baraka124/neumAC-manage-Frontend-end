@@ -705,3 +705,49 @@ html #app .import-verdict--review,.sync-table small.import-verdict--review{color
 .import-removed,.import-swaps{border-left:3px solid #c9a227;padding-left:10px}
 .import-removed label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
 .import-current+.import-current{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(0,0,0,.12)}
+
+/* ── Pneumo Ops Room (OR-1) ── */
+.opsr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:14px}
+.opsr-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;background:var(--surface,#fff);border:1px solid rgba(15,40,60,.12);border-radius:14px;padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.opsr-card:hover,.opsr-card:focus-visible{border-color:#0e8f8f;box-shadow:0 4px 14px rgba(14,143,143,.12);outline:none}
+.opsr-card-code{font:600 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;color:#5b6b78;text-transform:uppercase}
+.opsr-card-name{font-size:16px;color:#10283c}
+.opsr-card-line{font-size:13px;color:#4a5a66}
+.opsr-card-stats{display:flex;gap:14px;font-size:13px;color:#4a5a66}.opsr-card-stats b{color:#10283c}
+.opsr-caps{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.opsr-cap{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(14,143,143,.09);color:#0b6f6f}
+.opsr-unit{margin-top:14px}
+.opsr-unit-head{display:flex;align-items:center;gap:14px;margin-bottom:12px}.opsr-unit-head h3{margin:2px 0 0}
+.opsr-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.opsr-tab{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 13px;border-radius:12px;border:1px solid rgba(15,40,60,.12);background:var(--surface,#fff);font-weight:600;color:#10283c;cursor:pointer;min-width:150px}
+.opsr-tab small{font-weight:400;font-size:11px;color:#5b6b78}
+.opsr-tab.active{border-color:#0e8f8f;background:rgba(14,143,143,.08)}
+.opsr-tab.off{opacity:.45;cursor:not-allowed}
+.opsr-panel{background:var(--surface,#fff);border:1px solid rgba(15,40,60,.10);border-radius:14px;padding:16px}
+.opsr-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px}
+@media (max-width:860px){.opsr-cols{grid-template-columns:1fr}}
+.opsr-table select{max-width:210px}
+.opsr-actions{white-space:nowrap;text-align:right}.opsr-actions .btn+.btn{margin-left:6px}
+.opsr-list{list-style:none;padding:0;margin:6px 0 12px;display:flex;flex-direction:column;gap:6px}
+.opsr-list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.opsr-add{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed rgba(15,40,60,.15)}
+.opsr-add .admin-kicker{flex-basis:100%;margin:0}
+.opsr-add select{max-width:240px}
+.opsr-add label{display:flex;flex-direction:column;font-size:12px;color:#5b6b78}
+.opsr-add small{flex-basis:100%}
+.opsr-history{margin-top:12px}.opsr-history summary{cursor:pointer;font-size:13px;color:#4a5a66}
+.opsr-src{font-weight:400;letter-spacing:0;text-transform:none;color:#5b6b78;margin-left:6px}
+.opsr-next h4{margin:4px 0 8px}
+@media (prefers-color-scheme:dark){.opsr-card,.opsr-tab,.opsr-panel{border-color:rgba(255,255,255,.12)}}
+.opsr-table{min-width:0!important;width:100%;table-layout:auto}
+.opsr-table th,.opsr-table td{white-space:normal}
+.opsr-cols>div{min-width:0}
+@media (max-width:640px){
+  .opsr-table thead{display:none}
+  .opsr-table tr{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 0;border-bottom:1px solid rgba(15,40,60,.08)}
+  .opsr-table td{padding:0!important;border:0!important}
+  .opsr-table td:first-child{grid-column:1/-1}
+  .opsr-actions{text-align:left}
+  .opsr-add select,.opsr-add label,.opsr-add input{max-width:none;width:100%}
+  .opsr-tab{min-width:0;flex:1 1 140px}
+}
