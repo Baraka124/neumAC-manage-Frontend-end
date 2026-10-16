@@ -153,3 +153,11 @@ test('preview wiring: Current schedule column, guardia words, capacity advice wi
   assert.match(app, /for\(let i=0;i<body\.length;i\+=300\)\{/);       // one check request: same-file rows count
   assert.match(app, /window\.NeumRotationImport\.sendable\(r\)/);
 });
+
+test('start-after chains past rotations touching the start (Iria, 16 Oct 2026: HOSP ends 1 Sep, UCI 2→8 Sep)', () => {
+  const r = R.diff([rec({ start_date: '2026-09-01', end_date: '2026-11-30' })], [
+    manual({ id: 'hosp', start_date: '2026-08-01', end_date: '2026-09-01', rotation_status: 'completed', unit: { unit_name: 'Hospitalización' } }),
+    manual({ id: 'uci', start_date: '2026-09-02', end_date: '2026-10-02', actual_end_date: '2026-09-08', rotation_status: 'terminated_early' })]).records[0];
+  assert.equal(r.status, 'conflict'); assert.equal(r.can_replace, false);
+  assert.equal(r.trim.start_date, '2026-09-09'); assert.equal(r.trim.because.unit_name, 'UCI');
+});
