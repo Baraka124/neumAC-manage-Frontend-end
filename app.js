@@ -9171,7 +9171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
         // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
-        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
+        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',remembered:[],layout:null,layoutChanges:[],rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
         const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
         // Tint review rows by duty date: today/future = green (actionable), past = orange (historical import).
         const oncallSyncRowClass=(dateStr)=>{
@@ -9204,13 +9204,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncSelectNew=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const next={...oncallSync.selection};oncallSyncVisible.value.filter(r=>r.status==='new').forEach(r=>next[r.key]=true);oncallSync.selection=next}
         watch(()=>JSON.stringify(oncallSync.filter),()=>{oncallSync.selection={}},{flush:'sync'})
         const SYNC_MAP_KEY='neumdesk_oncall_sync_mappings'
+        // Import memory (Phase B): saved mappings + layout memory, shared across users and devices.
+        const importMemory={
+          async aliases(type){try{const r=await API.request('/api/import-aliases?type='+type,{skipCache:true});return r?.data||[]}catch{return []}},
+          async save(type,aliases){if(!aliases.length)return null;try{const r=await API.request('/api/import-aliases',{method:'PUT',body:{type,aliases}});if(r?.rejected?.length)showToast('Some mappings were not saved',r.rejected.map(x=>x.label+': '+x.reason).join(' · '),'warning');return r}catch(e){showToast('Mapping not remembered',e.message,'warning');return null}},
+          async forget(id){try{await API.request('/api/import-aliases/'+encodeURIComponent(id),{method:'DELETE'});return true}catch(e){showToast('Could not forget mapping',e.message,'error');return false}},
+          async layoutCheck(type,layout){const M=window.NeumImportMemory;try{const r=await API.request('/api/import-layouts/'+type,{skipCache:true});const prev=r?.data;if(!prev||prev.fingerprint===M.fingerprint(layout))return {changes:[],prev};return {changes:M.diffLayout(prev.layout,layout),prev}}catch{return {changes:[],prev:null}}},
+          async layoutSave(type,layout,fileName){try{await API.request('/api/import-layouts/'+type,{method:'PUT',body:{fingerprint:window.NeumImportMemory.fingerprint(layout),layout,file_name:fileName}})}catch{}}
+        }
         const syncRebuild=()=>{
           const p=window.NeumOncallSync.plan(oncallSync.rows,oncallSync.sourceStaff,oncallSync.existing,oncallSync.mappings,oncallSync.choices)
           Object.assign(oncallSync,p,{stats:{total:oncallSync.rows.length,sheet:oncallSync.rows[0]?.source_sheet||'',add:p.toAdd.length,update:p.toUpdate.length,unchanged:p.counts.unchanged,unmatchedRows:p.blocked.length,skipped:p.counts.skipped}})
         }
         const oncallSyncParse=async(file)=>{
           if(oncallSync.checking||oncallSync.committing)return
-          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},summary:null,filter:{start:'',end:'',search:'',status:''}})
+          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',remembered:[],layout:null,layoutChanges:[],choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},summary:null,filter:{start:'',end:'',search:'',status:''}})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const active=String(new Date().getFullYear());const sheet=wb.SheetNames.find(n=>n===active+'+'||n===active)||wb.SheetNames.find(n=>/^\d{4}\+?$/.test(n));if(!sheet)throw Error('No dated Guardias sheet found.')
             const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,raw:true});oncallSync.rows=window.NeumOncallSync.parse(aoa,sheet)
@@ -9222,7 +9230,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const upcoming=dates.filter(d=>d>=todayStr).length;
             oncallSync.summary={min:dates[0],max:dates.at(-1),total:dates.length,upcoming,pastOnly:dates.at(-1)<todayStr};
             const [existing,staff]=await Promise.all([API.request('/api/oncall?start_date='+dates[0]+'&end_date='+dates.at(-1),{skipCache:true}),API.request('/api/identity/staff',{skipCache:true})]);oncallSync.existing=Array.isArray(existing)?existing:existing.data||[];oncallSync.sourceStaff=staff.data||[]
-            try{oncallSync.mappings=JSON.parse(localStorage.getItem(SYNC_MAP_KEY)||'{}')}catch{oncallSync.mappings={}}
+            // Saved mappings now live in the database; mappings left in this browser are migrated once.
+            let legacy={};try{legacy=JSON.parse(localStorage.getItem(SYNC_MAP_KEY)||'{}')}catch{}
+            const legacyItems=Object.entries(legacy).filter(([,v])=>v).map(([label,v])=>v==='skip'?{label,action:'skip'}:{label,action:'map',target_id:v})
+            if(legacyItems.length){const r=await importMemory.save('oncall_staff',legacyItems);if(r)try{localStorage.removeItem(SYNC_MAP_KEY)}catch{}}
+            const labels=[...new Set(oncallSync.rows.flatMap(r=>[r.surname,r.mir]).filter(Boolean))]
+            const mem=window.NeumImportMemory.mappingFor(labels,await importMemory.aliases('oncall_staff'))
+            oncallSync.mappings=mem.mapping;oncallSync.remembered=mem.remembered
+            oncallSync.layout=window.NeumImportMemory.layoutOncall(sheet,aoa)
+            oncallSync.layoutChanges=(await importMemory.layoutCheck('oncall',oncallSync.layout)).changes
             // Land on the current month when the file has upcoming shifts, so the user sees
             // current/future on-call by default instead of the file's first (oldest) month.
             const landMonth=upcoming>0&&dates.at(-1)>=todayStr?todayStr.slice(0,7):dates[0].slice(0,7);
@@ -9231,9 +9247,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const oncallSyncReset=()=>{if(!oncallSync.checking&&!oncallSync.committing)Object.assign(oncallSync,{done:false,fileName:'',error:'',rows:[],entries:[],selection:{},results:{},toAdd:[],toUpdate:[],conflicts:[],blocked:[],unmatched:[],choices:{},commitResult:null,committed:false})}
         const oncallSyncFile=ev=>{const file=ev.target.files?.[0];if(file)oncallSyncParse(file);ev.target.value=''}
-        const oncallSyncMap=(name,id)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={...oncallSync.mappings,[name]:id};try{localStorage.setItem(SYNC_MAP_KEY,JSON.stringify(oncallSync.mappings))}catch{};syncRebuild()}
+        const oncallSyncMap=(name,id)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={...oncallSync.mappings,[name]:id};syncRebuild();if(id)importMemory.save('oncall_staff',[id==='skip'?{label:name,action:'skip'}:{label:name,action:'map',target_id:id}]).then(r=>{const a=r?.saved?.[0];if(a)oncallSync.remembered=[...oncallSync.remembered.filter(x=>x.label!==name),{label:name,id:a.id,action:a.action,target_id:a.target_id}]})}
+        const oncallSyncPools=computed(()=>window.NeumOncallSync.pools(oncallSync.sourceStaff))
+        const oncallSyncForget=async(item)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;if(!(await importMemory.forget(item.id)))return;const m={...oncallSync.mappings};delete m[item.label];oncallSync.mappings=m;oncallSync.remembered=oncallSync.remembered.filter(x=>x.id!==item.id);oncallSync.selection={};syncRebuild()}
         const oncallSyncChoice=(date,choice)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const selection={...oncallSync.selection};oncallSync.entries.filter(r=>r.date===date).forEach(r=>delete selection[r.key]);oncallSync.selection=selection;oncallSync.choices={...oncallSync.choices,[date]:choice};syncRebuild()}
-        const oncallSyncClearMappings=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={};try{localStorage.removeItem(SYNC_MAP_KEY)}catch{};syncRebuild()}
+        const oncallSyncClearMappings=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={};oncallSync.remembered=[];try{localStorage.removeItem(SYNC_MAP_KEY)}catch{};syncRebuild()}
         const oncallSyncConfirmCommit=()=>{
           if(oncallSync.checking||oncallSync.committing)return
           const n=oncallSyncSelected.value.length
@@ -9268,11 +9286,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const base=parts.length?parts.join(' · '):'No changes to save'
             oncallSync.commitResult={ok:skipped===0,msg:skipped===0?base+' · all saved ✓':base+' · '+skipped+' could not be saved (see the rows marked “Not saved”)',failures}
           }catch(e){oncallSync.commitResult={ok:false,msg:'Saved '+inserted+' and updated '+updated+' before the sync hit an error: '+e.message+' Reload the file before retrying — part of the request may have completed.',failures}}
-          finally{oncallSync.committed=true;oncallSync.committing=false;oncallSync.progress=null;API.clearCache();try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
+          finally{oncallSync.committed=true;oncallSync.committing=false;oncallSync.progress=null;API.clearCache();if(oncallSync.layout&&inserted+updated>0)importMemory.layoutSave('oncall',oncallSync.layout,oncallSync.fileName);try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
         }
 
         // ─── Rotations import (MIR matrix → resident_rotations) — mirrors the on-call sync ───
-        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null})
+        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null})
         // Time bands: current + upcoming are the working set (highlighted, pre-selected); past is
         // history (importable on purpose); far = more than 12 months ahead (flagged, never pre-selected).
         const ROT_BAND_VIEW={now:['current','upcoming'],past:['past'],far:['far'],all:['past','current','upcoming','far']}
@@ -9294,7 +9312,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if(rotationImport.autoSelect){const next={};p.records.filter(r=>r.status==='ready'&&['current','upcoming'].includes(r.band)).forEach(r=>next[r.key]=true);rotationImport.selection=next}}
         const rotationImportParse = async(file)=>{
           if(rotationImport.checking||rotationImport.committing)return
-          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:''})
+          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[]})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true})
             const sheets={};wb.SheetNames.forEach(n=>{sheets[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true})})
@@ -9305,6 +9323,13 @@ document.addEventListener('DOMContentLoaded', () => {
             rotationImport.summary={periods:t.periods.length,residents:t.residents.length,span:[starts[0],ends.at(-1)]}
             const [staff,units]=await Promise.all([API.request('/api/identity/staff',{skipCache:true}),API.request('/api/training-units',{skipCache:true})])
             rotationImport.staff=staff.data||staff||[];rotationImport.units=units.data||units||[]
+            const M=window.NeumImportMemory
+            const [resAliases,unitAliases]=await Promise.all([importMemory.aliases('rotation_resident'),importMemory.aliases('rotation_unit')])
+            const resMem=M.mappingFor(t.residents,resAliases),unitMem=M.mappingFor([...new Set(t.periods.map(p=>p.unit_excel))],unitAliases)
+            rotationImport.residentMappings=resMem.mapping;rotationImport.unitChoices=unitMem.mapping
+            rotationImport.remembered=[...resMem.remembered.map(x=>({...x,kind:'resident'})),...unitMem.remembered.map(x=>({...x,kind:'unit'}))]
+            rotationImport.layout=M.layoutRotations(sheets)
+            rotationImport.layoutChanges=(await importMemory.layoutCheck('rotations',rotationImport.layout)).changes
             rotationImportRebuild();rotationImport.done=true
           }catch(e){rotationImport.error=e.message}finally{rotationImport.parsing=false}
         }
@@ -9323,12 +9348,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const rec=created?.data||created
             if(!rec?.id)throw Error('The new resident was not returned by the server.')
             rotationImport.staff=[...rotationImport.staff,{id:rec.id,full_name:rec.full_name||fullName,staff_type:'medical_resident',employment_status:'active',department_id}]
-            rotationImport.selection={};rotationImport.residentMappings={...rotationImport.residentMappings,[label]:rec.id};rotationImportRebuild()
+            rotationImport.selection={};rotationImport.autoSelect=true;rotationImport.residentMappings={...rotationImport.residentMappings,[label]:rec.id};rotationImportRebuild();rotationImportRemember('resident',label,rec.id)
             API.clearCache();showToast('Resident registered',(rec.full_name||fullName)+' · MIR '+(u.cohortYear||''),'success')
           }catch(e){showToast('Could not register resident',e.message,'error');rotationImportRebuild()}
         }
-        const rotationImportResidentMap = (label,id)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;if(id==='register'){rotationImportRegister(label);return}rotationImport.selection={};rotationImport.residentMappings={...rotationImport.residentMappings,[label]:id};rotationImportRebuild()}
-        const rotationImportUnitChoice = (code,choice)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.unitChoices={...rotationImport.unitChoices,[code]:choice};rotationImportRebuild()}
+        const rotationImportRemember=(kind,label,choice)=>{if(!choice||choice==='create'||choice==='register')return;importMemory.save(kind==='unit'?'rotation_unit':'rotation_resident',[choice==='skip'?{label,action:'skip'}:{label,action:'map',target_id:choice}]).then(r=>{const a=r?.saved?.[0];if(a)rotationImport.remembered=[...rotationImport.remembered.filter(x=>!(x.kind===kind&&x.label===label)),{label,kind,id:a.id,action:a.action,target_id:a.target_id}]})}
+        const rotationImportForget=async(item)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;if(!(await importMemory.forget(item.id)))return;if(item.kind==='unit'){const u={...rotationImport.unitChoices};delete u[item.label];rotationImport.unitChoices=u}else{const m={...rotationImport.residentMappings};delete m[item.label];rotationImport.residentMappings=m}rotationImport.remembered=rotationImport.remembered.filter(x=>x.id!==item.id);rotationImport.autoSelect=true;rotationImportRebuild()}
+        const rotationImportTargetName=(item)=>item.action==='skip'?'Skip':item.kind==='unit'?(rotationImport.units.find(u=>u.id===item.target_id)?.unit_name||'Unit'):(rotationImport.staff.find(s=>s.id===item.target_id)?.full_name||'Person')
+        const rotationImportResidentMap = (label,id)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;if(id==='register'){rotationImportRegister(label);return}rotationImport.selection={};rotationImport.autoSelect=true;rotationImport.residentMappings={...rotationImport.residentMappings,[label]:id};rotationImportRebuild();rotationImportRemember('resident',label,id)}
+        const rotationImportUnitChoice = (code,choice)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.autoSelect=true;rotationImport.unitChoices={...rotationImport.unitChoices,[code]:choice};rotationImportRebuild();rotationImportRemember('unit',code,choice)}
         const rotationImportSelectReady = ()=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;const next={...rotationImport.selection};rotationImportVisible.value.filter(r=>r.status==='ready').forEach(r=>next[r.key]=true);rotationImport.selection=next}
         const rotationImportClearSel = ()=>{rotationImport.selection={};rotationImport.autoSelect=false}
         const rotationImportReset = ()=>{if(!rotationImport.checking&&!rotationImport.committing)Object.assign(rotationImport,{done:false,fileName:'',error:'',periods:[],records:[],selection:{},residentMappings:{},unitChoices:{},commitResult:null,committed:false,checkResults:{},checkKey:'',summary:null})}
@@ -9366,7 +9394,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const base=inserted+(inserted===1?' rotation imported':' rotations imported')+(unitsCreated?' · '+unitsCreated+(unitsCreated===1?' unit created':' units created'):'')
             rotationImport.commitResult={ok:skipped===0,msg:skipped===0?base+' · all saved ✓':base+' · '+skipped+' could not be saved (see rows marked “Not saved”)',failures}
           }catch(e){rotationImport.commitResult={ok:false,msg:'Imported '+inserted+' before the import hit an error: '+e.message+' Reload the file before retrying.',failures}}
-          finally{rotationImport.committed=true;rotationImport.committing=false;rotationImport.progress=null;API.clearCache();if(rotationImport.commitResult)showToast(rotationImport.commitResult.ok?'Rotations import complete':'Import finished with issues',rotationImport.commitResult.msg,rotationImport.commitResult.ok?'success':'error')}
+          finally{rotationImport.committed=true;rotationImport.committing=false;rotationImport.progress=null;API.clearCache();if(rotationImport.layout&&inserted>0)importMemory.layoutSave('rotations',rotationImport.layout,rotationImport.fileName);if(rotationImport.commitResult)showToast(rotationImport.commitResult.ok?'Rotations import complete':'Import finished with issues',rotationImport.commitResult.msg,rotationImport.commitResult.ok?'success':'error')}
         }
         // Selections persist across views (person search, History, far-future) so the pre-selected working
         // set survives browsing; the UI always states how many selected rows are outside the current view.
@@ -19367,8 +19395,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
-          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
+          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportForget,rotationImportTargetName, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
