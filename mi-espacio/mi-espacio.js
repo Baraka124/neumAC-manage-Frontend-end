@@ -1726,7 +1726,7 @@
                 <ul v-else class="me-v16-timeline-list">
                   <li v-for="e in filteredTimeline.slice(0,state.timeline.expanded?25:5)" :key="e.id" class="me-v16-timeline-entry">
                     <span class="me-v16-timeline-action">{{e.actionLabel}}</span>
-                    <span class="me-v16-timeline-resource">{{e.resourceLabel}}</span>
+                    <span class="me-v16-timeline-resource">{{e.resourceLabel}}<template v-if="e.summary"> · {{e.summary}}</template><small v-if="e.by && !e.byMe" class="me-v16-timeline-by"> · por {{e.by}}</small></span>
                     <time class="me-v16-timeline-time">{{fmtRelative(e.createdAt)}}</time>
                   </li>
                 </ul>
