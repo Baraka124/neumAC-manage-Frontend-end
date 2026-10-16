@@ -188,6 +188,18 @@ function diff(records,existing){
   claimed.add(e.id);changed++;
   Object.assign(r,{replaces:e.id,sync:'changed',previous:{unit_name:e.unit?.unit_name||null,start_date:s10(e.start_date),end_date:s10(e.end_date),rotation_id:e.rotation_id||null}});
  }
+ // A row whose first days collide with a rotation neumDesk already records (typically one that was
+ // terminated early, or is still running) → suggest starting the day after that rotation's EFFECTIVE end.
+ // Same rule as the DB: any non-cancelled rotation occupies the resident up to actual_end_date || end_date.
+ for(const r of out){
+  if(!r.resident_id||r.replaces||r.status==='unchanged'||r.status==='skipped')continue;
+  const head=ex.filter(e=>String(e.resident_id)===String(r.resident_id)&&!claimed.has(e.id)&&overlap(r,e)&&s10(e.start_date)<=r.start_date);
+  if(!head.length)continue;
+  const last=head.reduce((a,b)=>endOf(b)>endOf(a)?b:a), from=nextDay(endOf(last));
+  if(from>r.end_date)continue;                                           // fully covered: nothing sensible to trim to
+  if(ex.some(e=>String(e.resident_id)===String(r.resident_id)&&!claimed.has(e.id)&&s10(e.start_date)>r.start_date&&overlap({start_date:from,end_date:r.end_date},e)))continue;   // still collides later on
+  r.trim={start_date:from,because:{unit_name:last.unit?.unit_name||null,start_date:s10(last.start_date),end_date:endOf(last),status:last.rotation_status||null}};
+ }
  const span={};for(const r of out){if(!r.resident_id||r.status==='skipped')continue;const k=String(r.resident_id),x=span[k]||(span[k]={from:r.start_date,to:r.end_date});if(r.start_date<x.from)x.from=r.start_date;if(r.end_date>x.to)x.to=r.end_date}
  const removed=ex.filter(e=>e.sync_source&&!claimed.has(e.id)&&span[String(e.resident_id)]&&s10(e.start_date)>=span[String(e.resident_id)].from&&s10(e.end_date)<=span[String(e.resident_id)].to&&!fileRowsOver(e).length)
   .map(e=>({id:e.id,rotation_id:e.rotation_id||null,resident_id:e.resident_id,resident_name:(out.find(r=>String(r.resident_id)===String(e.resident_id))||{}).resident_name||null,unit_name:e.unit?.unit_name||null,start_date:s10(e.start_date),end_date:s10(e.end_date),file:e.sync_source&&e.sync_source.file||null}))
