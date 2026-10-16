@@ -23,7 +23,8 @@ test('identical rotation already in neumDesk is "unchanged" and never sent', () 
 test('a changed period of an earlier IMPORTED rotation becomes a one-to-one replacement', () => {
   const d = R.diff([rec({ start_date: '2026-11-01', end_date: '2027-01-31' })], [ex({ start_date: '2026-11-01', end_date: '2026-12-31', unit: { unit_name: 'Neumo' } })]);
   const r = d.records[0];
-  assert.equal(r.status, 'ready'); assert.equal(r.sync, 'changed'); assert.equal(r.replaces, 'e-2026-11-01');
+  assert.equal(r.status, 'replacement'); assert.equal(r.sync, 'changed'); assert.equal(r.auto, true); assert.equal(r.replaces, 'e-2026-11-01');
+  assert.equal(r.replace_confirmed, undefined);                          // earlier import: no manual confirmation needed
   assert.equal(r.previous.end_date, '2026-12-31');
   const p = R.payload(d.records, { [r.key]: true })[0];
   assert.equal(p.replaces, 'e-2026-11-01');
@@ -70,7 +71,7 @@ test('guardias: A↔B trade across two dates is detected as one swap', () => {
 });
 
 test('app wiring: diff on rebuild, removals never pre-selected, import runs logged', () => {
-  assert.match(app, /T\.diff\(planned,rotationImport\.existing\)/);
+  assert.match(app, /T\.diff\(planned,rotationImport\.existing,rotationImport\.choices\)/);
   assert.match(app, /importMemory\.existing\('rotations'/);
   assert.match(app, /importMemory\.existing\('oncall'/);
   assert.match(app, /'\/api\/rotations\/'\+encodeURIComponent\(r\.id\)\+'\?mode=remove'/);
@@ -80,7 +81,7 @@ test('app wiring: diff on rebuild, removals never pre-selected, import runs logg
   assert.match(app, /oncallSyncAcceptSwap=sw=>/);
   assert.match(html, /No longer in this file/);
   assert.match(html, /Swaps detected/);
-  assert.match(html, /<option value="unchanged">Already in neumDesk<\/option>/);
+  assert.match(html, /<option value="unchanged">Already matches<\/option>/);
 });
 
 test('a row colliding with an early-terminated rotation is offered "start after it" (Cristina, 16 Oct 2026)', () => {
@@ -105,4 +106,50 @@ test('trim wiring: file end kept, only start moves; engine copy matches the DB r
   assert.match(html, /@click="rotationImportTrim\(r\)"/);
   const engine = fs.readFileSync(path.join(__dirname, '..', 'decision51.js'), 'utf8');
   assert.match(engine, /occupiesResident\(r\.rotation_status\)/);
+});
+
+// ── Guardia-style decisions on rotation conflicts (16 Oct 2026) ──
+const manual = (o) => ex({ sync_source: null, unit: { unit_name: 'UCI' }, ...o });
+
+test('a row overlapping a hand-entered rotation is a Conflict showing the current schedule; nothing is sent until decided', () => {
+  const d = R.diff([rec({ start_date: '2026-09-01', end_date: '2026-11-30' })], [manual({ id: 'uci', start_date: '2026-09-01', end_date: '2026-10-02', actual_end_date: '2026-09-04', rotation_status: 'terminated_early' })]);
+  const r = d.records[0];
+  assert.equal(r.status, 'conflict'); assert.equal(r.can_replace, true);
+  assert.deepEqual(r.current.map(c => [c.unit_name, c.start_date, c.end_date, c.planned_end, c.status, c.imported]), [['UCI', '2026-09-01', '2026-09-04', '2026-10-02', 'terminated_early', false]]);
+  assert.equal(r.trim.start_date, '2026-09-05');
+  assert.equal(R.sendable(r), false);
+  assert.deepEqual(R.payload(d.records, { [r.key]: true }), []);
+  assert.equal(d.counts.conflicts, 1);
+});
+
+test('Approve replacement of a hand-entered rotation sends replaces + replace_confirmed; Keep current sends nothing; Undo restores the conflict', () => {
+  const rows = [rec({ start_date: '2026-09-01', end_date: '2026-11-30' })], existing = [manual({ id: 'uci', start_date: '2026-09-01', end_date: '2026-10-02' })];
+  const k = rows[0].key;
+  const rep = R.diff(rows, existing, { [k]: 'replace' }).records[0];
+  assert.equal(rep.status, 'replacement'); assert.equal(rep.sync, 'manual'); assert.equal(rep.auto, false);
+  const p = R.payload([rep], { [k]: true })[0];
+  assert.equal(p.replaces, 'uci'); assert.equal(p.replace_confirmed, true);
+  assert.equal(R.diff(rows, existing, { [k]: 'keep' }).records[0].status, 'kept');
+  assert.equal(R.diff(rows, existing, { [k]: '' }).records[0].status, 'conflict');
+});
+
+test('an earlier import is pre-approved but can be kept instead', () => {
+  const rows = [rec({ start_date: '2026-11-01', end_date: '2027-01-31' })], existing = [ex({ start_date: '2026-11-01', end_date: '2026-12-31' })];
+  assert.equal(R.diff(rows, existing).records[0].status, 'replacement');
+  assert.equal(R.diff(rows, existing, { [rows[0].key]: 'keep' }).records[0].status, 'kept');
+});
+
+test('two recorded rotations under one row → conflict without Approve replacement', () => {
+  const r = R.diff([rec({ start_date: '2026-09-01', end_date: '2026-12-31' })], [manual({ id: 'a', start_date: '2026-09-01', end_date: '2026-09-30' }), manual({ id: 'b', start_date: '2026-11-01', end_date: '2026-11-30' })]).records[0];
+  assert.equal(r.status, 'conflict'); assert.equal(r.can_replace, false); assert.equal(r.current.length, 2);
+});
+
+test('preview wiring: Current schedule column, guardia words, capacity advice with open units', () => {
+  assert.match(html, /<th scope="col">Current schedule<\/th><th scope="col">From Excel<\/th>/);
+  assert.match(html, /@click="rotationImportChoice\(r,'keep'\)">Keep current/);
+  assert.match(html, /@click="rotationImportChoice\(r,'replace'\)">Approve replacement/);
+  assert.match(html, /is full as per policy \(max/);
+  assert.match(html, /@click="rotationImportUseUnit\(r,u\.id\)"/);
+  assert.match(app, /for\(let i=0;i<body\.length;i\+=300\)\{/);       // one check request: same-file rows count
+  assert.match(app, /window\.NeumRotationImport\.sendable\(r\)/);
 });

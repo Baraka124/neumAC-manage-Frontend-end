@@ -9,7 +9,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
 test('preview opens on current & upcoming and pre-selects only that working set', () => {
   assert.match(app, /filter:\{resident:'',status:'',band:'now',person:''\},autoSelect:true/);
-  assert.match(app, /r\.status==='ready'&&\['current','upcoming'\]\.includes\(r\.band\)/);   // never history or far-future
+  assert.match(app, /(r\.status==='ready'|window\.NeumRotationImport\.sendable\(r\))&&\['current','upcoming'\]\.includes\(r\.band\)/);   // never history or far-future
   assert.match(html, /<option value="now">Current &amp; upcoming/);
   assert.match(html, /<option value="past">History/);
   assert.match(html, /<option value="far">Beyond 12 months/);
