@@ -17,6 +17,8 @@ jobs:
       - name: JS syntax (all root scripts)
         run: |
           find . -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Rotations import translator (matrix → rotation periods)
+        run: node --test tests/rotation-import.test.cjs
       - name: Mi espacio identity and shell contract
         run: node --test tests/mi-espacio-phase1.test.cjs
       - name: Clinician access to Mi espacio
