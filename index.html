@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-ops-room-ui2">
+<link rel="stylesheet" href="access.css?v=20261017-comms-cm1">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4992,7 +4992,7 @@
                 </div>
 
                 <div v-if="currentView === 'communications'" class="ops-view">
-                    <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">DEPARTMENT COMMUNICATION</span><h2>Keep the team informed</h2><p>Announcements, departmental updates and operational context.</p></div></header>
+                    <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">DEPARTMENT COMMUNICATION</span><h2>Keep the team informed</h2><p>What comes in from other services, briefed to the team · Parte del día · Agenda de sesiones y reuniones · Pendientes.</p></div></header>
 
                     <!-- ══ TWO-COLUMN LAYOUT ════════════════════════════════════════
                          Left: pulse tiles + feed  |  Right: compose + broadcasts
@@ -5036,158 +5036,252 @@
                         </div>
                     </div>
 
-                    <!-- ═══ ZONES 2+3: Feed (main) + Briefing (rail) ═══ -->
-                    <div class="ops-hub">
+                    <!-- ═══ COMMUNICATION (CM-1): Feed · Parte del día · Agenda · Pendientes ═══ -->
+                    <nav class="cm-tabs" aria-label="Communication">
+                        <button v-for="t in COMMS_TABS" :key="t.key" type="button" :class="['cm-tab',{active:comms.tab===t.key}]" @click="commsTab(t.key)">{{ t.l }}<span v-if="t.key==='pendientes' &amp;&amp; commsOpenActions.length" class="cm-badge">{{ commsOpenActions.length }}</span></button>
+                    </nav>
+                    <p v-if="comms.error" class="sync-check-error">Could not load: {{ comms.error }}</p>
+                    <p v-if="!comms.migrated" class="sync-check-error">Agenda, Parte del día and follow-ups need the CM-1 database update (see COMMS.md).</p>
 
-                        <!-- ZONE 2: FEED (right column content reused below) -->
-                        <!-- ═══ RIGHT COLUMN — feed + compose ═══ -->
-                        <div class="ops-right">
-
-                            <!-- ── LIVE BROADCASTS ── -->
-                            <div v-if="livebroadcasts.filter(b => !b._dismissed).length > 0" class="ops-broadcasts">
-                                <div class="ops-section-label">
-                                    <span class="ops-live-dot"></span> Live
-                                </div>
-                                <div v-for="bc in livebroadcasts" :key="bc.id"
-                                     v-if="!bc._dismissed"
-                                     class="ops-bc-card"
-                                     :class="bc.priority_level === 'urgent' ? 'ops-bc--red' : 'ops-bc--blue'">
-                                    <div class="ops-bc-stripe"></div>
-                                    <div class="ops-bc-ico">
-                                        <svg v-if="bc.priority_level === 'urgent'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
-                                        <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
-                                    </div>
-                                    <div class="ops-bc-body">
-                                        <div class="ops-bc-text">{{ bc.content || bc.title }}</div>
-                                        <div class="ops-bc-meta">{{ bc.created_by_name || '—' }} · {{ formatTimeAgo(bc.created_at) }}<span v-if="bc.publish_end_date"> · expires {{ formatDate(bc.publish_end_date) }}</span></div>
-                                    </div>
-                                    <button class="ops-bc-dismiss" @click.stop="dismissBroadcast(bc)">×</button>
-                                </div>
-                            </div>
-
-                            <!-- ── COMPOSE BAR ── -->
-                            <div class="ops-compose-zone" v-if="hasPermission('communications','create')">
-                                <div v-if="!broadcastForm.show" class="ops-compose-dormant" @click="openBroadcastForm('announcement')">
-                                    <div class="ocd-av">
-                                        {{ (currentUser?.full_name || 'U').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
-                                    </div>
-                                    <div class="ocd-text">What does the team need to know?</div>
-                                    <div class="ocd-pills">
-                                        <span class="ocd-pill ocd-pill--broadcast" @click.stop="openBroadcastForm('broadcast')">Broadcast</span>
-                                        <span class="ocd-pill ocd-pill--protocol"  @click.stop="openBroadcastForm('protocol')">Protocol</span>
-                                        <span class="ocd-pill ocd-pill--note"      @click.stop="openBroadcastForm('announcement')">Note</span>
-                                        <span class="ocd-pill ocd-pill--kudos"     @click.stop="openBroadcastForm('kudos')">Kudos</span>
-                                    </div>
-                                </div>
-
-                                <div v-else class="ops-compose-open">
-                                    <div class="oco-tabs">
-                                        <button v-for="t in ['broadcast','protocol','announcement','kudos']" :key="t"
-                                                class="oco-tab"
-                                                :class="{ 'oco-tab--active': broadcastForm.type === t, ['oco-tab--' + t]: true }"
-                                                @click="broadcastForm.type = t">
-                                            {{ broadcastTypeConfig[t].label }}
-                                        </button>
-                                        <button class="oco-close" @click="broadcastForm.show = false" aria-label="Close broadcast form" title="Close broadcast form">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7l10 10M17 7l-10 10"/></svg>
-                                        </button>
-                                    </div>
-                                    <textarea class="oco-textarea"
-                                              v-model="broadcastForm.text"
-                                              :placeholder="broadcastForm.type === 'broadcast' ? 'Urgent — keep it short and clear…' : broadcastForm.type === 'kudos' ? 'Recognise someone\'s contribution…' : broadcastForm.type === 'protocol' ? 'Describe the protocol update…' : 'What does the department need to know?'"
-                                              rows="3"></textarea>
-                                    <div class="oco-footer">
-                                        <div class="oco-expiry">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                            <select v-model.number="broadcastForm.expiryHours" class="oco-exp-sel">
-                                                <option :value="4">4 hours</option>
-                                                <option :value="8">8 hours</option>
-                                                <option :value="24">24 hours</option>
-                                                <option :value="72">3 days</option>
-                                                <option :value="168">1 week</option>
-                                            </select>
-                                        </div>
-                                        <button class="btn btn-primary btn-sm" @click="submitBroadcast(null)">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                                            Send
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- ── DEPARTMENT FEED ── -->
-                            <div class="ops-feed-zone">
-                                <div class="ops-feed-header">
-                                    <div class="ops-section-label nd-l028" >Feed</div>
-                                    <div class="ops-feed-filters">
-                                        <button v-for="f in ['all','broadcast','protocol','announcement','kudos']" :key="f"
-                                                class="ops-ff" :class="{ active: feedFilter === f }"
-                                                @click="feedFilter = f">
-                                            {{ f === 'all' ? 'All' : broadcastTypeConfig[f]?.label || f }}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="ops-feed">
-                                    <div v-for="item in feedItems" :key="item.id" class="ops-fi">
-                                        <div class="ops-fi-bar"
-                                             :style="{ background: broadcastTypeConfig[getAnnouncementType(item)]?.barColor || '#94a3b8' }">
-                                        </div>
-                                        <div class="ops-fi-av">
-                                            {{ (item.created_by_name || item.author || '?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
-                                        </div>
-                                        <div class="ops-fi-body">
-                                            <div class="ops-fi-row">
-                                                <span class="ops-fi-author">{{ item.created_by_name || item.author || 'Staff' }}</span>
-                                                <span class="ops-fi-tag"
-                                                      :style="{ background: broadcastTypeConfig[getAnnouncementType(item)]?.bg, color: broadcastTypeConfig[getAnnouncementType(item)]?.color }">
-                                                    {{ broadcastTypeConfig[getAnnouncementType(item)]?.label }}
-                                                </span>
-                                                <span class="ops-fi-time">{{ formatTimeAgo(item.created_at) }}</span>
-                                            </div>
-                                            <div class="ops-fi-title" v-if="item.title && item.content && item.title !== item.content">{{ item.title }}</div>
-                                            <div class="ops-fi-text">{{ item.content || item.title }}</div>
-                                            <div class="ops-fi-actions">
-                                                <button class="ops-fi-btn" @click="editAnnouncement(item)" v-if="hasPermission('communications','update')">
-                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit
-                                                </button>
-                                                <button class="ops-fi-btn ops-fi-btn--del" @click="deleteAnnouncement(item)" v-if="hasPermission('communications','delete')" aria-label="Delete announcement" title="Delete announcement">
-                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div v-if="feedItems.length === 0" class="ops-feed-empty">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".25"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
-                                        <p>Nothing posted yet. Be first to update the department.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- ZONE 3: BRIEFING RAIL (hybrid: auto-draft + edit) -->
-                        <div class="ops-brief">
-                            <div class="ops-brief-head">
-                                <div class="ops-brief-k">Daily Briefing</div>
-                                <div class="ops-brief-t">{{ formatDate(new Date()) }}</div>
-                            </div>
-                            <div class="ops-brief-body">
-                                <div class="ops-brief-auto">
-                                    <div class="ops-brief-auto-h">✦ Auto-drafted from live data</div>
-                                    <div class="ops-brief-auto-t">
-                                        <b>{{ commsPulse.onDuty }} on duty</b>, {{ commsPulse.onCall }} on-call today.<span v-if="commsPulse.absent"> <b>{{ commsPulse.absent }} absent</b> on leave.</span><span v-if="understaffedUnitAlerts.length"> <b>{{ understaffedUnitAlerts.length }} coverage gap{{ understaffedUnitAlerts.length===1?'':'s' }}</b> flagged ({{ understaffedUnitAlerts[0].unitName }}).</span><span v-if="commsPulse.onRotation"> {{ commsPulse.onRotation }} residents on active rotation.</span><span v-if="!commsPulse.absent && !understaffedUnitAlerts.length"> All units covered, no gaps.</span>
-                                    </div>
-                                    <button class="ops-brief-edit" v-if="hasPermission('communications','create')" @click="briefingForm.show = true">✎ Edit &amp; post briefing</button>
-                                </div>
-                                <div class="ops-brief-line"><span class="ops-brief-bk">On duty</span><span class="ops-brief-bv">{{ commsPulse.onDuty }} active</span></div>
-                                <div class="ops-brief-line" v-if="commsPulse.onCall"><span class="ops-brief-bk">On-call</span><span class="ops-brief-bv">{{ commsPulse.onCall }} scheduled</span></div>
-                                <div class="ops-brief-line" v-if="understaffedUnitAlerts.length"><span class="ops-brief-bk">Watch</span><span class="ops-brief-bv">{{ understaffedUnitAlerts[0].unitName }} coverage</span></div>
+                    <!-- ── FEED ── -->
+                    <section v-if="comms.tab==='feed'" class="cm-feed-wrap" aria-label="Feed">
+                        <div v-if="livebroadcasts.filter(b => !b._dismissed).length > 0" class="ops-broadcasts">
+                            <div class="ops-section-label"><span class="ops-live-dot"></span> Live</div>
+                            <div v-for="bc in livebroadcasts.filter(b => !b._dismissed)" :key="bc.id" class="ops-bc-card" :class="bc.priority_level === 'urgent' ? 'ops-bc--red' : 'ops-bc--blue'">
+                                <div class="ops-bc-stripe"></div>
+                                <div class="ops-bc-body"><div class="ops-bc-text">{{ bc.content || bc.title }}</div><div class="ops-bc-meta">{{ bc.created_by_name || '—' }} · {{ formatTimeAgo(bc.created_at) }}</div></div>
+                                <button class="ops-bc-dismiss" @click.stop="dismissBroadcast(bc)" aria-label="Dismiss">×</button>
                             </div>
                         </div>
 
+                        <!-- Composer -->
+                        <div v-if="commsCanPost" class="cm-compose">
+                            <div v-if="!comms.compose.open" class="cm-compose-dormant">
+                                <button type="button" class="cm-compose-start" @click="commsComposeOpen('announcement')">What does the team need to know?</button>
+                                <span class="cm-compose-kinds">
+                                    <button type="button" class="cm-kind cm-kind--entrada" @click="commsComposeOpen('entrada')">Entrada</button>
+                                    <button type="button" class="cm-kind cm-kind--broadcast" @click="commsComposeOpen('broadcast')">Urgente</button>
+                                    <button type="button" class="cm-kind cm-kind--protocol" @click="commsComposeOpen('protocol')">Protocolo</button>
+                                    <button type="button" class="cm-kind cm-kind--kudos" @click="commsComposeOpen('kudos')">Reconocimiento</button>
+                                </span>
+                            </div>
+                            <form v-else class="cm-compose-open" @submit.prevent="commsPost">
+                                <div class="cm-seg" role="radiogroup" aria-label="Type">
+                                    <label v-for="(t,k) in comms.lists.post_types" :key="k" :class="{active:comms.compose.type===k}"><input type="radio" :value="k" v-model="comms.compose.type"> {{ t.label }}</label>
+                                </div>
+                                <div v-if="comms.compose.type==='entrada'" class="cm-row">
+                                    <label class="cm-field">From (service) <select v-model="comms.compose.source_service" class="form-select" required><option value="">— Service —</option><option v-for="sv in comms.lists.services" :key="sv.code" :value="sv.code">{{ sv.label }}</option><option value="direccion_medica">Dirección Médica</option><option value="supervision">Supervisión de enfermería</option></select></label>
+                                    <label class="cm-field cm-grow">Who / detail <input v-model="comms.compose.source_detail" class="form-control" maxlength="120" placeholder="e.g. Dr. X, adjunto de guardia (no patient data)"></label>
+                                </div>
+                                <textarea v-model="comms.compose.content" class="form-control cm-text" rows="4" maxlength="4000" required :placeholder="comms.compose.type==='entrada' ? 'What came in and what the team must do — e.g. Urgencias: 3 pacientes pendientes de ingreso en Neumología, 1 con VMNI. No names or record numbers.' : 'Message for the team. No patient names or record numbers.'"></textarea>
+                                <div class="cm-row">
+                                    <label class="cm-field">Category <select v-model="comms.compose.category" class="form-select"><option value="">—</option><option v-for="c in comms.lists.categories.filter(x=>x.active)" :key="c.code" :value="c.code">{{ c.label }}</option></select></label>
+                                    <label class="cm-field">Priority <select v-model="comms.compose.priority_level" class="form-select"><option value="">Default</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select></label>
+                                    <label class="cm-field">Show until <input type="date" v-model="comms.compose.expires" :min="comms.today" class="form-control"></label>
+                                </div>
+                                <div v-if="comms.compose.category==='interconsulta'" class="cm-row cm-note">
+                                    <label class="opsr-check"><input type="checkbox" v-model="comms.compose.log_interconsult"> Also log it in Interconsultas (Ops Room)</label>
+                                    <select v-if="comms.compose.log_interconsult" v-model="comms.compose.ic_priority" class="form-select cm-narrow" aria-label="Priority"><option value="urgent">Urgente</option><option value="preferente">Preferente</option><option value="ordinary">Ordinaria</option></select>
+                                    <small class="ac-meta">Needs the requesting service from the list.</small>
+                                </div>
+                                <details class="cm-more"><summary>Who it concerns · follow-up</summary>
+                                    <div class="cm-row">
+                                        <label class="cm-field cm-grow">Units <select multiple v-model="comms.compose.audience.units" class="form-select cm-multi"><option v-for="u in commsUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option></select></label>
+                                        <fieldset class="cm-field"><legend>Profiles</legend><label v-for="r in COMMS_ROLES" :key="r.v" class="opsr-check"><input type="checkbox" :value="r.v" v-model="comms.compose.audience.roles"> {{ r.l }}</label><label class="opsr-check"><input type="checkbox" v-model="comms.compose.audience.oncall_today"> Guardia de hoy</label></fieldset>
+                                    </div>
+                                    <small class="ac-meta">Everyone can read it; these people see it under “Para mí”. Empty = whole department.</small>
+                                    <div class="cm-row">
+                                        <label class="cm-field cm-grow">Follow-up <input v-model="comms.compose.action.text" class="form-control" maxlength="300" placeholder="Something someone must do (optional)"></label>
+                                        <label class="cm-field">Owner <select v-model="comms.compose.action.owner_id" class="form-select"><option value="">—</option><option v-for="s in commsStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label>
+                                        <label class="cm-field">Due <input type="date" v-model="comms.compose.action.due_on" class="form-control"></label>
+                                    </div>
+                                </details>
+                                <div class="cm-row cm-actions">
+                                    <button type="submit" class="btn btn-primary btn-sm" :disabled="!comms.compose.content.trim() || comms.busy || (comms.compose.type==='entrada' &amp;&amp; !comms.compose.source_service)">Post</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="comms.compose.open=false">Cancel</button>
+                                    <small class="ac-meta">After posting you can share it on WhatsApp.</small>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="cm-filters" role="tablist" aria-label="Filter">
+                            <button v-for="f in COMMS_FILTERS" :key="f.key" type="button" :class="['ops-ff',{active:comms.filter===f.key}]" @click="comms.filter=f.key">{{ f.l }}</button>
+                        </div>
+                        <ul class="cm-posts">
+                            <li v-for="p in commsFeed" :key="p.id" :id="'comms-post-'+p.id" :class="['cm-post','cm-post--'+(p.type||'announcement'),{focus:comms.focus===p.id,urgent:p.priority_level==='urgent'}]">
+                                <div class="cm-post-head">
+                                    <span class="cm-type">{{ p.type_label }}</span>
+                                    <span v-if="p.category_label" class="opsr-cap">{{ p.category_label }}</span>
+                                    <span v-if="p.for_me" class="cm-forme">Para mí</span>
+                                    <span class="cm-meta">{{ p.created_by_name || 'Staff' }} · {{ commsAgo(p.created_at) }}</span>
+                                </div>
+                                <p v-if="p.source_label || p.source_detail" class="cm-source">From <b>{{ p.source_label || p.source_service }}</b><template v-if="p.source_detail"> · {{ p.source_detail }}</template></p>
+                                <strong v-if="p.title &amp;&amp; p.content !== p.title" class="cm-post-title">{{ p.title }}</strong>
+                                <div class="cm-post-text">{{ commsPlain(p.content || p.title) }}</div>
+                                <p v-if="p.audience" class="cm-aud">Concerns: {{ commsAudienceText(p.audience) }}</p>
+                                <ul v-if="commsPostActions(p).length" class="cm-mini-actions"><li v-for="a in commsPostActions(p)" :key="a.id" :data-state="a.state">☐ {{ a.text }}<template v-if="a.owner_name"> — {{ a.owner_name }}</template><template v-if="a.due_on"> · {{ formatDateShort(a.due_on) }}</template> <b>{{ COMMS_ACTION_STATE[a.state] }}</b></li></ul>
+                                <div class="cm-post-foot">
+                                    <button type="button" class="cm-share" @click="commsShareOpen(commsPostText(p), 'Share this post')">Share</button>
+                                    <a :href="commsWa(commsPostText(p))" target="_blank" rel="noopener" class="cm-share cm-share--wa">WhatsApp</a>
+                                    <button v-if="p.interconsult_id" type="button" class="cm-share" @click="switchView('opsroom'); opsSection('interconsults')">Open interconsulta</button>
+                                    <button v-if="p.meeting_id" type="button" class="cm-share" @click="commsTab('agenda'); commsMtOpen({id:p.meeting_id})">Open agenda</button>
+                                    <button v-if="commsCanChange(p)" type="button" class="cm-share cm-share--del" @click="commsRemovePost(p)">Remove</button>
+                                </div>
+                            </li>
+                            <li v-if="!comms.loading &amp;&amp; !commsFeed.length" class="ac-meta">{{ comms.filter==='mine' ? 'Nothing addressed to you.' : 'Nothing posted yet.' }}</li>
+                            <li v-if="comms.loading &amp;&amp; !comms.posts.length" class="ac-meta">Loading…</li>
+                        </ul>
+                    </section>
+
+                    <!-- ── PARTE DEL DÍA ── -->
+                    <section v-if="comms.tab==='parte'" class="cm-parte" aria-label="Parte del día">
+                        <div class="cm-row cm-parte-head">
+                            <label class="cm-field">Day <input type="date" :value="comms.bf.date" class="form-control" @change="commsBriefLoad($event.target.value)"></label>
+                            <span v-if="comms.bf.data &amp;&amp; comms.bf.data.row &amp;&amp; comms.bf.data.row.status==='sent'" class="opsr-level" data-level="ok">Sent {{ commsFmtWhen(comms.bf.data.row.sent_at) }}</span>
+                            <span v-else class="opsr-level" data-level="watch">Draft</span>
+                            <span class="cm-grow"></span>
+                            <button v-if="comms.bf.data" type="button" class="btn btn-secondary btn-sm" @click="commsShareOpen(comms.bf.data.share.text,'Share the Parte del día')">Share</button>
+                            <button type="button" class="btn btn-secondary btn-sm" @click="opsRepPrint">Print</button>
+                        </div>
+                        <div class="cm-parte-layout">
+                            <form v-if="commsCanPost" class="cm-parte-edit no-print" @submit.prevent="commsBriefSend">
+                                <label class="cm-field">Message of the day <textarea v-model="comms.bf.notes" class="form-control" rows="5" maxlength="4000" placeholder="What you want everyone to know today (no patient data)" @input="comms.bf.dirty=true"></textarea></label>
+                                <fieldset class="cm-field"><legend>Include</legend>
+                                    <label v-for="s in comms.lists.brief_sections" :key="s[0]" class="opsr-check"><input type="checkbox" :checked="commsBriefHas(s[0])" @change="commsBriefToggle(s[0])"> {{ s[1] }}</label>
+                                </fieldset>
+                                <div class="cm-row cm-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm" :disabled="comms.bf.busy" @click="commsBriefSave">Save draft</button>
+                                    <button type="submit" class="btn btn-primary btn-sm" :disabled="comms.bf.busy">{{ comms.bf.data &amp;&amp; comms.bf.data.row &amp;&amp; comms.bf.data.row.status==='sent' ? 'Send again' : 'Send to the team' }}</button>
+                                </div>
+                                <small class="ac-meta">The rest is built from today's records (guardia, ausencias, unidades, interconsultas, agenda, pendientes). Absence reasons are never shown. Sending posts it to the feed and opens the WhatsApp share.</small>
+                            </form>
+                            <article v-if="commsBriefShown" class="cm-parte-doc opsr-report">
+                                <header><span class="module-header-kicker">PARTE DEL DÍA</span><h3>{{ commsDayTitle(comms.bf.date) }}</h3></header>
+                                <p v-if="comms.bf.notes &amp;&amp; commsBriefHas('notes')" class="cm-parte-notes">{{ comms.bf.notes }}</p>
+                                <template v-for="(c,ck) in [commsBriefShown.content]" :key="ck">
+                                    <div v-if="c.entradas &amp;&amp; c.entradas.length" class="cm-parte-sec"><h4>Entradas</h4><ul><li v-for="(e,ei) in c.entradas" :key="ei"><b v-if="e.priority==='urgent'">⚠ </b>{{ e.title }}<small v-if="e.source"> · {{ e.source }}</small></li></ul></div>
+                                    <div v-if="c.oncall" class="cm-parte-sec"><h4>Guardia</h4><p>{{ c.oncall.length ? c.oncall.map(o=>o.name+(o.role?' ('+o.role+')':'')).join(' · ') : 'Not on the schedule.' }}</p></div>
+                                    <div v-if="c.absences" class="cm-parte-sec"><h4>Ausencias</h4><p>{{ c.absences.length ? c.absences.map(a=>a.name+(a.covered_by?' → cubre '+a.covered_by:'')).join(' · ') : 'None.' }}</p></div>
+                                    <div v-if="c.units" class="cm-parte-sec"><h4>Unidades <small v-if="c.units_ok">· {{ c.units_ok }} sin incidencias</small></h4><ul><li v-for="(u,ui) in c.units" :key="ui"><span class="opsr-level" :data-level="u.level">{{ u.name }}</span> {{ u.reasons.join('; ') }}</li></ul></div>
+                                    <div v-if="c.interconsults" class="cm-parte-sec"><h4>Interconsultas</h4><p>{{ c.interconsults.waiting }} en espera · {{ c.interconsults.overdue }} fuera de plazo · {{ c.interconsults.unassigned }} sin asignar<template v-if="c.interconsults.calls_today"> · {{ c.interconsults.calls_today }} llamadas hoy</template></p></div>
+                                    <div v-if="c.meetings" class="cm-parte-sec"><h4>Agenda de hoy</h4><p v-if="!c.meetings.length">Nothing scheduled.</p><ul v-else><li v-for="(m,mi) in c.meetings" :key="mi">{{ commsFmtTime(m.at) }} {{ m.title }}<small v-if="m.location"> · {{ m.location }}</small></li></ul></div>
+                                    <div v-if="c.actions" class="cm-parte-sec"><h4>Pendientes</h4><p v-if="!c.actions.length">None open.</p><ul v-else><li v-for="(a,ai) in c.actions" :key="ai" :data-state="a.state">{{ a.text }}<small v-if="a.owner"> — {{ a.owner }}</small><b v-if="a.state==='overdue'"> · overdue</b></li></ul></div>
+                                    <div v-if="c.residents" class="cm-parte-sec"><h4>Residentes por unidad</h4><ul><li v-for="(r,ri) in c.residents" :key="ri"><b>{{ r.unit }}</b>: {{ r.names.join(', ') }}</li></ul></div>
+                                </template>
+                            </article>
+                            <p v-else class="ac-meta">{{ comms.bf.loading ? 'Building today’s brief…' : '' }}</p>
+                        </div>
+                    </section>
+
+                    <!-- ── AGENDA ── -->
+                    <section v-if="comms.tab==='agenda'" class="cm-agenda" aria-label="Agenda">
+                        <div class="cm-agenda-layout">
+                            <div class="cm-agenda-list">
+                                <div class="cm-row"><p class="admin-kicker">UPCOMING</p><span class="cm-grow"></span><button v-if="commsCanPost" type="button" class="btn btn-primary btn-sm" @click="commsMtNew">+ New meeting</button></div>
+                                <ul class="cm-mt-list">
+                                    <li v-for="m in commsMtUpcoming" :key="m.id"><button type="button" :class="['cm-mt-item',{active:comms.mt.open &amp;&amp; comms.mt.open.meeting.id===m.id}]" @click="commsMtOpen(m)">
+                                        <span class="cm-mt-date">{{ commsFmtWhen(m.starts_at) }}</span><strong>{{ m.title }}</strong><small>{{ m.kind_label }}<template v-if="m.location"> · {{ m.location }}</template><template v-if="m.item_count"> · {{ m.item_count }} items</template></small><span v-if="m.for_me" class="cm-forme">Para mí</span></button></li>
+                                    <li v-if="!commsMtUpcoming.length" class="ac-meta">Nothing scheduled.</li>
+                                </ul>
+                                <details class="opsr-history" :open="comms.mt.showPast"><summary>Past and cancelled ({{ commsMtPast.length }})</summary>
+                                    <ul class="cm-mt-list"><li v-for="m in commsMtPast" :key="'p'+m.id"><button type="button" class="cm-mt-item" @click="commsMtOpen(m)"><span class="cm-mt-date">{{ commsFmtWhen(m.starts_at) }}</span><strong>{{ m.title }}</strong><small>{{ m.status==='cancelled' ? 'Cancelled' : m.status==='held' ? 'Held' : m.kind_label }}</small></button></li></ul></details>
+                            </div>
+
+                            <!-- Meeting editor -->
+                            <form v-if="comms.mt.form" class="cm-mt-detail cm-mt-form" @submit.prevent="commsMtSave">
+                                <p class="admin-kicker">{{ comms.mt.form.id ? 'EDIT MEETING' : 'NEW MEETING' }}</p>
+                                <div class="cm-row"><label class="cm-field cm-grow">Title <input v-model="comms.mt.form.title" class="form-control" maxlength="160" required placeholder="e.g. Sesión clínica: manejo de la EPID"></label>
+                                    <label class="cm-field">Kind <select v-model="comms.mt.form.kind" class="form-select"><option v-for="k in comms.lists.meeting_kinds.filter(x=>x.active)" :key="k.code" :value="k.code">{{ k.label }}</option></select></label></div>
+                                <div class="cm-row"><label class="cm-field">Starts <input type="datetime-local" v-model="comms.mt.form.starts_at" class="form-control" required></label><label class="cm-field">Ends <input type="datetime-local" v-model="comms.mt.form.ends_at" class="form-control"></label>
+                                    <label class="cm-field cm-grow">Place <input v-model="comms.mt.form.location" class="form-control" maxlength="120" placeholder="Aula, sala…"></label></div>
+                                <div class="cm-row"><label class="cm-field cm-grow">Online link <input v-model="comms.mt.form.online_url" class="form-control" maxlength="300" placeholder="https://…"></label>
+                                    <label class="cm-field">Organiser <select v-model="comms.mt.form.organizer_id" class="form-select"><option value="">—</option><option v-for="s in commsStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label></div>
+                                <p class="admin-kicker">ORDEN DEL DÍA</p>
+                                <ol class="cm-items-edit">
+                                    <li v-for="(it,ii) in comms.mt.form.items" :key="ii">
+                                        <input v-model="it.topic" class="form-control cm-grow" maxlength="200" placeholder="Topic" :aria-label="'Topic '+(ii+1)">
+                                        <select v-model="it.presenter_id" class="form-select" aria-label="Presenter"><option value="">Guest / other…</option><option v-for="s in commsStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
+                                        <input v-if="!it.presenter_id" v-model="it.presenter_name" class="form-control" maxlength="120" placeholder="Guest name (optional)" aria-label="Guest presenter">
+                                        <input type="number" min="1" max="480" v-model="it.duration_min" class="form-control opsr-num" placeholder="min" aria-label="Minutes">
+                                        <span class="cm-item-ctl"><button type="button" class="btn btn-secondary btn-sm" @click="commsMtItemMove(ii,-1)" aria-label="Move up">↑</button><button type="button" class="btn btn-secondary btn-sm" @click="commsMtItemMove(ii,1)" aria-label="Move down">↓</button><button type="button" class="btn btn-secondary btn-sm" @click="comms.mt.form.items.splice(ii,1)" aria-label="Remove item">×</button></span>
+                                    </li>
+                                </ol>
+                                <button type="button" class="btn btn-secondary btn-sm" @click="commsMtItemAdd">+ Agenda item</button>
+                                <details class="cm-more"><summary>Who it concerns · materials · minutes</summary>
+                                    <div class="cm-row">
+                                        <label class="cm-field cm-grow">Units <select multiple v-model="comms.mt.form.audience.units" class="form-select cm-multi"><option v-for="u in commsUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option></select></label>
+                                        <fieldset class="cm-field"><legend>Profiles</legend><label v-for="r in COMMS_ROLES" :key="r.v" class="opsr-check"><input type="checkbox" :value="r.v" v-model="comms.mt.form.audience.roles"> {{ r.l }}</label></fieldset>
+                                    </div>
+                                    <div v-for="(mat,mi) in comms.mt.form.materials" :key="'m'+mi" class="cm-row"><input v-model="mat.label" class="form-control" maxlength="80" placeholder="Label"><input v-model="mat.url" class="form-control cm-grow" maxlength="300" placeholder="https://…"><button type="button" class="btn btn-secondary btn-sm" @click="comms.mt.form.materials.splice(mi,1)">×</button></div>
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="comms.mt.form.materials.push({label:'',url:''})">+ Material (link)</button>
+                                    <label class="cm-field">Minutes (acta) <textarea v-model="comms.mt.form.minutes" class="form-control" rows="5" maxlength="8000" placeholder="What was decided (no patient data)"></textarea></label>
+                                    <label class="cm-field">Status <select v-model="comms.mt.form.status" class="form-select cm-narrow"><option value="planned">Planned</option><option value="held">Held</option><option value="cancelled">Cancelled</option></select></label>
+                                </details>
+                                <div class="cm-row cm-actions"><button type="submit" class="btn btn-primary btn-sm" :disabled="!comms.mt.form.title || !comms.mt.form.starts_at || comms.mt.busy">Save</button><button type="button" class="btn btn-secondary btn-sm" @click="comms.mt.form=null">Cancel</button></div>
+                            </form>
+
+                            <!-- Meeting detail -->
+                            <article v-else-if="comms.mt.open" class="cm-mt-detail opsr-report">
+                                <header class="opsr-rep-head">
+                                    <div><span class="module-header-kicker">{{ comms.mt.open.meeting.kind_label }}<template v-if="comms.mt.open.meeting.status!=='planned'"> · {{ comms.mt.open.meeting.status==='held' ? 'HELD' : 'CANCELLED' }}</template></span><h3>{{ comms.mt.open.meeting.title }}</h3>
+                                        <small>{{ commsFmtWhen(comms.mt.open.meeting.starts_at) }}<template v-if="comms.mt.open.meeting.ends_at">–{{ commsFmtTime(comms.mt.open.meeting.ends_at) }}</template><template v-if="comms.mt.open.meeting.location"> · {{ comms.mt.open.meeting.location }}</template><template v-if="comms.mt.open.meeting.organizer_name"> · organiza {{ comms.mt.open.meeting.organizer_name }}</template></small>
+                                        <small v-if="comms.mt.open.meeting.audience" class="cm-aud">Concerns: {{ commsAudienceText(comms.mt.open.meeting.audience) }}</small></div>
+                                    <span class="no-print cm-mt-btns">
+                                        <button type="button" class="btn btn-secondary btn-sm" @click="commsShareOpen(comms.mt.open.share.text,'Share the agenda')">Share</button>
+                                        <button v-if="commsCanPost" type="button" class="btn btn-secondary btn-sm" @click="commsMtAnnounce">Post to feed</button>
+                                        <button type="button" class="btn btn-secondary btn-sm" @click="opsRepPrint">Print</button>
+                                        <button v-if="commsMtCanChange()" type="button" class="btn btn-secondary btn-sm" @click="commsMtEdit">Edit</button>
+                                        <button v-if="commsMtCanChange() &amp;&amp; comms.mt.open.meeting.status==='planned'" type="button" class="btn btn-secondary btn-sm" @click="commsMtStatus('held')">Mark held</button>
+                                        <button v-if="commsMtCanChange()" type="button" class="btn btn-secondary btn-sm" @click="commsMtRemove">Remove</button>
+                                    </span>
+                                </header>
+                                <p v-if="comms.mt.open.meeting.online_url"><a :href="comms.mt.open.meeting.online_url" target="_blank" rel="noopener">Join online</a></p>
+                                <h4>Orden del día</h4>
+                                <ol class="cm-items"><li v-for="it in comms.mt.open.items" :key="it.id"><span class="cm-mt-date">{{ commsFmtTime(it.at) }}</span> <strong>{{ it.topic }}</strong><template v-if="it.presenter"> — {{ it.presenter }}</template><small v-if="it.duration_min"> · {{ it.duration_min }} min</small><small v-if="it.notes" class="cm-block">{{ it.notes }}</small></li>
+                                    <li v-if="!comms.mt.open.items.length" class="ac-meta">No agenda items yet.</li></ol>
+                                <template v-if="comms.mt.open.meeting.materials &amp;&amp; comms.mt.open.meeting.materials.length"><h4>Materials</h4><ul><li v-for="(mat,mi) in comms.mt.open.meeting.materials" :key="mi"><a :href="mat.url" target="_blank" rel="noopener">{{ mat.label }}</a></li></ul></template>
+                                <template v-if="comms.mt.open.meeting.minutes"><h4>Acta</h4><p class="cm-post-text">{{ comms.mt.open.meeting.minutes }}</p></template>
+                                <h4>Follow-ups</h4>
+                                <ul class="cm-actions-list"><li v-for="a in comms.mt.open.actions" :key="a.id" :data-state="a.state"><span>{{ a.text }}<small v-if="a.owner_name"> — {{ a.owner_name }}</small><small v-if="a.due_on"> · {{ formatDateShort(a.due_on) }}</small></span><b>{{ COMMS_ACTION_STATE[a.state] }}</b><button v-if="a.status==='open'" type="button" class="btn btn-secondary btn-sm no-print" @click="commsActionSet(a,'done')">Done</button></li>
+                                    <li v-if="!comms.mt.open.actions.length" class="ac-meta">None.</li></ul>
+                                <form v-if="commsCanPost" class="cm-row no-print" @submit.prevent="commsActionAdd({meeting_id:comms.mt.open.meeting.id})"><input v-model="comms.mt.actionForm.text" class="form-control cm-grow" maxlength="300" placeholder="Add a follow-up from this meeting"><select v-model="comms.mt.actionForm.owner_id" class="form-select"><option value="">Owner</option><option v-for="s in commsStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select><input type="date" v-model="comms.mt.actionForm.due_on" class="form-control"><button type="submit" class="btn btn-secondary btn-sm" :disabled="!comms.mt.actionForm.text">Add</button></form>
+                            </article>
+                            <p v-else class="ac-meta cm-mt-detail">Choose a meeting, or create one.</p>
+                        </div>
+                    </section>
+
+                    <!-- ── PENDIENTES ── -->
+                    <section v-if="comms.tab==='pendientes'" class="cm-pend" aria-label="Pendientes">
+                        <form v-if="commsCanPost" class="cm-row" @submit.prevent="commsActionAdd()">
+                            <input v-model="comms.actionForm.text" class="form-control cm-grow" maxlength="300" placeholder="New follow-up (no patient data)">
+                            <select v-model="comms.actionForm.owner_id" class="form-select"><option value="">Owner</option><option v-for="s in commsStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
+                            <input type="date" v-model="comms.actionForm.due_on" class="form-control">
+                            <button type="submit" class="btn btn-primary btn-sm" :disabled="!comms.actionForm.text">Add</button>
+                        </form>
+                        <p class="ac-meta">{{ commsOpenActions.length }} open<template v-if="commsMyOpenCount"> · {{ commsMyOpenCount }} yours</template>. Follow-ups come from posts, meetings or here.</p>
+                        <ul class="cm-actions-list">
+                            <li v-for="a in commsOpenActions" :key="a.id" :data-state="a.state" :class="{mine:a.mine}">
+                                <span>{{ a.text }}<small v-if="a.owner_name"> — {{ a.owner_name }}</small><small v-if="a.due_on"> · due {{ formatDateShort(a.due_on) }}</small><small v-if="a.meeting_id"> · from a meeting</small><small v-else-if="a.post_id"> · from a post</small></span>
+                                <b>{{ COMMS_ACTION_STATE[a.state] }}</b>
+                                <span class="cm-item-ctl"><button type="button" class="btn btn-primary btn-sm" @click="commsActionSet(a,'done')">Done</button><button type="button" class="btn btn-secondary btn-sm" @click="commsActionSet(a,'cancelled')">Cancel</button><button v-if="commsCanEdit" type="button" class="btn btn-secondary btn-sm" @click="commsActionRemove(a)">Remove</button></span>
+                            </li>
+                            <li v-if="!commsOpenActions.length" class="opsr-allgood">Nothing pending.</li>
+                        </ul>
+                        <details v-if="comms.actions.some(a=>a.status!=='open')" class="opsr-history"><summary>Done or cancelled this week ({{ comms.actions.filter(a=>a.status!=='open').length }})</summary>
+                            <ul class="cm-actions-list"><li v-for="a in comms.actions.filter(x=>x.status!=='open')" :key="'d'+a.id" :data-state="a.status"><span>{{ a.text }}<small v-if="a.owner_name"> — {{ a.owner_name }}</small></span><b>{{ COMMS_ACTION_STATE[a.status] }}</b><button type="button" class="btn btn-secondary btn-sm" @click="commsActionSet(a,'open')">Reopen</button></li></ul></details>
+                    </section>
+
+                    <!-- Share sheet -->
+                    <div v-if="comms.share" class="cm-share-sheet" role="dialog" aria-modal="true" :aria-label="comms.share.title" @click.self="comms.share=null">
+                        <div class="cm-share-box">
+                            <div class="cm-row"><strong>{{ comms.share.title }}</strong><span class="cm-grow"></span><button type="button" class="btn btn-secondary btn-sm" @click="comms.share=null" aria-label="Close">×</button></div>
+                            <textarea class="form-control cm-share-text" rows="10" readonly :value="comms.share.text"></textarea>
+                            <div class="cm-row cm-actions"><a :href="comms.share.wa" target="_blank" rel="noopener" class="btn btn-primary btn-sm cm-wa">Open in WhatsApp</a><button type="button" class="btn btn-secondary btn-sm" @click="commsCopy(comms.share.text)">Copy text</button></div>
+                            <small class="ac-meta">The link opens neumDesk (sign-in required). Check there is no patient data before sharing outside the hospital.</small>
+                        </div>
                     </div>
-                </div>            
+                </div>
+            
 
                 <!-- ============ SYSTEM SETTINGS VIEW ============ -->
                 <div v-if="currentView === 'system_settings'">
@@ -13249,7 +13343,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.40-20261017-ops-room-ui2"></script>
+    <script src="app.js?v=5.4-production.41-20261017-comms-cm1"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
