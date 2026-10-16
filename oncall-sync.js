@@ -43,5 +43,28 @@ function plan(rows,staff,existing,mappings,choices={}){
 }
 function visible(entries,filter){const q=norm(filter.search);return entries.filter(r=>(!filter.start||r.date>=filter.start)&&(!filter.end||r.date<=filter.end)&&(!filter.status||r.status===filter.status)&&(!q||norm([r.staffName,r.residentName,r.surname,r.mir,r.currentName,r.currentResident].join(' ')).includes(q)))}
 function selected(entries,filter,selection){return visible(entries,filter).filter(r=>selection[r.key]&&['new','replacement'].includes(r.status))}
-root.NeumOncallSync={norm,isResident,pools,resolve,parse,plan,signature,visible,selected};if(typeof module!=='undefined')module.exports=root.NeumOncallSync;
+// Phase D. Guardias an earlier import created (sync_source) on dates INSIDE this file's period that
+// the file no longer lists — removed upstream. Proposed for deletion, never pre-selected.
+function removedUpstream(rows,existing){
+ const dates=(rows||[]).map(r=>r.date).filter(Boolean).sort(); if(!dates.length)return [];
+ const from=dates[0],to=dates[dates.length-1],inFile=new Set(dates);
+ return (existing||[]).filter(s=>s&&!s.deleted_at&&s.sync_source).map(s=>({...s,duty_date:String(s.duty_date).slice(0,10)}))
+  .filter(s=>s.duty_date>=from&&s.duty_date<=to&&!inFile.has(s.duty_date)).sort((a,b)=>a.duty_date<b.duty_date?-1:1);
+}
+// Phase D. Two changed dates where the staff (or MIR) simply traded places: d1 A→B and d2 B→A.
+// Shown as one change so the reviewer accepts or rejects the pair together.
+function swaps(entries){
+ const ch=(entries||[]).filter(r=>r.expected&&['conflict','replacement','kept'].includes(r.status));
+ const out=[],used=new Set();
+ for(const field of [['primary_physician_id','staffId','staff'],['resident_physician_id','residentId','mir']]){
+  const [was,now,role]=field;
+  for(let i=0;i<ch.length;i++)for(let j=i+1;j<ch.length;j++){
+   const a=ch[i],b=ch[j]; if(used.has(a.key)||used.has(b.key))continue;
+   const a0=a.expected[was]||null,a1=a[now]||null,b0=b.expected[was]||null,b1=b[now]||null;
+   if(a0&&b0&&a0!==b0&&a1===b0&&b1===a0){used.add(a.key);used.add(b.key);out.push({role,keys:[a.key,b.key],dates:[a.date,b.date],people:[a0,b0]})}
+  }
+ }
+ return out;
+}
+root.NeumOncallSync={norm,isResident,pools,resolve,parse,plan,signature,visible,selected,removedUpstream,swaps};if(typeof module!=='undefined')module.exports=root.NeumOncallSync;
 })(typeof window!=='undefined'?window:globalThis);

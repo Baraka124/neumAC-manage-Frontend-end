@@ -699,3 +699,8 @@ html #app .import-verdict--review,.sync-table small.import-verdict--review{color
 .import-impact{margin:12px 0;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;background:#fafaf9}
 .import-impact ul{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.6}
 .import-impact li.warn{color:#92400e;font-weight:600}
+
+/* Import Phase D — sync diff */
+.import-sync-changed{color:#8a5a12;font-weight:600}
+.import-removed,.import-swaps{border-left:3px solid #c9a227;padding-left:10px}
+.import-removed label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
