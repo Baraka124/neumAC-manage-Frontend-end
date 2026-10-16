@@ -444,7 +444,7 @@
   const ACTION_LABELS = Object.freeze({
     'login':'Inicio de sesión', 'update':'Actualización', 'create':'Creación',
     'delete':'Eliminación', 'upload':'Subida', 'view':'Consulta',
-    'approve':'Aprobación', 'reject':'Rechazo', 'export':'Exportación'
+    'approve':'Aprobación', 'reject':'Rechazo', 'export':'Exportación', 'cancel':'Cancelación'
   });
   const RESOURCE_LABELS = Object.freeze({
     'medical_staff':'Perfil profesional', 'staff_certificates':'Certificado',
@@ -468,6 +468,9 @@
       resourceLabel: RESOURCE_LABELS[resource] || resource.replace(/_/g, ' '),
       resourceId: safe(e.resource_id),
       details,
+      summary: safe(details && details.summary),
+      by: safe(details && details.by),
+      byMe: !!(details && details.by_me),
       createdAt: safe(e.created_at)
     };
   }
