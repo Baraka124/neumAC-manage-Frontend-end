@@ -1164,7 +1164,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const date = d instanceof Date ? d : new Date(Utils.normalizeDate(d) + 'T00:00:00')
           if (Number.isNaN(date.getTime())) return ''
-          return date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })
+          // Show the year when it is not the current one, so a 2028 block never reads as this year.
+          const opts = { weekday: 'short', day: '2-digit', month: 'short' }
+          if (date.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric'
+          return date.toLocaleDateString('en-GB', opts)
         } catch { return '' }
       }
 
@@ -1916,7 +1919,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       async createRotation(d) { this.invalidate('/api/rotations'); return this.request('/api/rotations', { method: 'POST', body: d }) }
       async updateRotation(id, d) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'PUT', body: d }) }
-      async deleteRotation(id) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'DELETE' }) }
+      async deleteRotation(id, opts = {}) { this.invalidate('/api/rotations'); const q = opts.permanent ? '?permanent=true' : opts.mode ? `?mode=${encodeURIComponent(opts.mode)}` : ''; return this.request(`/api/rotations/${id}${q}`, { method: 'DELETE' }) }
 
       async getOnCallSchedule() { return this.getList('/api/oncall') }
       async getOnCallToday() { return this.getList('/api/oncall/today') }
@@ -1932,7 +1935,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       async createAbsence(d) { this.invalidate('/api/absence-records'); return this.request('/api/absence-records', { method: 'POST', body: d }) }
       async updateAbsence(id, d) { this.invalidate('/api/absence-records'); return this.request(`/api/absence-records/${id}`, { method: 'PUT', body: d }) }
-      async deleteAbsence(id) { this.invalidate('/api/absence-records'); return this.request(`/api/absence-records/${id}`, { method: 'DELETE' }) }
+      async deleteAbsence(id, opts = {}) { this.invalidate('/api/absence-records'); const q = opts.mode ? `?mode=${encodeURIComponent(opts.mode)}` : ''; return this.request(`/api/absence-records/${id}${q}`, { method: 'DELETE' }) }
       async purgeAbsence(id) { this.invalidate('/api/absence-records'); return this.request(`/api/absence-records/${id}/purge`, { method: 'DELETE' }) }
       async returnToDuty(id, d) { this.invalidate('/api/absence-records'); return this.request(`/api/absence-records/${id}/return`, { method: 'PUT', body: d }) }
 
@@ -3771,7 +3774,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 6.5 useRotations ============
     function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, absences, onCallSchedule, currentUser, hasPermission }) {
       // rotations is a shared ref hoisted in main setup — do not redeclare
-      const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '' })
+      const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '', history: false })
+      // A rotation belongs to the working view until its effective end (actual end if it ended early).
+      const rotationIsPast = r => { const end = Utils.normalizeDate(r.actual_end_date || r.end_date); return !!end && end < Utils.localDateStr(new Date()) }
       const debouncedRotationSearch = ref('')
       watch(() => rotationFilters.search, Utils.debounce(v => { debouncedRotationSearch.value = v }, 250))
       const rotationModal = reactive({
@@ -4078,8 +4083,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return ok
       }
 
+      const rotationHistoryCount = computed(() => rotations.value.filter(rotationIsPast).length)
       const filteredRotationsAll = computed(() => {
         let f = rotations.value
+        // Past rotations live in Historial; an explicit status filter (e.g. Completed) shows them too.
+        if (!rotationFilters.history && !rotationFilters.status) f = f.filter(r => !rotationIsPast(r))
         if (rotationFilters.resident) f = f.filter(r => r.resident_id === rotationFilters.resident)
         if (rotationFilters.status) f = f.filter(r => r.rotation_status === rotationFilters.status)
         if (rotationFilters.trainingUnit) f = f.filter(r => r.training_unit_id === rotationFilters.trainingUnit)
@@ -4292,6 +4300,31 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { saving.value = false }
       }
 
+      const canPurgeRecords = computed(() => ['system_admin', 'department_head'].includes(currentUser?.value?.user_role))
+      const removeRotation = (rotation, permanent = false) => {
+        const resident = Utils.formatDrName(getResidentName(rotation.resident_id))
+        const unit = getTrainingUnitName(rotation.training_unit_id)
+        showConfirmation({
+          title: permanent ? 'Delete rotation permanently' : 'Delete rotation',
+          message: permanent
+            ? 'The rotation is deleted from the system. A copy stays in the audit trail and an administrator can restore it.'
+            : 'The rotation disappears from every list, including history. Its dates are not rewritten and it can be restored.',
+          confirmButtonText: permanent ? 'Delete permanently' : 'Delete',
+          confirmButtonClass: 'btn-danger',
+          details: `${resident} · ${unit} · ${Utils.formatDateShort(rotation.start_date)} – ${Utils.formatDateShort(rotation.end_date)}`,
+          onConfirm: async () => {
+            try {
+              await API.deleteRotation(rotation.id, permanent ? { permanent: true } : { mode: 'remove' })
+              rotations.value = rotations.value.filter(r => r.id !== rotation.id)
+              showToast('Rotation deleted', permanent ? 'Permanently deleted.' : 'Removed from all lists.', 'success')
+              await loadRotations()
+            } catch (e) {
+              showToast('Error', e?.message || 'Failed to delete rotation', 'error')
+              await loadRotations()
+            }
+          }
+        })
+      }
       const deleteRotation = (rotation) => {
         const status = String(rotation.rotation_status || '').toLowerCase()
         const isScheduled = status === 'scheduled'
@@ -4560,7 +4593,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         rotations, rotationFilters, rotationModal,
         filteredRotations, filteredRotationsAll, rotationTotalPages,
-        loadRotations, rotationConflicts, showAddRotationModal, editRotation, saveRotation, deleteRotation, selectedUnitCapacity, rotationTemporalReviews,
+        loadRotations, rotationConflicts, showAddRotationModal, editRotation, saveRotation, deleteRotation, removeRotation, canPurgeRecords, rotationHistoryCount, selectedUnitCapacity, rotationTemporalReviews,
         rotationQualityExpanded, rotationTemporalShowAll, rotationOneDayReviews, rotationMissingResidentReviews,
         rotationTemporalVisibleReviews, rotationTemporalRemaining, rotationOneDayVisibleReviews, rotationMissingResidentVisibleReviews,
         rotationHasDataQualityIssues,
@@ -4921,6 +4954,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
+      const removeAbsence = (absence) => showConfirmation({
+        title: 'Delete absence record',
+        message: 'The absence disappears from every list, including history. Its recorded status is kept in the audit trail and it can be restored.',
+        icon: 'fa-trash-alt', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
+        details: `Staff: ${getStaffName(absence.staff_member_id)} · ${Utils.formatDate(absence.start_date)} → ${Utils.formatDate(absence.end_date)}`,
+        onConfirm: async () => {
+          try {
+            await API.deleteAbsence(absence.id, { mode: 'remove' })
+            absences.value = absences.value.filter(a => a.id !== absence.id)
+            showToast('Deleted', 'Absence record removed from all lists', 'success')
+            await loadAbsences()
+          } catch (e) {
+            showToast('Error', e?.message || 'Failed to delete absence record', 'error')
+            await loadAbsences()
+          }
+        }
+      })
       const purgeAbsence = (absence) => showConfirmation({
         title: 'Permanently Delete Record',
         message: `This will permanently remove this absence record from the system. This action cannot be undone and the record will not appear in any future audit trail.`,
@@ -5005,7 +5055,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         absences, absenceFilters, absenceModal, absenceOverlapWarning,
         filteredAbsences, filteredAbsencesAll, absenceTotalPages, absenceKPIs, absencePageContext,
-        loadAbsences, showAddAbsenceModal, editAbsence, saveAbsence, deleteAbsence, purgeAbsence,
+        loadAbsences, showAddAbsenceModal, editAbsence, saveAbsence, deleteAbsence, removeAbsence, purgeAbsence,
         absenceResolutionModal, openResolutionModal, resolveAbsence,
         getStaffName
       }

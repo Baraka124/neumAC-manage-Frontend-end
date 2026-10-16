@@ -37,7 +37,9 @@ export const Utils = {
     if (!d) return ''
     try {
       const date = typeof d === 'string' ? new Date(this.normalizeDate(d) + 'T00:00:00') : d
-      return date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })
+      const opts = { weekday: 'short', day: '2-digit', month: 'short' }
+      if (date.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric'
+      return date.toLocaleDateString('en-GB', opts)
     } catch { return '' }
   },
 
