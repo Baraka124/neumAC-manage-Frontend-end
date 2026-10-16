@@ -87,6 +87,36 @@ test('resolveResident resolves one hit, flags ambiguity with candidates, never a
   assert.deepEqual(RI.resolveResident('Ana', staff, {Ana:'skip'}), {skip:true});
 });
 
+test('plan resolves residents+units, flags unmatched, and payload emits only selected ready rows', () => {
+  const staff=[{id:'i1',full_name:'Iria Horjales'},{id:'a1',full_name:'Ana Santalla'},{id:'a2',full_name:'Ana Souto'}];
+  const units=[{id:'u-hosp',unit_code:'HOSP-NEUM',unit_name:'Hospitalización'},{id:'u-bfc',unit_code:'BFC',unit_name:'Broncoscopias'}];
+  const periods=[
+    {source_sheet:'MIR NML 2026',resident:'Iria',unit_excel:'SALA NML',unit_code:'HOSP-NEUM',start_date:'2026-08-01',end_date:'2026-08-31',split:false},
+    {source_sheet:'MIR NML 2026',resident:'Ana',unit_excel:'BFC',unit_code:'BFC',start_date:'2026-09-01',end_date:'2026-09-30',split:false}, // Ana ambiguous
+    {source_sheet:'MIR NML 2026',resident:'Iria',unit_excel:'ZZZ',unit_code:null,start_date:'2026-10-01',end_date:'2026-10-31',split:false}, // unit unmapped
+  ];
+  const p1=RI.plan(periods,staff,units);
+  assert.equal(p1.records.find(r=>r.resident==='Iria'&&r.unit_excel==='SALA NML').status,'ready');
+  assert.equal(p1.unmatchedResidents.length,1);          // the two Anas
+  assert.equal(p1.unmatchedResidents[0].candidates.length,2);
+  assert.equal(p1.unmatchedUnits[0].code,'ZZZ');         // unmapped unit reported
+  assert.equal(p1.records.find(r=>r.unit_excel==='ZZZ').status,'blocked');
+
+  // resolve the ambiguous Ana + choose to create ZZZ → both become ready
+  const p2=RI.plan(periods,staff,units,{residentMappings:{Ana:'a1'},unitChoices:{ZZZ:'create'}});
+  const anaRow=p2.records.find(r=>r.resident==='Ana');
+  assert.equal(anaRow.status,'ready'); assert.equal(anaRow.resident_id,'a1');
+  const zzz=p2.records.find(r=>r.unit_excel==='ZZZ');
+  assert.equal(zzz.status,'ready'); assert.deepEqual(zzz.create_unit,{unit_code:'ZZZ',unit_name:'ZZZ'});
+
+  // payload: only selected ready rows, with create_unit carried through
+  const sel={}; p2.records.forEach(r=>sel[r.key]=true);
+  const body=RI.payload(p2.records,sel);
+  assert.equal(body.length,3);
+  assert.ok(body.find(b=>b.create_unit&&b.create_unit.unit_code==='ZZZ'));
+  assert.ok(body.every(b=>b.resident_id&&b.start_date&&b.end_date));
+});
+
 test('translate ignores non-cohort sheets and merges across cohort sheets', () => {
   const out = RI.translate({ 'MIR NML 2026': cohort2026, 'MIR NML 2027': cohort2027, 'Broncoscopias': [['Año','Mes']] });
   assert.ok(out.residents.includes('Iria') && out.residents.includes('Efrén'));

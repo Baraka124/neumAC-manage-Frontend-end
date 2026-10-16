@@ -91,6 +91,45 @@ function translate(sheets,opts={}){
  return {periods:merged,unmatchedUnits:[...unmatched].sort(),residents:[...new Set(merged.map(p=>p.resident))].sort()};
 }
 
-root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,resolveResident,cellUnits,parseCohort,mergeContiguous,translate};
+// Resolve translated periods against live staff + units into commit-ready records,
+// reporting the residents and unit codes a human must still decide. Nothing is guessed:
+// an ambiguous/unknown resident or an unmapped unit marks the row 'blocked'.
+function plan(periods,staff,units,opts={}){
+ const residentMappings=opts.residentMappings||{}, unitChoices=opts.unitChoices||{};
+ const byCode={}, byId={}; (units||[]).forEach(u=>{if(!u)return; if(u.unit_code)byCode[String(u.unit_code)]=u; if(u.id)byId[String(u.id)]=u;});
+ const records=[], unmatchedResidents={}, unmatchedUnits={}; let ready=0,blocked=0,skipped=0;
+ for(const p of periods){
+  const codeKey=p.unit_code||p.unit_excel;
+  const rec={...p, key:[p.source_sheet,p.resident,p.unit_excel,p.start_date].join('|'), code_key:codeKey};
+  const rr=resolveResident(p.resident,staff,residentMappings);
+  if(rr.skip){rec.status='skipped';skipped++;records.push(rec);continue;}
+  rec.resident_id=rr.id||null; rec.resident_name=rr.name||null; rec.resident_issue=rr.issue||null;
+  if(rr.issue)(unmatchedResidents[p.resident]=unmatchedResidents[p.resident]||{label:p.resident,candidates:rr.candidates||[],count:0}).count++;
+  const choice=unitChoices[codeKey], unit=byCode[codeKey];
+  if(unit){rec.training_unit_id=unit.id;rec.unit_name=unit.unit_name;}
+  else if(choice==='skip'){rec.status='skipped';skipped++;records.push(rec);continue;}
+  else if(choice==='create'){rec.create_unit={unit_code:codeKey,unit_name:p.unit_excel};}
+  else if(choice&&byId[choice]){rec.training_unit_id=choice;rec.unit_name=byId[choice].unit_name;}
+  else {rec.unit_issue='Unmapped unit';(unmatchedUnits[codeKey]=unmatchedUnits[codeKey]||{code:codeKey,count:0}).count++;}
+  if(rec.resident_issue||rec.unit_issue){rec.status='blocked';blocked++;}
+  else{rec.status='ready';ready++;}
+  records.push(rec);
+ }
+ return {records,unmatchedResidents:Object.values(unmatchedResidents),unmatchedUnits:Object.values(unmatchedUnits),counts:{ready,blocked,skipped}};
+}
+
+// Commit/check payload from the ready records the reviewer selected.
+function payload(records,selection){
+ return (records||[]).filter(r=>selection[r.key]&&r.status==='ready').map(r=>({
+  resident_id:r.resident_id,
+  training_unit_id:r.training_unit_id||undefined,
+  create_unit:r.create_unit||undefined,
+  start_date:r.start_date, end_date:r.end_date,
+  rotation_category:'clinical_rotation',
+  source_sheet:r.source_sheet
+ }));
+}
+
+root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,resolveResident,cellUnits,parseCohort,mergeContiguous,translate,plan,payload};
 if(typeof module!=='undefined')module.exports=root.NeumRotationImport;
 })(typeof window!=='undefined'?window:globalThis);
