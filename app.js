@@ -1514,7 +1514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // overwrite the availability of the roster used by the dashboard.
         const source = isGet && ({
           '/api/medical-staff?limit=500': 'medical_staff',
-          '/api/rotations?limit=500': 'resident_rotations',
+          '/api/rotations?limit=500&include_completed=true': 'resident_rotations',
           '/api/rotations?limit=500&rotation_status=terminated_early': 'terminated_rotations',
           '/api/oncall': 'oncall_schedule',
           '/api/absence-records?limit=500': 'staff_absence',
@@ -1909,7 +1909,7 @@ document.addEventListener('DOMContentLoaded', () => {
       async deleteTrainingUnit(id) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'DELETE' }) }
 
       async getRotations() {
-        try { const r = await this.request('/api/rotations?limit=500'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
+        try { const r = await this.request('/api/rotations?limit=500&include_completed=true'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
       }
       async getTerminatedRotations() {
         try { const r = await this.request('/api/rotations?limit=500&rotation_status=terminated_early'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
@@ -13641,7 +13641,7 @@ document.addEventListener('DOMContentLoaded', () => {
             {key:'staff',label:'Staff directory',path:'/api/medical-staff?limit=500',target:medicalStaff,normalize:a=>a.filter(x=>!x.deleted_at)},
             {key:'oncall',label:'On-call schedule',path:'/api/oncall',target:onCallSchedule,normalize:a=>a.map(x=>({...x,duty_date:Utils.normalizeDate(x.duty_date)}))},
             {key:'leave',label:'Leave records',path:'/api/absence-records?limit=500',target:absences,normalize:a=>a.filter(x=>x.current_status!=='cancelled').map(x=>({...x,start_date:Utils.normalizeDate(x.start_date),end_date:Utils.normalizeDate(x.end_date)}))},
-            {key:'rotations',label:'Rotations',path:'/api/rotations?limit=500',target:rotations,normalize:a=>a.map(x=>({...x,start_date:Utils.normalizeDate(x.start_date||x.rotation_start_date),end_date:Utils.normalizeDate(x.end_date||x.rotation_end_date)}))},
+            {key:'rotations',label:'Rotations',path:'/api/rotations?limit=500&include_completed=true',target:rotations,normalize:a=>a.map(x=>({...x,start_date:Utils.normalizeDate(x.start_date||x.rotation_start_date),end_date:Utils.normalizeDate(x.end_date||x.rotation_end_date)}))},
             {key:'units',label:'Training units',path:'/api/training-units',target:trainingUnits},
             {key:'research',label:'Research programmes',path:'/api/research-lines',target:researchOps.researchLines},
             {key:'research',label:'Clinical studies',path:'/api/clinical-trials?limit=500',target:researchOps.clinicalTrials},

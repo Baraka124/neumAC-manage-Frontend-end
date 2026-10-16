@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261011-invite-entry1">
+<link rel="stylesheet" href="access.css?v=20261016-oncall-stickybar">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4675,7 +4675,8 @@
                                 </div>
                                 <p class="ac-meta">New shifts use the current default hours, 15:00–08:00. Existing times and coverage areas are preserved. Blank source assignments do not delete records.</p>
                                 <label><input type="checkbox" v-model="oncallSync.historyAccepted" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed"> Include historical assignments from this file (requires exception-approval permission)</label>
-                                <div class="sync-preflight"><div><p class="admin-kicker">03 / CHECK BEFORE APPLYING</p><p>{{oncallSyncReady?'Selected assignments passed the current checks.':oncallSyncChecked?'Some selected assignments need attention. Resolve or deselect those rows, then check again.':'Check your selection for permissions, leave conflicts and overlapping duties.'}}</p><small>Checks do not save assignments. The server checks again when you apply.</small></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.length||currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'" @click="oncallSyncCheck">{{oncallSync.checking?'Checking…':'Check selected assignments'}}</button></div>
+                                <div class="sync-stickybar">
+                                <div class="sync-preflight"><div><p class="admin-kicker">03 / CHECK BEFORE APPLYING</p><p>{{oncallSyncReady?'Selected assignments passed the current checks.':oncallSyncChecked?'Some selected assignments need attention. Resolve or deselect those rows, then check again.':'Check your selection for permissions, leave conflicts and overlapping duties.'}}</p><small>Checks do not save assignments. The server checks again when you apply.</small></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.length||currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'" @click="oncallSyncCheck">{{oncallSync.checking?'Checking…':'Check selected assignments'}}</button><small v-if="!oncallSyncSelected.length" class="sync-gate-hint">Select at least one assignment in the table above to run the check.</small><small v-else-if="currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'" class="sync-gate-hint">On-call sync requires system-administrator permission.</small></div>
                                 <p v-if="oncallSync.checkError" class="ac-alert" role="alert">{{oncallSync.checkError}}</p>
                                 <!-- COMMIT -->
                                 <div v-if="!oncallSync.committed"  class="nd-l240">
@@ -4685,6 +4686,7 @@
                                         {{ oncallSync.committing ? ('Syncing… ' + (oncallSync.progress ? oncallSync.progress.done + '/' + oncallSync.progress.total : '')) : ('Apply ' + oncallSyncSelected.length + ' assignments · ' + oncallSyncSelected.filter(r=>r.status==='replacement').length + ' replacements') }}
                                     </button>
                                 </div>
+                                </div><!-- /sync-stickybar -->
                                 <p v-if="oncallSync.committing" class="ac-meta" role="status" aria-live="polite">Saving your schedule to the system… <span v-if="oncallSync.progress">{{ oncallSync.progress.done }} of {{ oncallSync.progress.total }} shifts</span></p>
                                 <div v-if="oncallSync.commitResult" :style="'margin-top:12px;padding:11px 14px;border-radius:10px;font-size:13px;border:1px solid ' + (oncallSync.commitResult.ok ? 'rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#059669' : 'rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#b91c1c')">
                                     {{ oncallSync.commitResult.msg }}<ul v-if="oncallSync.commitResult.failures?.length"><li v-for="(r,i) in oncallSync.commitResult.failures" :key="i">{{r.date}}: {{r.message}}</li></ul>
@@ -12492,7 +12494,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261015-photo-interop"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261015-photo-interop"></script>
-    <script src="app.js?v=5.4-production.22-20261015-technical-lead"></script>
+    <script src="app.js?v=5.4-production.23-20261016-oncall-ux"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
