@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-ops-room-orr">
+<link rel="stylesheet" href="access.css?v=20261017-ops-room-ui2">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4431,6 +4431,7 @@
                 <div v-if="currentView === 'opsroom'" class="opsr">
                     <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">PNEUMO OPS ROOM</span><h2>Sala de Operaciones de Neumología</h2><p>Saber cada día cómo funciona cada unidad —quién está, con qué cuenta, qué se ha hecho y qué queda pendiente— y actuar antes de que un problema llegue al paciente.</p></div></header>
                     <nav class="opsr-sections" aria-label="Ops Room sections">
+                        <button type="button" :class="['opsr-section',{active:opsRoom.section==='today'}]" @click="opsSection('today')">Hoy</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='units'}]" @click="opsSection('units')">Unidades</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='interconsults'}]" @click="opsSection('interconsults')">Interconsultas</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='objectives'}]" @click="opsSection('objectives')">¿Cumplimos? · Objetivos</button>
@@ -4440,21 +4441,77 @@
                     <p v-if="opsRoom.error" class="sync-check-error">Could not load the Ops Room: {{ opsRoom.error }}</p>
                     <div v-if="opsRoom.loading && !opsRoom.units.length" class="ac-meta">Loading units…</div>
 
+                    <!-- Hoy: the department's daily screen — what needs action, interconsultas, objectives off track, every unit -->
+                    <section v-if="opsRoom.section==='today'" class="opsr-today" aria-label="Hoy">
+                        <div class="opsr-today-head">
+                            <div><p class="admin-kicker">HOY · {{ opsRoom.today ? formatDateShort(opsRoom.today) : '' }}</p><h3>How the department is doing</h3></div>
+                            <div v-if="opsRoom.units.length" class="opsr-overview">
+                                <span class="opsr-ov" data-level="alert"><b>{{ opsLevelCount('alert') }}</b> need action</span>
+                                <span class="opsr-ov" data-level="watch"><b>{{ opsLevelCount('watch') }}</b> to watch</span>
+                                <span class="opsr-ov" data-level="ok"><b>{{ opsLevelCount('ok') }}</b> in order</span>
+                            </div>
+                        </div>
+                        <div class="opsr-today-grid">
+                            <div class="opsr-today-card" data-level="alert">
+                                <p class="admin-kicker">NEEDS ACTION</p>
+                                <ul class="opsr-today-list"><li v-for="(it,ii) in opsTodayItems('alert')" :key="'a'+ii"><button type="button" class="opsr-linkish" @click="opsTodayOpenUnit(it.unit)"><b>{{ it.unit.unit_name }}</b> · {{ it.text }}</button></li>
+                                    <li v-if="opsRoom.ic.stats &amp;&amp; opsRoom.ic.stats.overdue"><button type="button" class="opsr-linkish" @click="opsSection('interconsults')"><b>Interconsultas</b> · {{ opsRoom.ic.stats.overdue }} over target</button></li>
+                                    <li v-if="!opsTodayItems('alert').length &amp;&amp; !(opsRoom.ic.stats &amp;&amp; opsRoom.ic.stats.overdue)" class="opsr-allgood">Nothing needs action.</li></ul>
+                            </div>
+                            <div class="opsr-today-card" data-level="watch">
+                                <p class="admin-kicker">TO LOOK AT TODAY</p>
+                                <ul class="opsr-today-list"><li v-for="(it,ii) in opsTodayItems('watch')" :key="'w'+ii"><button type="button" class="opsr-linkish" @click="opsTodayOpenUnit(it.unit)"><b>{{ it.unit.unit_name }}</b> · {{ it.text }}</button></li>
+                                    <li v-if="opsRoom.ic.stats &amp;&amp; opsRoom.ic.stats.unassigned"><button type="button" class="opsr-linkish" @click="opsSection('interconsults')"><b>Interconsultas</b> · {{ opsRoom.ic.stats.unassigned }} unassigned</button></li>
+                                    <li v-if="!opsTodayItems('watch').length &amp;&amp; !(opsRoom.ic.stats &amp;&amp; opsRoom.ic.stats.unassigned)" class="ac-meta">Nothing to watch.</li></ul>
+                            </div>
+                            <div class="opsr-today-card">
+                                <div class="opsr-row"><p class="admin-kicker">INTERCONSULTAS</p><button type="button" class="btn btn-secondary btn-sm" @click="opsSection('interconsults')">Open</button></div>
+                                <div v-if="opsRoom.ic.stats" class="opsr-today-kpis">
+                                    <div><b>{{ opsRoom.ic.stats.waiting }}</b><span>waiting</span><small v-if="opsRoom.ic.stats.oldest_waiting_hours!==null">oldest {{ opsHours(opsRoom.ic.stats.oldest_waiting_hours) }}</small></div>
+                                    <div :class="{bad:opsRoom.ic.stats.overdue}"><b>{{ opsRoom.ic.stats.overdue }}</b><span>over target</span></div>
+                                    <div><b>{{ opsHours(opsRoom.ic.stats.median_hours) }}</b><span>median response</span><small>last {{ opsRoom.ic.days }} days</small></div>
+                                    <div v-if="opsRoom.ic.calls"><b>{{ opsRoom.ic.calls.total }}</b><span>calls</span><small>last {{ opsRoom.ic.days }} days</small></div>
+                                </div>
+                                <p v-else class="ac-meta">{{ opsRoom.ic.loading ? 'Loading…' : (opsRoom.ic.error || 'No data yet.') }}</p>
+                            </div>
+                            <div class="opsr-today-card">
+                                <div class="opsr-row"><p class="admin-kicker">OBJECTIVES OFF TRACK</p><button type="button" class="btn btn-secondary btn-sm" @click="opsSection('objectives')">All objectives</button></div>
+                                <ul class="opsr-today-list"><li v-for="i in opsTodayOffTrack" :key="i.id"><b>{{ i.name }}</b> · {{ opsIndFmt(i, i.result.last_value ? i.result.last_value.value : null) }} vs {{ i.result.target_now ? ((i.result.target_now.direction||i.direction)==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.result.target_now.value) : '—' }}<small>{{ i.unit ? i.unit.unit_name : 'Department' }}</small></li>
+                                    <li v-if="!opsRoom.dept.loading &amp;&amp; !opsTodayOffTrack.length" class="opsr-allgood">Every objective with data is on track.</li></ul>
+                            </div>
+                        </div>
+                        <p class="admin-kicker">UNITS</p>
+                        <div class="opsr-today-units">
+                            <button v-for="u in opsUnitsSorted" :key="u.id" type="button" class="opsr-unit-row" :data-level="opsLevel(u)" @click="opsTodayOpenUnit(u)">
+                                <span class="opsr-level" :data-level="opsLevel(u)">{{ OPS_LEVEL[opsLevel(u)] }}</span>
+                                <strong>{{ u.unit_name }}</strong>
+                                <span class="opsr-unit-row-note">{{ opsReasons(u).length ? opsReasons(u)[0].text + (opsReasons(u).length > 1 ? ' · +' + (opsReasons(u).length - 1) : '') : 'Nothing needs attention' }}</span>
+                                <span class="opsr-unit-row-stats"><span>{{ u.roster.current.length }} team</span><span>{{ u.residents_this_week.length }} residents</span><span v-if="u.pulse &amp;&amp; u.pulse.indicators.total">{{ u.pulse.indicators.met }}/{{ u.pulse.indicators.total }} met</span><span v-if="u.pulse &amp;&amp; u.pulse.activity.measures">activity {{ opsAgo(u.pulse.activity.days_since) }}</span></span>
+                            </button>
+                            <p v-if="!opsRoom.loading &amp;&amp; !opsRoom.units.length" class="ac-meta">No units are switched on for the Ops Room yet.</p>
+                        </div>
+                    </section>
+
                     <!-- Units -->
                     <section v-if="opsRoom.section==='units' && !opsRoom.unit" class="opsr-grid" aria-label="Pulmonology units">
-                        <button v-for="u in opsRoom.units" :key="u.id" type="button" class="opsr-card" @click="opsOpen(u)">
-                            <span class="opsr-card-code">{{ u.unit_code }}</span>
+                        <div v-if="opsRoom.units.length" class="opsr-overview" aria-label="Units by status">
+                            <span class="opsr-ov" data-level="alert"><b>{{ opsLevelCount('alert') }}</b> need action</span>
+                            <span class="opsr-ov" data-level="watch"><b>{{ opsLevelCount('watch') }}</b> to watch</span>
+                            <span class="opsr-ov" data-level="ok"><b>{{ opsLevelCount('ok') }}</b> in order</span>
+                        </div>
+                        <button v-for="u in opsUnitsSorted" :key="u.id" type="button" class="opsr-card" :data-level="opsLevel(u)" @click="opsOpen(u)">
+                            <span class="opsr-card-top"><span class="opsr-card-code">{{ u.unit_code }}</span><span class="opsr-level" :data-level="opsLevel(u)">{{ OPS_LEVEL[opsLevel(u)] }}</span></span>
                             <strong class="opsr-card-name">{{ u.unit_name }}</strong>
                             <span class="opsr-card-line">{{ u.coordinators.length ? 'Coordina: ' + u.coordinators.join(', ') : 'No coordinator yet' }}</span>
-                            <span class="opsr-card-stats"><span><b>{{ u.roster.current.length }}</b> in the team</span><span><b>{{ u.residents_this_week.length }}</b> residents this week</span></span>
-                            <span v-if="u.alerts" class="opsr-alerts">
-                                <span v-if="u.alerts.resources.out_of_service" class="opsr-alert">{{ u.alerts.resources.out_of_service }} out of service</span>
-                                <span v-if="u.alerts.resources.calibration_overdue" class="opsr-alert">{{ u.alerts.resources.calibration_overdue }} calibration overdue</span>
-                                <span v-if="u.alerts.resources.loans_overdue" class="opsr-alert">{{ u.alerts.resources.loans_overdue }} loan overdue</span>
-                                <span v-if="u.alerts.incidents.open" class="opsr-alert opsr-alert--inc">{{ u.alerts.incidents.open }} open incident{{ u.alerts.incidents.open===1?'':'s' }}</span>
-                                <span v-if="u.alerts.resources.beds" class="opsr-note">{{ u.alerts.resources.beds_available }}/{{ u.alerts.resources.beds }} beds available</span>
+                            <ul v-if="opsReasons(u).length" class="opsr-reasons"><li v-for="(r,ri) in opsReasons(u).slice(0,3)" :key="ri" :data-level="r.level">{{ r.text }}</li><li v-if="opsReasons(u).length > 3" class="opsr-more">+{{ opsReasons(u).length - 3 }} more</li></ul>
+                            <span v-else class="opsr-allgood">Nothing needs attention</span>
+                            <span class="opsr-card-stats">
+                                <span><b>{{ u.roster.current.length }}</b> team</span>
+                                <span><b>{{ u.residents_this_week.length }}</b> residents</span>
+                                <span v-if="u.pulse &amp;&amp; u.pulse.indicators.total"><b>{{ u.pulse.indicators.met }}/{{ u.pulse.indicators.total }}</b> objectives met</span>
+                                <span v-if="u.pulse &amp;&amp; u.pulse.activity.measures">activity <b>{{ opsAgo(u.pulse.activity.days_since) }}</b></span>
+                                <span v-if="u.alerts &amp;&amp; u.alerts.resources.beds"><b>{{ u.alerts.resources.beds_available }}/{{ u.alerts.resources.beds }}</b> beds free</span>
                             </span>
-                            <span class="opsr-caps"><span v-for="c in u.capabilities" :key="c" class="opsr-cap">{{ OPS_CAP_LABEL[c] || c }}</span></span>
                         </button>
                         <p v-if="!opsRoom.loading && !opsRoom.units.length && !opsRoom.error" class="ac-meta">No units are switched on for the Ops Room yet.</p>
                     </section>
@@ -4463,11 +4520,12 @@
                     <section v-else-if="opsRoom.section==='units' && opsRoom.unit" class="opsr-unit" :aria-label="opsRoom.unit.unit_name">
                         <div class="opsr-unit-head">
                             <button type="button" class="btn btn-secondary btn-sm" @click="opsClose">← Units</button>
-                            <div><span class="opsr-card-code">{{ opsRoom.unit.unit_code }}<template v-if="opsRoom.unit.location"> · {{ opsRoom.unit.location }}</template></span><h3>{{ opsRoom.unit.unit_name }}</h3></div>
+                            <div><span class="opsr-card-code">{{ opsRoom.unit.unit_code }}<template v-if="opsRoom.unit.location"> · {{ opsRoom.unit.location }}</template></span><h3>{{ opsRoom.unit.unit_name }} <span class="opsr-level" :data-level="opsLevel(opsRoom.unit)">{{ OPS_LEVEL[opsLevel(opsRoom.unit)] }}</span></h3>
+                                <p v-if="opsReasons(opsRoom.unit).length" class="opsr-reasons-line"><span v-for="(r,ri) in opsReasons(opsRoom.unit)" :key="ri" :data-level="r.level">{{ r.text }}</span></p></div>
                             <button type="button" class="btn btn-secondary btn-sm opsr-head-btn" @click="opsRepFromUnit">Informes de la unidad</button>
                         </div>
                         <nav class="opsr-tabs" role="tablist" aria-label="Six questions">
-                            <button v-for="q in OPS_QUESTIONS" :key="q.key" type="button" role="tab" :aria-selected="opsRoom.tab===q.key" :class="['opsr-tab',{active:opsRoom.tab===q.key,off:!opsQuestionOn(opsRoom.unit,q)}]" :disabled="!opsQuestionOn(opsRoom.unit,q)" :title="opsQuestionOn(opsRoom.unit,q)?q.hint:'Not used by this unit'" @click="opsTab(q.key)">{{ q.q }}<small>{{ q.hint }}</small></button>
+                            <button v-for="q in OPS_QUESTIONS" :key="q.key" type="button" role="tab" :aria-selected="opsRoom.tab===q.key" :class="['opsr-tab',{active:opsRoom.tab===q.key,off:!opsQuestionOn(opsRoom.unit,q)}]" :data-level="opsQuestionOn(opsRoom.unit,q) ? opsQStatus(opsRoom.unit,q.key).level : null" :disabled="!opsQuestionOn(opsRoom.unit,q)" :title="opsQuestionOn(opsRoom.unit,q)?q.hint:'Not used by this unit'" @click="opsTab(q.key)"><span class="opsr-tab-q">{{ q.q }}</span><template v-if="opsQuestionOn(opsRoom.unit,q)"><b class="opsr-tab-val">{{ opsQStatus(opsRoom.unit,q.key).value }}</b><small>{{ opsQStatus(opsRoom.unit,q.key).note }}</small></template><small v-else>Not used here</small></button>
                         </nav>
 
                         <!-- ¿Quién está? -->
@@ -4486,15 +4544,16 @@
                                     </tbody></table>
                                     <template v-if="opsRoom.unit.roster.upcoming.length"><p class="admin-kicker">JOINING SOON</p>
                                         <ul class="opsr-list"><li v-for="e in opsRoom.unit.roster.upcoming" :key="'u'+e.id"><strong>{{ e.staff?.full_name }}</strong> · {{ e.role_label }} · from {{ formatDateShort(e.assigned_from) }}<button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsRemove(e)">Cancel</button></li></ul></template>
-                                    <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAdd">
-                                        <p class="admin-kicker">ADD TO THE TEAM</p>
+                                    <details v-if="opsCanManage" class="opsr-drawer"><summary>+ Add to the team</summary>
+                                    <form class="opsr-add" @submit.prevent="opsAdd">
+                                        
                                         <select v-model="opsRoom.form.staff_id" class="form-select" aria-label="Person" required><option value="">— Person —</option><option v-for="s in opsCandidates" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
                                         <select v-model="opsRoom.form.role" class="form-select" aria-label="Role"><option v-for="r in OPS_ROLES" :key="r.v" :value="r.v">{{ r.l }}</option></select>
                                         <label>From <input type="date" v-model="opsRoom.form.assigned_from" class="form-control"></label>
                                         <label>Until <input type="date" v-model="opsRoom.form.assigned_until" class="form-control"></label>
                                         <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.form.staff_id||opsRoom.saving">{{ opsRoom.saving ? 'Adding…' : 'Add' }}</button>
                                         <small class="ac-meta">Residents join through Rotations, not here. Leave “From” empty for today.</small>
-                                    </form>
+                                    </form></details>
                                     <details v-if="opsRoom.unit.roster.ended.length" class="opsr-history"><summary>History ({{ opsRoom.unit.roster.ended.length }})</summary>
                                         <ul class="opsr-list"><li v-for="e in opsRoom.unit.roster.ended" :key="'h'+e.id">{{ e.staff?.full_name }} · {{ e.role_label }} · {{ e.assigned_from ? formatDateShort(e.assigned_from) : '—' }} → {{ formatDateShort(e.assigned_until) }}<button v-if="opsIsAdmin" type="button" class="btn btn-secondary btn-sm" @click="opsRemove(e,true)">Delete</button></li></ul></details>
                                 </div>
@@ -4552,8 +4611,9 @@
                                 </template>
                                 <tr v-if="!opsRoom.res.loading && !opsRoom.res.list.length"><td :colspan="3+(opsHas('calibration')?1:0)+(opsHas('loans')?1:0)" class="sync-empty">No resources registered for this unit yet.</td></tr>
                             </tbody></table>
-                            <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAddRes">
-                                <p class="admin-kicker">ADD A RESOURCE</p>
+                            <details v-if="opsCanManage" class="opsr-drawer"><summary>+ Add a resource</summary>
+                            <form class="opsr-add" @submit.prevent="opsAddRes">
+                                
                                 <select v-model="opsRoom.res.form.kind" class="form-select" aria-label="Kind"><option value="device">Device</option><option value="room">Room</option><option v-if="opsHas('beds')" value="bed">Bed</option></select>
                                 <select v-if="opsRoom.res.form.kind==='device' &amp;&amp; opsCatOptions('device_type').length" v-model="opsRoom.res.form.device_type" class="form-select" aria-label="Device type" @change="opsDeviceDefault"><option value="">— Device type —</option><option v-for="t in opsCatOptions('device_type')" :key="t.code" :value="t.code">{{ t.label }}{{ t.meta &amp;&amp; t.meta.calibration_days ? ' · calibrate every '+t.meta.calibration_days+' d' : '' }}</option></select>
                                 <input v-model="opsRoom.res.form.name" class="form-control" maxlength="120" placeholder="Name (e.g. Pletismógrafo 1)" aria-label="Name" required>
@@ -4561,7 +4621,7 @@
                                 <input v-model="opsRoom.res.form.location" class="form-control" maxlength="120" placeholder="Location" aria-label="Location">
                                 <label v-if="opsHas('calibration')&&opsRoom.res.form.kind==='device'">Calibrate every (days) <input type="number" min="1" max="3650" v-model="opsRoom.res.form.calibration_interval_days" class="form-control"></label>
                                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.res.form.name||opsRoom.res.busy">Add</button>
-                            </form>
+                            </form></details>
                         </div>
 
                         <!-- ¿Qué hemos hecho? -->
@@ -4632,15 +4692,16 @@
                                 </li>
                                 <li v-if="!opsRoom.inc.loading && !opsRoom.inc.list.some(x=>x.status!=='resolved')" class="ac-meta">No open incidents.</li>
                             </ul>
-                            <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAddInc">
-                                <p class="admin-kicker">RECORD AN INCIDENT</p>
+                            <details v-if="opsCanManage" class="opsr-drawer"><summary>+ Record an incident</summary>
+                            <form class="opsr-add" @submit.prevent="opsAddInc">
+                                
                                 <select v-model="opsRoom.inc.form.category" class="form-select" aria-label="Category"><option v-for="c in opsIncCatOptions" :key="c.v" :value="c.v">{{ c.l }}</option></select>
                                 <input v-model="opsRoom.inc.form.title" class="form-control opsr-grow" maxlength="140" placeholder="What happened (e.g. Broncoscopio 2 averiado)" aria-label="Title" required>
                                 <select v-model="opsRoom.inc.form.resource_id" class="form-select" aria-label="Resource"><option value="">— Resource (optional) —</option><option v-for="r in opsRoom.res.list" :key="r.id" :value="r.id">{{ r.name }}</option></select>
                                 <select v-model="opsRoom.inc.form.owner_id" class="form-select" aria-label="Owner"><option value="">— Owner (optional) —</option><option v-for="s in opsOwners" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
                                 <input v-model="opsRoom.inc.form.details" class="form-control opsr-grow" maxlength="500" placeholder="Details (no patient data)" aria-label="Details">
                                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.inc.form.title||opsRoom.inc.busy">Record</button>
-                            </form>
+                            </form></details>
                             <details v-if="opsRoom.inc.list.some(x=>x.status==='resolved')" class="opsr-history"><summary>Resolved in the last 90 days ({{ opsRoom.inc.list.filter(x=>x.status==='resolved').length }})</summary>
                                 <ul class="opsr-list"><li v-for="i in opsRoom.inc.list.filter(x=>x.status==='resolved')" :key="'r'+i.id"><span class="opsr-cap">{{ OPS_INC_CAT[i.category] }}</span> {{ i.title }} · {{ formatDateShort(i.opened_on) }} → {{ formatDateShort(i.resolved_on) }}<template v-if="i.resolution"> — {{ i.resolution }}</template><button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsUpdInc(i,{status:'open'})">Reopen</button></li></ul></details>
                         </div>
@@ -13188,7 +13249,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.38-20261017-ops-room-orr"></script>
+    <script src="app.js?v=5.4-production.40-20261017-ops-room-ui2"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

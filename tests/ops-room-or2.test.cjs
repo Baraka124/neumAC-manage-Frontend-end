@@ -36,6 +36,9 @@ test('incidents: resolving asks how; free text warns against patient data; admin
 });
 
 test('unit cards show what needs attention', () => {
-  for (const k of ['out_of_service', 'calibration_overdue', 'loans_overdue']) assert.ok(view.includes(`u.alerts.resources.${k}`), k);
-  assert.match(view, /u\.alerts\.incidents\.open/);
+  // Since the interface pass the alerts reach the card as the backend pulse's reasons (out of service, calibration /
+  // loans overdue, open incidents…); without a pulse the level falls back to the same alert counts.
+  assert.match(view, /v-for="\(r,ri\) in opsReasons\(u\)\.slice\(0,3\)"/);
+  for (const k of ['out_of_service', 'calibration_overdue', 'loans_overdue']) assert.ok(app.includes(`r.${k}`), k);
+  assert.match(app, /i\.open\?'watch':'ok'/);
 });
