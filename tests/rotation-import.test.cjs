@@ -72,23 +72,35 @@ test('cross-year contiguous stays merge (Dec 2026 UCRI + ... only when truly adj
   assert.equal(merged[0].months, 2);
 });
 
-test('resolveResident resolves one hit, flags ambiguity with candidates, never auto-picks', () => {
+test('resolveResident matches ACTIVE RESIDENTS only, flags ambiguity, never auto-picks', () => {
+  const R='medical_resident', A='attending_physician';
   const staff = [
-    {id:'a1', full_name:'Ana Santalla'},
-    {id:'a2', full_name:'Ana Souto Alonso'},
-    {id:'i1', full_name:'Iria Horjales Rodríguez'},
+    {id:'a1', full_name:'Ana Santalla', staff_type:R},
+    {id:'a2', full_name:'Ana Souto Alonso', staff_type:A},        // attending: never offered for a rotation
+    {id:'a3', full_name:'Ana Pérez', staff_type:R},
+    {id:'i1', full_name:'Iria Horjales Rodríguez', staff_type:R},
+    {id:'l1', full_name:'Laura Yoris Marin', staff_type:R},
+    {id:'e1', full_name:'Efrén Ruiz Pedrosa', staff_type:A},
+    {id:'x1', full_name:'Old Resident', staff_type:R, employment_status:'inactive'},
   ];
-  assert.equal(RI.resolveResident('Iria', staff).id, 'i1');          // unique first-token hit
+  assert.equal(RI.resolveResident('Iria', staff).id, 'i1');                    // unique first-token hit
+  assert.equal(RI.resolveResident('Laura Yoris', staff).id, 'l1');             // partial full name
   const ana = RI.resolveResident('Ana', staff);
-  assert.equal(ana.issue, 'Ambiguous name');                          // two Anas → not guessed
-  assert.equal(ana.candidates.length, 2);
-  assert.equal(RI.resolveResident('Zzz', staff).issue, 'Name not matched');
+  assert.equal(ana.issue, 'Ambiguous name');                                    // two resident Anas → not guessed
+  assert.deepEqual(ana.candidates.map(c=>c.id).sort(), ['a1','a3']);            // the attending Ana is NOT a candidate
+  assert.equal(RI.resolveResident('Ana Santalla', staff).id, 'a1');
+  const efren = RI.resolveResident('Efrén', staff);                             // only an attending has this name
+  assert.equal(efren.issue, 'Registered, but not as a resident');
+  assert.equal(efren.nonResidents[0].id, 'e1');
+  assert.equal(RI.resolveResident('Old Resident', staff).issue, 'Not registered as a resident'); // inactive excluded
+  assert.equal(RI.resolveResident('Zzz', staff).issue, 'Not registered as a resident');
   assert.deepEqual(RI.resolveResident('Ana', staff, {Ana:'a1'}), {id:'a1', name:'Ana Santalla'}); // saved mapping wins
+  assert.equal(RI.resolveResident('Ana', staff, {Ana:'a2'}).issue, 'Saved mapping is not an active resident'); // cannot map to an attending
   assert.deepEqual(RI.resolveResident('Ana', staff, {Ana:'skip'}), {skip:true});
 });
 
 test('plan resolves residents+units, flags unmatched, and payload emits only selected ready rows', () => {
-  const staff=[{id:'i1',full_name:'Iria Horjales'},{id:'a1',full_name:'Ana Santalla'},{id:'a2',full_name:'Ana Souto'}];
+  const staff=[{id:'i1',full_name:'Iria Horjales',staff_type:'medical_resident'},{id:'a1',full_name:'Ana Santalla',staff_type:'medical_resident'},{id:'a2',full_name:'Ana Souto',staff_type:'medical_resident'}];
   const units=[{id:'u-hosp',unit_code:'HOSP-NEUM',unit_name:'Hospitalización'},{id:'u-bfc',unit_code:'BFC',unit_name:'Broncoscopias'}];
   const periods=[
     {source_sheet:'MIR NML 2026',resident:'Iria',unit_excel:'SALA NML',unit_code:'HOSP-NEUM',start_date:'2026-08-01',end_date:'2026-08-31',split:false},
@@ -99,6 +111,7 @@ test('plan resolves residents+units, flags unmatched, and payload emits only sel
   assert.equal(p1.records.find(r=>r.resident==='Iria'&&r.unit_excel==='SALA NML').status,'ready');
   assert.equal(p1.unmatchedResidents.length,1);
   assert.equal(p1.unmatchedResidents[0].candidates.length,2);
+  assert.equal(p1.unmatchedResidents[0].cohortYear,2026);                     // cohort year offered when registering
   assert.equal(p1.unmatchedUnits[0].code,'ZZZ');
   assert.equal(p1.records.find(r=>r.unit_excel==='ZZZ').status,'blocked');
   const p2=RI.plan(periods,staff,units,{residentMappings:{Ana:'a1'},unitChoices:{ZZZ:'create'}});

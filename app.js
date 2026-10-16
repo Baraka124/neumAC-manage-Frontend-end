@@ -9243,7 +9243,25 @@ document.addEventListener('DOMContentLoaded', () => {
           }catch(e){rotationImport.error=e.message}finally{rotationImport.parsing=false}
         }
         const rotationImportFile = ev=>{const f=ev.target.files?.[0];if(f)rotationImportParse(f);ev.target.value=''}
-        const rotationImportResidentMap = (label,id)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.residentMappings={...rotationImport.residentMappings,[label]:id};rotationImportRebuild()}
+        // Only registered residents can be chosen for a sheet name.
+        const rotationImportResidents = computed(()=>window.NeumRotationImport.residentPool(rotationImport.staff).slice().sort((a,b)=>String(a.full_name).localeCompare(String(b.full_name),'es')))
+        // Extra step for new names: register them as residents (MIR cohort from the sheet), then map.
+        const rotationImportRegister = async(label)=>{
+          const u=rotationImport.unmatchedResidents.find(x=>x.label===label);if(!u)return
+          const fullName=String(window.prompt('Full name of the new resident (MIR '+(u.cohortYear||'')+'):',label)||'').trim()
+          if(!fullName){rotationImportRebuild();return}
+          const depts={};window.NeumRotationImport.residentPool(rotationImport.staff).forEach(s=>{if(s.department_id)depts[s.department_id]=(depts[s.department_id]||0)+1})
+          const department_id=Object.entries(depts).sort((a,b)=>b[1]-a[1])[0]?.[0]||null
+          try{
+            const created=await API.request('/api/medical-staff',{method:'POST',body:{full_name:fullName,staff_type:'medical_resident',training_year:u.cohortYear?String(u.cohortYear):null,department_id,employment_status:'active'}})
+            const rec=created?.data||created
+            if(!rec?.id)throw Error('The new resident was not returned by the server.')
+            rotationImport.staff=[...rotationImport.staff,{id:rec.id,full_name:rec.full_name||fullName,staff_type:'medical_resident',employment_status:'active',department_id}]
+            rotationImport.selection={};rotationImport.residentMappings={...rotationImport.residentMappings,[label]:rec.id};rotationImportRebuild()
+            API.clearCache();showToast('Resident registered',(rec.full_name||fullName)+' · MIR '+(u.cohortYear||''),'success')
+          }catch(e){showToast('Could not register resident',e.message,'error');rotationImportRebuild()}
+        }
+        const rotationImportResidentMap = (label,id)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;if(id==='register'){rotationImportRegister(label);return}rotationImport.selection={};rotationImport.residentMappings={...rotationImport.residentMappings,[label]:id};rotationImportRebuild()}
         const rotationImportUnitChoice = (code,choice)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.unitChoices={...rotationImport.unitChoices,[code]:choice};rotationImportRebuild()}
         const rotationImportSelectReady = ()=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;const next={...rotationImport.selection};rotationImportVisible.value.filter(r=>r.status==='ready').forEach(r=>next[r.key]=true);rotationImport.selection=next}
         const rotationImportClearSel = ()=>{rotationImport.selection={}}
@@ -19282,7 +19300,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
           oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
-          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
+          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
