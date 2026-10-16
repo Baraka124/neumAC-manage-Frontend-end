@@ -681,3 +681,12 @@
 .ac-invite-foot{margin:24px 0 0;padding-top:16px;border-top:1px solid #eef2f2;font-size:11px;color:#9aabac;text-align:center;letter-spacing:.02em}
 .ac-invite .ac-alert{background:#fdeceb;border:1px solid #f3c9c4;color:#9a3b2f;border-radius:9px;padding:10px 12px;font-size:13px;margin:0}
 @media(max-width:520px){.ac-invite-card{padding:30px 22px 20px;border-radius:16px}}
+/* Import time bands — history dimmed, far-future flagged, person panel */
+.import-band-past td{opacity:.6}
+.import-band-far td:first-child{box-shadow:inset 4px 0 0 #8b5cf6}
+.import-band-far td{background:rgba(139,92,246,.06)}
+.rot-import-person-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:8px 0}
+.rot-import-person-cols ul{list-style:none;margin:0;padding:0;font-size:13px;line-height:1.7}
+.rot-import-person-cols li.import-band-past{opacity:.6}
+.rot-import-person-cols li.import-band-current,.rot-import-person-cols li.import-band-upcoming{color:#047857;font-weight:600}
+.rot-import-person-cols li.import-band-far{color:#6d28d9}
