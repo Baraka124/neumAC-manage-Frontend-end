@@ -3,7 +3,8 @@
 Status (17 Oct 2026): **OR-1, OR-2, OR-2b, OR-3, OR-C steps 1–2 and OR-R built** — all six questions, Interconsultas
 (+ calls from other departments), Objetivos, **Informes** (weekly/monthly, unit + department) and Configuración are live.
 Clinical counts can be broken down by condition, age band or sex (counts only).
-**Next: the interface** (redesign of the Ops Room screens — see §9), then OR-C steps 3–4, OR-4, OR-5, OR-6.
+**Interface pass 1–2 built (17 Oct):** status first everywhere and a department daily screen, **Hoy** (see §9).
+Next: OR-C steps 3–4, OR-4, OR-5, OR-6 (and any interface pass 3 items in §9).
 **§8 is the handoff** — read it first if you are continuing this work in a new session or with another assistant.
 
 ## 1. Purpose
@@ -144,6 +145,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 | ✅ OR-2b | **Interconsultas**: request record, board, take/assign/answer/follow-up/close, response-time stats |
 | ✅ OR-3 | Indicators (targets, owners, ISO 7101 clause, week/month/quarter, last 6 periods computed from records) |
 | ◐ OR-C | **Configuration** — steps 1 ✅ and 2 ✅ built 17 Oct (see §8); steps 3–4 pending: (1) catalogues as data — interconsulta services/reasons/priorities/**targets**, incident categories, roster roles, device types with default calibration interval; (2) **target history** (valid-from dates; past periods judged with the target in force then); (3) unit **Ops profile inside the existing clinical units module** (see rule below); (4) alert rules (thresholds → owner notifications) |
+| ✅ UI 1–2 | Status first: unit pulse (level + reasons), six-question control panel, drawers, **Hoy** department screen (backend `unitPulse`) |
 | ✅ OR-R | **Clinical counts + calls + reports** (17 Oct): a measure may carry ONE breakdown (`clinical_condition` / `age_band` / `sex`, catalogues; never crossed, counts only); phone / in-person calls from other departments logged in Interconsultas (channel, outcome, minutes; saved as resolved; excluded from response times; `calls_total` indicator); **Informes**: fixed weekly/monthly snapshots per unit and a department roll-up, generated lazily for the last complete week/month, regenerable, printable |
 | OR-4 | Remaining Pulmonology units, each with only its capabilities |
 | OR-5 | Connections: Mi espacio, resident visibility, Grounded, leadership overview |
@@ -265,7 +267,7 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 - OR-5: Mi espacio "your unit this week / your interconsultas", resident visibility of incidents, Grounded answers from Ops Room records.
 - Security (outside Ops Room): rotate the keys in the committed backend `.env`, move them to Railway Variables, then untrack `.env`.
 
-## 9. Next: the interface (agreed 17 Oct 2026)
+## 9. Interface (agreed 17 Oct 2026; passes 1–2 built the same day)
 
 The Ops Room works end to end; its screens were built feature by feature (functional, consistent with neumDesk, tested
 on desktop and mobile) but not designed as a whole. The next step is a proper interface pass:
@@ -273,3 +275,22 @@ on desktop and mobile) but not designed as a whole. The next step is a proper in
 - the department view (all units, interconsultas, objectives) as the head of department's daily screen;
 - fewer forms in view at once (progressive disclosure), consistent empty states, Spanish/English labels decided once;
 - keep every rule in §8 (no patient data, no `<` inside `{{ }}`, cache keys, tests per screen, render check).
+
+Decisions: unit control panel first, then the department screen from the same pieces; labels keep the current mix
+(Spanish questions and sections, English controls).
+
+**Built — pass 1 (units):** the backend adds `pulse` to every unit in `GET /api/ops/units[/:id]` —
+`unitPulse()` in `ops-room.js` turns records the unit already has into `level` (`alert` | `watch` | `ok`) + short
+`reasons` + activity freshness, latest pending values and objectives met / not met. Rules: alert = equipment out of
+service, calibration or loan overdue, objective not met, incident open > 7 days; watch = fresh or unowned incident,
+calibration due ≤ 14 days, activity not recorded for > 7 days (only units that use activity), empty team. A pulse
+failure never blocks the list (logged, `pulse: null`). Frontend: cards sorted by urgency with level pill + reasons;
+the six questions are a control panel (each tile shows its live value and a coloured top edge); "add" forms (team,
+resource, incident) sit in drawers; status refreshes after every write (`opsRefreshPulse`).
+
+**Built — pass 2 (Hoy):** the Ops Room now opens on **Hoy**, the department's daily screen: units by level, "Needs
+action" and "To look at today" (every unit reason + interconsultas over target / unassigned, each clickable to the
+unit), interconsultas at a glance, objectives off track (from `GET /api/ops/indicators`), and every unit as one row.
+
+Possible pass 3 (not started): Interconsultas board as a queue (oldest first, one-tap take/answer); Objetivos as a
+grid by unit; consistent empty states for brand-new units.

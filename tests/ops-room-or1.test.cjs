@@ -12,7 +12,9 @@ test('Ops Room is its own view, opened with Units read access; communications ke
   assert.match(access, /opsroom:'training_units'/);
   assert.match(html, /@click\.prevent="switchView\('opsroom'\); mobileMenuOpen = false"\s*\n\s*v-if="hasPermission\('training_units', 'read'\)"/);
   assert.match(html, /aria-label="Communications" :aria-current="currentView === 'communications'/);
-  assert.match(app, /if \(view === 'opsroom'\) \{\s*currentView\.value = 'opsroom'\s*opsRoom\.unit = null\s*(opsRoom\.section = 'units'\s*)?opsLoad\(\)/);
+  // Entering the Ops Room opens the department's daily screen ("Hoy"), which loads the units.
+  assert.match(app, /if \(view === 'opsroom'\) \{\s*currentView\.value = 'opsroom'\s*opsSection\('today'\)/);
+  assert.match(app, /if\(key==='today'\)\{opsLoad\(\);opsLoadIc\(\);opsLoadDept\(\)\}/);
 });
 
 test('purpose and the six questions are the structure of a unit', () => {
