@@ -134,3 +134,25 @@ test('translate ignores non-cohort sheets and merges across cohort sheets', () =
   assert.equal(iriaUcri.length, 1);
   assert.equal(iriaUcri[0].end_date, '2027-01-31');
 });
+
+test('timeBand places periods relative to today (history / now / coming / far-future)', () => {
+  const t = '2026-10-16';
+  assert.equal(RI.timeBand('2026-08-01', '2026-09-30', t), 'past');      // finished: history
+  assert.equal(RI.timeBand('2026-09-01', '2026-10-31', t), 'current');   // running now
+  assert.equal(RI.timeBand('2026-11-01', '2026-11-30', t), 'upcoming');
+  assert.equal(RI.timeBand('2027-10-01', '2027-10-31', t), 'upcoming');  // within 12 months
+  assert.equal(RI.timeBand('2028-10-01', '2028-11-30', t), 'far');       // the "MIR NML 2028" case
+});
+
+test('plan tags every record with its band, counts bands and sorts by start date', () => {
+  const staff=[{id:'e1',full_name:'Efrén Ruiz Pedrosa',staff_type:'medical_resident'}];
+  const units=[{id:'u1',unit_code:'RAD-TORAX',unit_name:'Radiología'},{id:'u2',unit_code:'ROT-EXT',unit_name:'Externa'}];
+  const periods=[
+    {source_sheet:'MIR NML 2028',resident:'Efrén',unit_excel:'ROT EXT',unit_code:'ROT-EXT',start_date:'2028-10-01',end_date:'2028-11-30',split:false},
+    {source_sheet:'MIR NML 2026',resident:'Efrén',unit_excel:'RX',unit_code:'RAD-TORAX',start_date:'2026-09-01',end_date:'2026-10-31',split:false},
+    {source_sheet:'MIR NML 2026',resident:'Efrén',unit_excel:'RX',unit_code:'RAD-TORAX',start_date:'2026-06-01',end_date:'2026-07-31',split:false},
+  ];
+  const p=RI.plan(periods,staff,units,{today:'2026-10-16'});
+  assert.deepEqual(p.records.map(r=>r.band), ['past','current','far']);   // sorted by start date
+  assert.deepEqual(p.counts.bands, {past:1,current:1,upcoming:0,far:1});
+});

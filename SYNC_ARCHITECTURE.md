@@ -43,9 +43,11 @@ The Servicio de Neumología at CHUAC maintains two operational Excel files that 
 - ANTELO (16 shifts) — should auto-match but didn't (investigation needed)
 - Remaining gaps from the mapping UI "choose" state being left unselected
 
-### Rotations: ○ Not started — Phase 2
+### Rotations: ✅ Shipped (Oct 2026)
 
-The rotations Excel has a fundamentally different structure (matrix, not list) that requires a different parser.
+Matrix parser `rotation-import.js` → `POST /api/rotations/batch` (dry run → commit), preview UI in Settings → Schedule import. Residents are matched against **registered residents only**; unknown names can be registered as new residents (MIR cohort from the sheet) in one step. Details and the Google-Sheets automation path: `docs/rotations-import-automation.md`.
+
+> Status note (2026-10-16): sections 3–6 below are the original on-call design notes, kept for history. Several are done (MIR column → `resident_physician_id`, provenance via `sync_source`/`sync_key`, commit reads the API response). **Section 8 is the current plan.**
 
 ---
 
@@ -196,3 +198,52 @@ Benefits:
 The department maintains their Excel files as they always have. neumDesk reads those files periodically (or on upload), resolves names, shows what changed, and writes the data to the database — making it queryable by Grounded, visible on the dashboard, and available for conflict detection.
 
 The Excel remains the source of truth for scheduling. neumDesk is the intelligence layer on top of it — not a replacement for it.
+
+---
+
+## 8. Import intelligence — plan of record (decided 2026-10-16)
+
+Goal: imports stop being "file → rows" and become the **point of entry where the system understands the data**: it knows *when* each row sits relative to today, *who* each name is, *what it would break*, and *what changed since last time*. Same engine for every import (guardias, rotations, research).
+
+### Decisions
+- **No AI-assisted column mapping.** Mapping stays deterministic: known layouts + remembered choices.
+- **Past rows are imported as history**, dimmed and unselected by default; the user can include them deliberately. History stays displayable everywhere (Historial toggle).
+- **Rows more than 12 months ahead are flagged** (warning, unselected by default) — they can still be accepted on purpose. Rationale: a "MIR NML 2028" sheet in October 2026 is far-future planning, not this year.
+- A human always confirms; nothing is auto-committed.
+
+### Phase A — Time-aware, person-centred preview (rotations + guardias)
+- Every preview row gets a **time band** relative to today: `past` · `current` · `upcoming` · `far` (> 12 months).
+- **Current + upcoming are highlighted (green) and pre-selected**; past is dimmed/collapsed and unselected; far-future is flagged and unselected.
+- The preview **opens at the current month** — no scrolling through finished months.
+- **Person view:** search one person → see their whole Excel plan as a timeline beside what already exists in neumDesk → accept that person's rows only.
+- Dates always show the year when it is not the current one.
+
+### Phase B — Memory and role awareness
+- `import_aliases` table (replaces localStorage / hard-coded maps): `{import_type, source_label} → target id` for people **and units**. Saved when the user confirms a mapping; applied automatically next time; visible/editable by admins.
+- Excel unit codes (`SALA NML`, `RX`, …) move from `UNIT_CODES` in code to `import_aliases` — a new code is a UI choice, not a deploy.
+- **Role-aware matching everywhere:** guardia "Nombre" column → attendings only, "MIR" column → residents only (rotations already do this).
+- **Layout fingerprint:** remember each file's sheet/header/column layout; warn clearly when the template changes.
+
+### Phase C — Cross-checks before commit
+Each row is reviewed against live data and labelled ✓ ready · ⚠ review (with reason) · ✕ blocked:
+- guardia during an absence · resident away on rotation (esp. external) on a guardia day · rest after guardia (consecutive days) · workload/fairness per month · days without cover / without backup · unit over capacity · training-plan gaps per resident year.
+- **Impact summary** before commit: "creates 31 guardias + 12 rotations · 4 uncovered days · 2 absence conflicts · Ana above average".
+- Guardias go through the same decision engine the rotations already use.
+
+### Phase D — Re-import as sync
+- A second upload of the same source shows **only the difference**: new · changed · **removed upstream** (proposed deletion) · unchanged (hidden).
+- **Swap detection:** "A ↔ B exchanged 12 Oct / 19 Oct" shown as one change.
+- Rotations get the same structured provenance guardias have (`sync_source` / `sync_key`), not just a note.
+- `import_runs` log: who, file, when, counts, decisions (the old `sync_log` idea, Issue 5).
+
+### Phase E — Research import portal (clinical studies, innovation projects, …)
+Source: **department Excel lists** (one row per study/project). Same engine:
+- Known layout → column mapping remembered per file template (Phase B), no AI.
+- Matching: PI / co-investigators / technical lead → **staff** (role-aware), research line → `research_lines`, status/stage → the DB vocabularies (`Reclutando`, `Activo`, …; `concept`…`completed`), sponsor type, phase.
+- Dedup key: `protocol_id` / NCT / EudraCT for studies; title + lead for projects.
+- Cross-checks: unknown investigator, status outside allowed values, closed study with future dates, project without lead, duplicate protocol IDs.
+- Preview with the same time bands (active / upcoming / closed-as-history), person view ("everything Pedro leads"), dry run → commit.
+- Out of scope until requested: registry pulls (ClinicalTrials.gov / EU CTR), protocol PDFs.
+
+### Order
+A → B → C → D → E. A and B change the daily experience most; C is the intelligence; D keeps files and system in step; E reuses all of it.

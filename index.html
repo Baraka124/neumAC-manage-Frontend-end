@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261016-oncall-stickybar">
+<link rel="stylesheet" href="access.css?v=20261016-import-bands">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4743,18 +4743,38 @@
                                     </div>
                                 </div>
                                 <div class="sync-review-heading"><div><p class="admin-kicker">REVIEW ROTATIONS</p><h3>{{ rotationImportVisible.length }} in view <span>of {{ rotationImport.records.length }} total</span></h3></div>
-                                    <select v-model="rotationImport.filter.resident" class="form-select"><option value="">All residents</option><option v-for="r in rotationImport.residents" :key="r" :value="r">{{ r }}</option></select>
+                                    <select v-model="rotationImport.filter.band" class="form-select" aria-label="Time period">
+                                        <option value="now">Current &amp; upcoming ({{ rotationImportBandCounts.now }})</option>
+                                        <option value="past">History ({{ rotationImportBandCounts.past }})</option>
+                                        <option value="far">Beyond 12 months ({{ rotationImportBandCounts.far }})</option>
+                                        <option value="all">All periods ({{ rotationImportBandCounts.all }})</option>
+                                    </select>
+                                    <input type="search" v-model="rotationImport.filter.person" class="form-control" placeholder="Find a person…" aria-label="Find a person" list="rot-import-people">
+                                    <datalist id="rot-import-people"><option v-for="r in rotationImport.residents" :key="r" :value="r"></option></datalist>
                                     <select v-model="rotationImport.filter.status" class="form-select"><option value="">All</option><option value="ready">Ready</option><option value="blocked">Needs mapping</option><option value="skipped">Skipped</option></select>
                                     <button class="btn btn-secondary" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportSelectReady">Select ready in view</button>
                                     <button class="btn btn-secondary" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportClearSel">Clear</button>
                                 </div>
+                                <p v-if="rotationImport.filter.band==='far' && rotationImportBandCounts.far" class="ac-meta">⚠ These rotations start more than 12 months from today. They are not selected automatically — select them only if this long-range plan is confirmed.</p>
+                                <p v-if="rotationImport.filter.band==='past' && rotationImportBandCounts.past" class="ac-meta">History: rotations that have already ended. Import them to complete a resident's training record; they are not selected automatically.</p>
+                                <p v-if="rotationImportHiddenSelected" class="ac-meta">{{ rotationImportSelectedKeys.length }} selected · <strong>{{ rotationImportHiddenSelected }} outside this view</strong> (they will also be checked and applied).</p>
+                                <div v-if="rotationImportPerson" class="nd-l247 nd-v230 rot-import-person">
+                                    <div class="nd-l090 nd-v225">{{ rotationImportPerson.name }} — Excel plan vs neumDesk</div>
+                                    <div class="rot-import-person-cols">
+                                        <div><p class="admin-kicker">IN THIS FILE ({{ rotationImportPerson.rows.length }})</p>
+                                            <ul><li v-for="r in rotationImportPerson.rows" :key="'pf'+r.key" :class="'import-band-'+(r.band||'upcoming')">{{ formatDateShort(r.start_date) }} → {{ formatDateShort(r.end_date) }} · {{ r.unit_name||r.unit_excel }}</li></ul></div>
+                                        <div><p class="admin-kicker">ALREADY IN NEUMDESK ({{ rotationImport.personExisting.length }})</p>
+                                            <ul><li v-for="x in rotationImport.personExisting" :key="'pe'+x.id">{{ formatDateShort(x.start) }} → {{ formatDateShort(x.end) }} · {{ x.unit }}</li><li v-if="!rotationImport.personExisting.length" class="ac-meta">No rotations recorded yet.</li></ul></div>
+                                    </div>
+                                    <button class="btn btn-secondary" :disabled="!rotationImportPerson.ready||rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportSelectPerson">Accept {{ rotationImportPerson.name }}'s ready rows in view</button>
+                                </div>
                                 <div class="sync-table-wrap" tabindex="0" aria-label="Rotations import review">
                                     <table class="sync-table"><thead><tr><th scope="col">Apply</th><th scope="col">Resident</th><th scope="col">Unit</th><th scope="col">Period</th><th scope="col">Result</th></tr></thead><tbody>
-                                        <tr v-for="r in rotationImportVisible" :key="r.key" :class="{'sync-selected':rotationImport.selection[r.key]}">
+                                        <tr v-for="r in rotationImportVisible" :key="r.key" :class="['import-band-'+(r.band||'upcoming'), {'sync-row-future':['current','upcoming'].includes(r.band), 'sync-row-past':r.band==='past', 'sync-selected':rotationImport.selection[r.key]}]">
                                             <td><input type="checkbox" v-model="rotationImport.selection[r.key]" :aria-label="'Import '+r.resident+' '+r.unit_excel" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed||r.status!=='ready'"></td>
                                             <td><strong>{{ r.resident_name||r.resident }}</strong><small v-if="r.resident_issue" class="sync-check-error">{{ r.resident_issue }}</small></td>
                                             <td><strong>{{ r.unit_name||r.unit_excel }}</strong><small v-if="r.create_unit">will be created</small><small v-if="r.unit_issue" class="sync-check-error">{{ r.unit_issue }}</small><small v-if="r.split">split month</small></td>
-                                            <td><strong>{{ r.start_date }} → {{ r.end_date }}</strong><small>{{ r.source_sheet }}</small></td>
+                                            <td><strong>{{ formatDateShort(r.start_date) }} → {{ formatDateShort(r.end_date) }}</strong><small>{{ ({past:'History',current:'Now',upcoming:'Upcoming',far:'Beyond 12 months'})[r.band]||'' }} · {{ r.source_sheet }}</small></td>
                                             <td><template v-if="rotationImport.checkResults[r.key]"><span class="sync-status" :data-status="rotationImport.checkResults[r.key].status==='ready'?'new':'conflict'">{{ rotationImport.checkResults[r.key].status==='ready'?'Checked · ready':rotationImport.checkResults[r.key].message }}</span></template><template v-else><span class="sync-status" :data-status="r.status==='ready'?'new':(r.status==='blocked'?'blocked':'skipped')">{{ ({ready:'Ready',blocked:'Needs mapping',skipped:'Skipped'})[r.status] }}</span></template></td>
                                         </tr>
                                         <tr v-if="!rotationImportVisible.length"><td colspan="5" class="sync-empty">No rotations match this view.</td></tr>
@@ -12562,7 +12582,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="decision51.js?v=5.3-production.2-entry3"></script>
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
     <script src="oncall-sync.js?v=5.3-production.2-entry3"></script>
-    <script src="rotation-import.js?v=20261016-residents-only"></script>
+    <script src="rotation-import.js?v=20261016-time-bands"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=20261011-invite-entry1"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
@@ -12575,7 +12595,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.26-20261016-crud-integrity"></script>
+    <script src="app.js?v=5.4-production.27-20261016-import-phase-a"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

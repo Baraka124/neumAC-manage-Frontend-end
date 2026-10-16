@@ -21,6 +21,8 @@ jobs:
         run: node --test tests/rotation-import.test.cjs
       - name: Delete-anytime and Historial guards
         run: node --test tests/crud-history.test.cjs
+      - name: Import Phase A time-aware preview
+        run: node --test tests/import-phase-a.test.cjs
       - name: Mi espacio identity and shell contract
         run: node --test tests/mi-espacio-phase1.test.cjs
       - name: Clinician access to Mi espacio

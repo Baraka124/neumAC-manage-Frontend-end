@@ -19,6 +19,17 @@ const lastDay=(y,m)=>new Date(Date.UTC(y,m,0)).getUTCDate();
 const iso=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const sheetYear=t=>{const m=/(\d{4})/.exec(String(t||''));return m?parseInt(m[1],10):null;};
 const isCohort=t=>/^mir nml\s+\d{4}$/.test(norm(t));
+// Where a period sits relative to today: history, running now, coming up, or far-future
+// planning (> 12 months ahead — e.g. a "MIR NML 2028" sheet read in 2026).
+const localToday=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+const addMonthsIso=(isoDate,n)=>{const d=new Date(isoDate+'T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);return d.toISOString().slice(0,10);};
+function timeBand(start,end,today=localToday()){
+ if(!start||!end)return 'upcoming';
+ if(end<today)return 'past';
+ if(start<=today)return 'current';
+ if(start>addMonthsIso(today,12))return 'far';
+ return 'upcoming';
+}
 const nextDay=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+1);return x.toISOString().slice(0,10);};
 
 // Only people registered as residents (MIR) can receive a rotation, so names are
@@ -110,12 +121,14 @@ function translate(sheets,opts={}){
 // reporting the residents and unit codes a human must still decide. Nothing is guessed:
 // an ambiguous/unknown resident or an unmapped unit marks the row 'blocked'.
 function plan(periods,staff,units,opts={}){
- const residentMappings=opts.residentMappings||{}, unitChoices=opts.unitChoices||{};
+ const residentMappings=opts.residentMappings||{}, unitChoices=opts.unitChoices||{}, today=opts.today||localToday();
+ const bands={past:0,current:0,upcoming:0,far:0};
  const byCode={}, byId={}; (units||[]).forEach(u=>{if(!u)return; if(u.unit_code)byCode[String(u.unit_code)]=u; if(u.id)byId[String(u.id)]=u;});
  const records=[], unmatchedResidents={}, unmatchedUnits={}; let ready=0,blocked=0,skipped=0;
  for(const p of periods){
   const codeKey=p.unit_code||p.unit_excel;
-  const rec={...p, key:[p.source_sheet,p.resident,p.unit_excel,p.start_date].join('|'), code_key:codeKey};
+  const rec={...p, key:[p.source_sheet,p.resident,p.unit_excel,p.start_date].join('|'), code_key:codeKey, band:timeBand(p.start_date,p.end_date,today)};
+  bands[rec.band]++;
   const rr=resolveResident(p.resident,staff,residentMappings);
   if(rr.skip){rec.status='skipped';skipped++;records.push(rec);continue;}
   rec.resident_id=rr.id||null; rec.resident_name=rr.name||null; rec.resident_issue=rr.issue||null;
@@ -130,7 +143,7 @@ function plan(periods,staff,units,opts={}){
   else{rec.status='ready';ready++;}
   records.push(rec);
  }
- return {records,unmatchedResidents:Object.values(unmatchedResidents),unmatchedUnits:Object.values(unmatchedUnits),counts:{ready,blocked,skipped}};
+ return {records:records.sort((a,b)=>a.start_date<b.start_date?-1:a.start_date>b.start_date?1:String(a.resident).localeCompare(String(b.resident))),unmatchedResidents:Object.values(unmatchedResidents),unmatchedUnits:Object.values(unmatchedUnits),counts:{ready,blocked,skipped,bands}};
 }
 
 // Commit/check payload from the ready records the reviewer selected.
@@ -145,6 +158,6 @@ function payload(records,selection){
  }));
 }
 
-root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,isResident,residentPool,resolveResident,cellUnits,parseCohort,mergeContiguous,translate,plan,payload};
+root.NeumRotationImport={norm,MONTHS,UNIT_CODES,isCohort,isResident,residentPool,timeBand,resolveResident,cellUnits,parseCohort,mergeContiguous,translate,plan,payload};
 if(typeof module!=='undefined')module.exports=root.NeumRotationImport;
 })(typeof window!=='undefined'?window:globalThis);
