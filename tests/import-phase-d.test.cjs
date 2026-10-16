@@ -70,7 +70,7 @@ test('guardias: A↔B trade across two dates is detected as one swap', () => {
 });
 
 test('app wiring: diff on rebuild, removals never pre-selected, import runs logged', () => {
-  assert.match(app, /window\.NeumRotationImport\.diff\(p\.records,rotationImport\.existing\)/);
+  assert.match(app, /T\.diff\(planned,rotationImport\.existing\)/);
   assert.match(app, /importMemory\.existing\('rotations'/);
   assert.match(app, /importMemory\.existing\('oncall'/);
   assert.match(app, /'\/api\/rotations\/'\+encodeURIComponent\(r\.id\)\+'\?mode=remove'/);
@@ -81,4 +81,28 @@ test('app wiring: diff on rebuild, removals never pre-selected, import runs logg
   assert.match(html, /No longer in this file/);
   assert.match(html, /Swaps detected/);
   assert.match(html, /<option value="unchanged">Already in neumDesk<\/option>/);
+});
+
+test('a row colliding with an early-terminated rotation is offered "start after it" (Cristina, 16 Oct 2026)', () => {
+  const existing = [ex({ id: 'uci', start_date: '2026-09-01', end_date: '2026-10-02', actual_end_date: '2026-09-04', rotation_status: 'terminated_early', sync_source: null, unit: { unit_name: 'UCI' } })];
+  const d = R.diff([rec({ start_date: '2026-09-01', end_date: '2026-11-30' })], existing);
+  const r = d.records[0];
+  assert.equal(r.replaces, undefined);                                   // hand-entered: never replaced
+  assert.deepEqual(r.trim, { start_date: '2026-09-05', because: { unit_name: 'UCI', start_date: '2026-09-01', end_date: '2026-09-04', status: 'terminated_early' } });
+  // after trimming the start, nothing collides any more
+  assert.equal(R.diff([rec({ start_date: '2026-09-05', end_date: '2026-11-30' })], existing).records[0].trim, undefined);
+});
+
+test('no trim when the row is fully covered, or would still collide later', () => {
+  const full = [ex({ id: 'a', start_date: '2026-09-01', end_date: '2026-12-31', sync_source: null })];
+  assert.equal(R.diff([rec({ start_date: '2026-10-01', end_date: '2026-11-30' })], full).records[0].trim, undefined);
+  const later = [ex({ id: 'a', start_date: '2026-09-01', end_date: '2026-09-10', sync_source: null }), ex({ id: 'b', start_date: '2026-10-01', end_date: '2026-10-31', sync_source: null })];
+  assert.equal(R.diff([rec({ start_date: '2026-09-01', end_date: '2026-11-30' })], later).records[0].trim, undefined);
+});
+
+test('trim wiring: file end kept, only start moves; engine copy matches the DB rule', () => {
+  assert.match(app, /trimmed_from:r\.start_date,trim_because:t\.because,start_date:t\.start_date/);
+  assert.match(html, /@click="rotationImportTrim\(r\)"/);
+  const engine = fs.readFileSync(path.join(__dirname, '..', 'decision51.js'), 'utf8');
+  assert.match(engine, /occupiesResident\(r\.rotation_status\)/);
 });

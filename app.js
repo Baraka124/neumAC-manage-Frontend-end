@@ -9319,7 +9319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ─── Rotations import (MIR matrix → resident_rotations) — mirrors the on-call sync ───
-        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null,existing:[],existingFor:{},existingError:'',removed:[],removeSel:{},removing:false,removeResult:null,syncCounts:{unchanged:0,changed:0,removed:0}})
+        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null,existing:[],existingFor:{},existingError:'',removed:[],removeSel:{},removing:false,removeResult:null,syncCounts:{unchanged:0,changed:0,removed:0},trims:{}})
         // Time bands: current + upcoming are the working set (highlighted, pre-selected); past is
         // history (importable on purpose); far = more than 12 months ahead (flagged, never pre-selected).
         const ROT_BAND_VIEW={now:['current','upcoming'],past:['past'],far:['far'],all:['past','current','upcoming','far']}
@@ -9336,9 +9336,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotationImportPayload = ()=>window.NeumRotationImport.payload(rotationImport.records,rotationImport.selection)
         const rotationImportCheckKey = computed(()=>JSON.stringify(rotationImportPayload()))
         const rotationImportReady = computed(()=>rotationImportSelectedKeys.value.length>0 && rotationImport.checkKey===rotationImportCheckKey.value && rotationImportSelectedKeys.value.every(r=>rotationImport.checkResults[r.key]?.status==='ready'))
-        const rotationImportRebuild = ()=>{const p=window.NeumRotationImport.plan(rotationImport.periods,rotationImport.staff,rotationImport.units,{residentMappings:rotationImport.residentMappings,unitChoices:rotationImport.unitChoices,today:Utils.localDateStr(new Date())})
+        const rotationImportRebuild = ()=>{const today=Utils.localDateStr(new Date()),T=window.NeumRotationImport;const p=T.plan(rotationImport.periods,rotationImport.staff,rotationImport.units,{residentMappings:rotationImport.residentMappings,unitChoices:rotationImport.unitChoices,today})
+          // Accepted "start after the recorded rotation" trims: the file's end date is kept, only the start moves.
+          const planned=p.records.map(r=>{const t=rotationImport.trims[r.key];return t&&t.start_date<=r.end_date?{...r,trimmed_from:r.start_date,trim_because:t.because,start_date:t.start_date,band:T.timeBand(t.start_date,r.end_date,today)}:r})
           // Phase D: compare with what neumDesk holds → unchanged (nothing to send) / changed (replaces) / removed upstream.
-          const d=window.NeumRotationImport.diff(p.records,rotationImport.existing)
+          const d=T.diff(planned,rotationImport.existing)
           Object.assign(rotationImport,{records:d.records,removed:d.removed,syncCounts:d.counts,unmatchedResidents:p.unmatchedResidents,unmatchedUnits:p.unmatchedUnits,counts:{...p.counts,ready:p.counts.ready-d.counts.unchanged,unchanged:d.counts.unchanged}})
           const keep={};for(const r of d.removed)if(rotationImport.removeSel[r.id])keep[r.id]=true;rotationImport.removeSel=keep
           // Pre-select the working set (ready rows that are current or upcoming). History and far-future are opt-in.
@@ -9354,6 +9356,9 @@ document.addEventListener('DOMContentLoaded', () => {
           catch(e){rotationImport.existingError=e.message;return}
           rotationImportRebuild()
         }
+        // Start an imported row the day after the rotation neumDesk already records for those days ends.
+        const rotationImportTrim = r=>{if(!r.trim||rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.trims={...rotationImport.trims,[r.key]:{start_date:r.trim.start_date,because:r.trim.because}};rotationImportRebuild();rotationImport.selection={...rotationImport.selection,[r.key]:true}}
+        const rotationImportUntrim = r=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;const t={...rotationImport.trims};delete t[r.key];rotationImport.trims=t;const sel={...rotationImport.selection};delete sel[r.key];rotationImport.selection=sel;rotationImportRebuild()}
         const rotationImportRemoveCount = computed(()=>rotationImport.removed.filter(r=>rotationImport.removeSel[r.id]).length)
         // Remove imported rotations the file no longer lists (restorable; hidden everywhere). Never pre-selected.
         const rotationImportRemoveSelected = async()=>{
@@ -9367,7 +9372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const rotationImportParse = async(file)=>{
           if(rotationImport.checking||rotationImport.committing)return
-          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},existing:[],existingFor:{},existingError:'',removed:[],removeSel:{},removeResult:null,syncCounts:{unchanged:0,changed:0,removed:0}})
+          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},existing:[],existingFor:{},existingError:'',removed:[],removeSel:{},removeResult:null,syncCounts:{unchanged:0,changed:0,removed:0},trims:{}})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true})
             const sheets={};wb.SheetNames.forEach(n=>{sheets[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true})})
@@ -9414,7 +9419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotationImportUnitChoice = (code,choice)=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;rotationImport.selection={};rotationImport.autoSelect=true;rotationImport.unitChoices={...rotationImport.unitChoices,[code]:choice};rotationImportRebuild();rotationImportRemember('unit',code,choice)}
         const rotationImportSelectReady = ()=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;const next={...rotationImport.selection};rotationImportVisible.value.filter(r=>r.status==='ready').forEach(r=>next[r.key]=true);rotationImport.selection=next}
         const rotationImportClearSel = ()=>{rotationImport.selection={};rotationImport.autoSelect=false}
-        const rotationImportReset = ()=>{if(!rotationImport.checking&&!rotationImport.committing)Object.assign(rotationImport,{done:false,fileName:'',error:'',periods:[],records:[],selection:{},residentMappings:{},unitChoices:{},commitResult:null,committed:false,checkResults:{},checkKey:'',summary:null,existing:[],existingFor:{},removed:[],removeSel:{},removeResult:null})}
+        const rotationImportReset = ()=>{if(!rotationImport.checking&&!rotationImport.committing)Object.assign(rotationImport,{done:false,fileName:'',error:'',periods:[],records:[],selection:{},residentMappings:{},unitChoices:{},commitResult:null,committed:false,checkResults:{},checkKey:'',summary:null,existing:[],existingFor:{},removed:[],removeSel:{},removeResult:null,trims:{}})}
         const rotationImportVerdict=r=>importVerdict(rotationImport.checkKey===rotationImportCheckKey.value?rotationImport.checkResults[r.key]:null,rotationImport.review.rows[r.key])
         const rotationImportCheck = async()=>{
           if(rotationImport.checking||rotationImport.committing||rotationImport.committed||!rotationImportCanCommit.value||!rotationImportSelectedKeys.value.length)return
@@ -19454,7 +19459,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
           oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSyncStaffName, oncallSyncAcceptSwap, oncallSyncRemoveCount, oncallSyncRemoveSelected, oncallSyncVerdict, importMonthLabel, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
-          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportRemoveCount,rotationImportRemoveSelected,rotationImportForget,rotationImportTargetName,rotationImportVerdict,rotationImportCheckKey, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
+          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportRemoveCount,rotationImportRemoveSelected,rotationImportTrim,rotationImportUntrim,rotationImportForget,rotationImportTargetName,rotationImportVerdict,rotationImportCheckKey, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,

@@ -4819,7 +4819,7 @@
                                         <tr v-for="r in rotationImportVisible" :key="r.key" :class="['import-band-'+(r.band||'upcoming'), {'sync-row-future':['current','upcoming'].includes(r.band), 'sync-row-past':r.band==='past', 'sync-selected':rotationImport.selection[r.key]}]">
                                             <td><input type="checkbox" v-model="rotationImport.selection[r.key]" :aria-label="'Import '+r.resident+' '+r.unit_excel" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed||r.status!=='ready'"></td>
                                             <td><strong>{{ r.resident_name||r.resident }}</strong><small v-if="r.resident_issue" class="sync-check-error">{{ r.resident_issue }}</small></td>
-                                            <td><strong>{{ r.unit_name||r.unit_excel }}</strong><small v-if="r.create_unit">will be created</small><small v-if="r.unit_issue" class="sync-check-error">{{ r.unit_issue }}</small><small v-if="r.split">split month</small><small v-if="r.sync==='changed'" class="import-sync-changed">Changed · replaces {{ r.previous.unit_name||'earlier import' }} {{ formatDateShort(r.previous.start_date) }} → {{ formatDateShort(r.previous.end_date) }}</small></td>
+                                            <td><strong>{{ r.unit_name||r.unit_excel }}</strong><small v-if="r.create_unit">will be created</small><small v-if="r.unit_issue" class="sync-check-error">{{ r.unit_issue }}</small><small v-if="r.split">split month</small><small v-if="r.trimmed_from" class="import-sync-changed">Starts {{ formatDateShort(r.start_date) }} instead of {{ formatDateShort(r.trimmed_from) }} · {{ r.trim_because.unit_name||'previous rotation' }} recorded until {{ formatDateShort(r.trim_because.end_date) }} <button type="button" class="btn btn-secondary btn-sm" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportUntrim(r)">Undo</button></small><small v-else-if="r.trim" class="sync-check-error">Its first days collide with {{ r.trim.because.unit_name||'a rotation' }} ({{ ({terminated_early:'ended early',completed:'completed',active:'active',scheduled:'scheduled',extended:'extended'})[r.trim.because.status]||r.trim.because.status }}, {{ formatDateShort(r.trim.because.start_date) }} → {{ formatDateShort(r.trim.because.end_date) }}) <button type="button" class="btn btn-secondary btn-sm" :disabled="rotationImport.checking||rotationImport.committing||rotationImport.committed" @click="rotationImportTrim(r)">Start {{ formatDateShort(r.trim.start_date) }} instead</button></small><small v-if="r.sync==='changed'" class="import-sync-changed">Changed · replaces {{ r.previous.unit_name||'earlier import' }} {{ formatDateShort(r.previous.start_date) }} → {{ formatDateShort(r.previous.end_date) }}</small></td>
                                             <td><strong>{{ formatDateShort(r.start_date) }} → {{ formatDateShort(r.end_date) }}</strong><small>{{ ({past:'History',current:'Now',upcoming:'Upcoming',far:'Beyond 12 months'})[r.band]||'' }} · {{ r.source_sheet }}</small></td>
                                             <td><template v-if="rotationImport.checkResults[r.key]"><span class="sync-status" :data-status="({ready:'new',review:'replacement',blocked:'conflict'})[rotationImportVerdict(r)]||'new'">{{ ({ready:'✓ Ready',review:'⚠ Review',blocked:'✕ '+(rotationImport.checkResults[r.key].message||'Blocked')})[rotationImportVerdict(r)] || 'Checked' }}</span><ul v-if="(rotationImport.review.rows[r.key]||[]).length" class="import-findings"><li v-for="(f,fi) in rotationImport.review.rows[r.key]" :key="fi" :data-severity="f.severity">{{ f.severity==='review' ? '⚠' : 'ℹ' }} {{ f.message }}</li></ul></template><template v-else><span class="sync-status" :data-status="r.status==='ready'?(r.sync==='changed'?'replacement':'new'):(r.status==='blocked'?'blocked':r.status==='unchanged'?'matching':'skipped')">{{ ({ready:r.sync==='changed'?'Ready · update':'Ready',unchanged:'Already in neumDesk',blocked:'Needs mapping',skipped:'Skipped'})[r.status] }}</span></template></td>
                                         </tr>
@@ -12644,11 +12644,11 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=5.3-production.2-entry3"></script>
     <script src="entry46.js?v=5.3-production.2-entry3"></script>
     <script src="grounded-core.js?v=5.3-production.2-entry3"></script>
-    <script src="decision51.js?v=5.3-production.2-entry3"></script>
+    <script src="decision51.js?v=20261016-overlap-parity"></script>
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
     <script src="oncall-sync.js?v=20261016-import-sync"></script>
     <script src="import-memory.js?v=20261016-phase-b"></script>
-    <script src="rotation-import.js?v=20261016-import-sync"></script>
+    <script src="rotation-import.js?v=20261016-import-trim"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=20261011-invite-entry1"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
@@ -12661,7 +12661,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.30-20261016-import-sync"></script>
+    <script src="app.js?v=5.4-production.31-20261016-import-trim"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
