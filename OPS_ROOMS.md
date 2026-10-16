@@ -1,9 +1,8 @@
 # Pneumo Ops Room — Sala de Operaciones de Neumología · plan of record
 
-Status (16 Oct 2026): **OR-1 and OR-2 built.** Live: units, ¿Quién está? (roster + residents from Rotations),
-¿Con qué contamos? (resources, status, calibration, loans, history), ¿Qué hemos hecho? (activity per day from each unit's
-catalogue), ¿Qué está pendiente? (dated snapshots, oldest pending date), ¿Qué ha fallado? (incidents with owner and
-resolution). Next: **OR-2b interconsultas**, **OR-3 indicators (¿Cumplimos?)**. This file is the reference for every Ops Room step.
+Status (16 Oct 2026): **OR-1, OR-2, OR-2b and OR-3 built** — all six questions and Interconsultas are live.
+Next: **OR-4** (refine each unit with the department), **OR-5** (connections), **OR-6** (hospital feed, if approved).
+**§8 is the handoff** — read it first if you are continuing this work in a new session or with another assistant.
 
 ## 1. Purpose
 
@@ -120,28 +119,98 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 - Grounded answers operational questions ("how many sleep studies are waiting?") from verified records.
 - Department leadership sees all units side by side only where the comparison is meaningful.
 
-## 6. Decisions to take before building
+## 6. Decisions (taken 16 Oct 2026 unless marked open)
 
-1. **One unit identity.** `training_units` is the live registry (19 units, capacity, supervisors). `clinical_units`
-   has 1 row; `clinical_unit_assignments` and `unit_staff` are empty. Proposal: keep `training_units` as *the*
-   unit (add "run by Pulmonology" + capabilities), retire the unused parallel tables.
-2. **Roster table**: reuse `clinical_unit_assignments` (re-pointed to the single unit) or a new table — decide in OR-1.
-3. **Current "Ops Room" view** (communications hub: Pulse · Feed · Briefing): rename/move it so the name
-   Ops Rooms means clinical operations.
-4. **Hospital data source** (ADX or other): does an approved automatic feed exist for census/admissions?
-   Until confirmed, those numbers are not shown.
-5. **First unit**: PFR or Unidad del Sueño (equipment + pending work, no hospital data needed).
+1. ✅ **One unit identity** = `training_units` (+ `ops_enabled`, `ops_capabilities`). `clinical_units` /
+   `clinical_unit_assignments` stay unused (1 row / 0 rows) — retire later, nothing reads them for Ops Room.
+2. ✅ **Roster** = `unit_staff` (it was already linked to `training_units` and used by Units, but empty).
+3. ✅ The old communications hub is labelled **Communications**; **Ops Room** (`opsroom` view) is clinical operations.
+4. ⏳ **Hospital data source** (ADX or other) — OPEN. Until an approved feed exists, census/admissions are entered by
+   hand or not shown.
+5. ✅ No single "first unit": the model is capability-driven, so all 9 units got OR-2 at once.
+6. ⏳ **Interconsulta response targets** — OPEN. Provisional 24 h (urgent) / 72 h (preferente) / 168 h (ordinary),
+   constant `IC_TARGET_HOURS` in backend `ops-room.js`. Change there once the department confirms.
+7. ⏳ **Indicator targets** — OPEN by design: never invented; each unit / the head of department sets them.
 
 ## 7. Build sequence
 
 | Step | Delivers |
 |---|---|
-| OR-1 | Unit identity cleanup + operational profile + **unit roster** |
-| OR-2 | First unit end to end: resources + events, activity catalogue + counts, pending work, incidents |
-| OR-2b | **Interconsultas**: request record, pending board, assignment, response-time indicators |
-| OR-3 | Indicators (targets, owners, values, optional ISO 7101 clause) |
+| ✅ OR-1 | Unit identity + operational profile + **unit roster** (backend #51, frontend #180) |
+| ✅ OR-2 | All units: resources + events, activity catalogue + counts, pending work, incidents (backend #52, frontend #181) |
+| ✅ OR-2b | **Interconsultas**: request record, board, take/assign/answer/follow-up/close, response-time stats |
+| ✅ OR-3 | Indicators (targets, owners, ISO 7101 clause, week/month/quarter, last 6 periods computed from records) |
 | OR-4 | Remaining Pulmonology units, each with only its capabilities |
 | OR-5 | Connections: Mi espacio, resident visibility, Grounded, leadership overview |
 | OR-6 | Hospital feed for high-frequency activity — only with an approved source |
 
 Each step: migrations with RLS, permission checks on every route, tests, rendered check, merged only when green.
+
+## 8. Handoff — how to continue (for a new session or another assistant)
+
+### Repos, deploy, people
+- Frontend: `Baraka124/neumAC-manage-Frontend-end` → GitHub Pages → https://desk.neumact.org (Vue 3, **in-DOM templates** in `index.html`, logic in `app.js`).
+- Backend: `Baraka124/neumAC-manage-back-end` → Railway (Express, `index.js`), Node ≥ 22.
+- Database: Supabase project `vssmguzuvekkecbmwcjw`.
+- Owner: Baraka (builds it); head of department: Pedro Marcos.
+
+### Where the Ops Room code is
+| Layer | File / place | What |
+|---|---|---|
+| Backend rules (pure, tested) | `ops-room.js` | roster rules, resources/events, measures, incidents, interconsultas (`IC_*`), indicator engine (`IND_KINDS`, `periodBounds`, `computeIndicator`) |
+| Backend routes | `index.js`, blocks headed `PNEUMO OPS ROOM (OR-1)`, `(OR-2)`, `(OR-2b)`, `(OR-3)` | all under `/api/ops/...` |
+| Backend tests | `tests/ops-room.test.cjs`, `ops-room-or2.test.cjs`, `ops-room-or3.test.cjs`; CI `.github/workflows/ops-room.yml` | |
+| Migrations (SQL, idempotent) | `migrations/2026-10-16_ops_room_or1_…sql`, `…or2_…sql`, `…or2b_or3_…sql` | |
+| Frontend logic | `app.js`, block starting `// ─── Pneumo Ops Room (OR-1)` (state `opsRoom`, functions `ops*`) | |
+| Frontend view | `index.html`, `<div v-if="currentView === 'opsroom'" class="opsr">` | sections: units / interconsults / objectives; unit tabs = six questions |
+| Styles | `access.css`, blocks `/* ── Pneumo Ops Room (OR-1) ── */`, `/* Ops Room OR-2 */`, `/* Ops Room OR-2b / OR-3 */` | |
+| Frontend tests | `tests/ops-room-or1.test.cjs`, `ops-room-or2.test.cjs`, `ops-room-or3.test.cjs`; CI step in `frontend-integrity.yml` | |
+| Access | `access.js` → `VIEW_MODULES.opsroom = 'training_units'` | |
+
+### Database objects
+- `training_units.ops_enabled`, `training_units.ops_capabilities` (`roster, resources, beds, calibration, loans, activity, pending, incidents, indicators`).
+- `unit_staff` (roster): roles `coordinator | primary | secondary`; one ACTIVE row per person+unit (`unit_staff_one_active`); audit.
+- `ops_resources` + `ops_resource_events` · `ops_measure_types` (flow | stock; 29 seeded) + `ops_measurements` · `ops_incidents`
+  · `ops_interconsults` · `ops_indicators` + `ops_indicator_values` (manual only). All: RLS on (API uses the service role), audit trigger `fn_audit_trigger`.
+
+### API (all need a signed-in user)
+| Route | Guard |
+|---|---|
+| `GET /api/ops/units`, `GET /api/ops/units/:id` | Units read |
+| `PUT /api/ops/units/:id/profile` | head of department / admin |
+| `POST/PUT/DELETE /api/ops/units/:unitId/staff[/:entryId]` | Units write (residents refused — they come from Rotations) |
+| `GET/POST/PUT/DELETE /api/ops/units/:unitId/resources[/:resourceId]`, `POST …/resources/:resourceId/events` | read / Units write |
+| `GET/PUT /api/ops/units/:unitId/measures`, `DELETE …/measures/:measureId`, `POST/PUT …/measure-types[/:typeId]` | read / Units write |
+| `GET/POST/PUT/DELETE /api/ops/units/:unitId/incidents[/:incidentId]` | read / Units write |
+| `GET/POST /api/ops/interconsults`, `POST /api/ops/interconsults/:icId/action` (assign·answer·follow_up·close·reopen) | read; log = any staff member; act = assignee or Units write |
+| `PUT/DELETE /api/ops/interconsults/:icId` | Units write; `?permanent=true` admin |
+| `GET /api/ops/units/:unitId/indicators`, `POST/PUT/DELETE …/indicators[/:indId]`, `POST …/indicators/:indId/values` | read / Units write |
+| `GET /api/ops/indicators` (department overview), `POST/PUT/DELETE /api/ops/indicators[/:indId]`, `POST …/:indId/values` | read / head of department or admin |
+Every `…?permanent=true` delete is head of department / admin only; normal removes are soft (restorable; audit keeps all).
+
+### Conventions that must hold (each has a test)
+- **No patient data anywhere** (no names, NHC, record numbers). Free-text fields say so and are length-capped.
+- **One record, one owner**: residents in a unit come from Rotations (linked, never copied).
+- **Never invent numbers**: indicator targets are empty until a person sets them; suggestions never prefill a target;
+  calibration % has no past reconstruction; unbuilt things say so.
+- **Writes check the unit in the URL** and that the row belongs to it (`opsOwned`).
+- **In-DOM templates: never put `<` inside `{{ }}`** in `index.html` (the browser parses it as a tag) — put the logic in a function.
+- Missing OR tables read as empty (`opsSoft`), so a new step never breaks the previous one before its migration runs.
+- Bump cache keys in `index.html` (`app.js?v=…`, `access.css?v=…`) on every frontend change; `scripts/integrity_check.py` must pass.
+
+### How changes have been shipped
+1. Branch from `main` in each repo; write code + tests; run all `tests/*.test.cjs` (backend: also `node tests/boot-smoke.cjs`;
+   frontend: also `python3 scripts/integrity_check.py` and a render check of the view in headless Chromium).
+2. Record the SQL in `migrations/`. **Database changes from the assistant's session were blocked**, so Baraka ran each
+   SQL file in Supabase → SQL Editor (all files are idempotent: safe to run twice).
+3. Open PRs, wait for CI green, merge **backend first**, then frontend; watch the Railway and GitHub Pages deploys.
+   (Once, Pages skipped a merge — an empty commit on `main` re-triggered it.)
+4. Do not touch `.env` tracking without first moving the variables into Railway (two attempts broke the deploy and were reverted).
+
+### Open items
+- Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
+  response targets, whether follow-ups are tracked.
+- Ask on the Urology visit (Monday): how the ADX data reaches them (export, API, manual), which ISO 7101 indicators they track.
+- OR-4: walk each unit with its coordinator — add/rename measures, set indicator targets, register resources.
+- OR-5: Mi espacio "your unit this week / your interconsultas", resident visibility of incidents, Grounded answers from Ops Room records.
+- Security (outside Ops Room): rotate the keys in the committed backend `.env`, move them to Railway Variables, then untrack `.env`.
