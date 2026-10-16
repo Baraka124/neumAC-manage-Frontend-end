@@ -12,7 +12,7 @@ test('Ops Room is its own view, opened with Units read access; communications ke
   assert.match(access, /opsroom:'training_units'/);
   assert.match(html, /@click\.prevent="switchView\('opsroom'\); mobileMenuOpen = false"\s*\n\s*v-if="hasPermission\('training_units', 'read'\)"/);
   assert.match(html, /aria-label="Communications" :aria-current="currentView === 'communications'/);
-  assert.match(app, /if \(view === 'opsroom'\) \{\s*currentView\.value = 'opsroom'\s*opsRoom\.unit = null\s*opsLoad\(\)/);
+  assert.match(app, /if \(view === 'opsroom'\) \{\s*currentView\.value = 'opsroom'\s*opsRoom\.unit = null\s*(opsRoom\.section = 'units'\s*)?opsLoad\(\)/);
 });
 
 test('purpose and the six questions are the structure of a unit', () => {
@@ -30,6 +30,6 @@ test('roster: managed with Units write, permanent delete only for admins, reside
   assert.match(app, /'\/api\/ops\/units\/'\+encodeURIComponent\(opsRoom\.unit\.id\)\+'\/staff'/);
 });
 
-test('questions not built yet say so and show nothing simulated', () => {
-  assert.match(html, /Not built yet — nothing here is simulated\./);
+test('questions a unit does not use say so (all six are built since OR-3)', () => {
+  assert.match(html, /This question is not used by \{\{ opsRoom\.unit\.unit_name \}\}\./);
 });

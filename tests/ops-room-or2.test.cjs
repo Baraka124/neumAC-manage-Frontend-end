@@ -8,10 +8,8 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const view = html.slice(html.indexOf(`<div v-if="currentView === 'opsroom'" class="opsr">`), html.indexOf(`<div v-if="currentView === 'communications'" class="ops-view">`));
 
-test('four questions have live panels; ¿Cumplimos? stays honest until OR-3', () => {
-  for (const t of ['resources', 'activity', 'pending', 'incidents']) assert.match(view, new RegExp(`v-else-if="opsRoom\\.tab==='${t}'"`));
-  assert.match(view, /<!-- ¿Cumplimos\?: built next \(OR-3\) -->/);
-  assert.match(view, /Not built yet — nothing here is simulated\./);
+test('four questions have live panels (and ¿Cumplimos? since OR-3)', () => {
+  for (const t of ['resources', 'activity', 'pending', 'incidents', 'indicators']) assert.match(view, new RegExp(`v-else-if="opsRoom\\.tab==='${t}'"`));
   assert.match(app, /const opsTab=key=>\{opsRoom\.tab=key;if\(key==='resources'\)opsLoadRes\(\);if\(key==='activity'\|\|key==='pending'\)opsLoadMeas\(\);/);
 });
 
