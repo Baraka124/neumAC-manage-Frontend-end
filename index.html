@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261016-ops-room-or3">
+<link rel="stylesheet" href="access.css?v=20261017-ops-room-orc">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4434,6 +4434,7 @@
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='units'}]" @click="opsSection('units')">Unidades</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='interconsults'}]" @click="opsSection('interconsults')">Interconsultas</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='objectives'}]" @click="opsSection('objectives')">¿Cumplimos? · Objetivos</button>
+                        <button v-if="opsIsAdmin" type="button" :class="['opsr-section',{active:opsRoom.section==='config'}]" @click="opsSection('config')">Configuración</button>
                     </nav>
                     <p v-if="opsRoom.error" class="sync-check-error">Could not load the Ops Room: {{ opsRoom.error }}</p>
                     <div v-if="opsRoom.loading && !opsRoom.units.length" class="ac-meta">Loading units…</div>
@@ -4474,7 +4475,7 @@
                                     <p class="admin-kicker">UNIT TEAM</p>
                                     <table class="sync-table opsr-table"><thead><tr><th scope="col">Role</th><th scope="col">Person</th><th scope="col">Since</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
                                         <tr v-for="e in opsRoom.unit.roster.current" :key="'c'+e.id">
-                                            <td><select v-if="opsCanManage" class="form-select form-select-sm" :value="e.role" :aria-label="'Role of '+(e.staff?.full_name||'')" @change="opsSetRole(e,$event.target.value)"><option v-for="r in OPS_ROLES" :key="r.v" :value="r.v">{{ r.l }}</option></select><span v-else>{{ e.role_label }}</span></td>
+                                            <td><select v-if="opsCanManage" class="form-select form-select-sm" :value="e.role" :aria-label="'Role of '+(e.staff?.full_name||'')" @change="opsSetRole(e,$event.target.value)"><option v-for="r in opsRoleOptions(e.role)" :key="r.v" :value="r.v">{{ r.l }}</option></select><span v-else>{{ e.role_label }}</span></td>
                                             <td><strong>{{ e.staff?.full_name || 'Unknown' }}</strong><small v-if="e.assigned_until">until {{ formatDateShort(e.assigned_until) }}</small></td>
                                             <td>{{ e.assigned_from ? formatDateShort(e.assigned_from) : '—' }}</td>
                                             <td class="opsr-actions"><button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsRemove(e)">End</button><button v-if="opsIsAdmin" type="button" class="btn btn-secondary btn-sm" title="Delete permanently (kept in the audit log)" @click="opsRemove(e,true)">Delete</button></td>
@@ -4552,6 +4553,7 @@
                             <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAddRes">
                                 <p class="admin-kicker">ADD A RESOURCE</p>
                                 <select v-model="opsRoom.res.form.kind" class="form-select" aria-label="Kind"><option value="device">Device</option><option value="room">Room</option><option v-if="opsHas('beds')" value="bed">Bed</option></select>
+                                <select v-if="opsRoom.res.form.kind==='device' &amp;&amp; opsCatOptions('device_type').length" v-model="opsRoom.res.form.device_type" class="form-select" aria-label="Device type" @change="opsDeviceDefault"><option value="">— Device type —</option><option v-for="t in opsCatOptions('device_type')" :key="t.code" :value="t.code">{{ t.label }}{{ t.meta &amp;&amp; t.meta.calibration_days ? ' · calibrate every '+t.meta.calibration_days+' d' : '' }}</option></select>
                                 <input v-model="opsRoom.res.form.name" class="form-control" maxlength="120" placeholder="Name (e.g. Pletismógrafo 1)" aria-label="Name" required>
                                 <input v-model="opsRoom.res.form.identifier" class="form-control" maxlength="80" placeholder="Serial / number" aria-label="Identifier">
                                 <input v-model="opsRoom.res.form.location" class="form-control" maxlength="120" placeholder="Location" aria-label="Location">
@@ -4624,7 +4626,7 @@
                             </ul>
                             <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsAddInc">
                                 <p class="admin-kicker">RECORD AN INCIDENT</p>
-                                <select v-model="opsRoom.inc.form.category" class="form-select" aria-label="Category"><option v-for="(l,k) in OPS_INC_CAT" :key="k" :value="k">{{ l }}</option></select>
+                                <select v-model="opsRoom.inc.form.category" class="form-select" aria-label="Category"><option v-for="c in opsIncCatOptions" :key="c.v" :value="c.v">{{ c.l }}</option></select>
                                 <input v-model="opsRoom.inc.form.title" class="form-control opsr-grow" maxlength="140" placeholder="What happened (e.g. Broncoscopio 2 averiado)" aria-label="Title" required>
                                 <select v-model="opsRoom.inc.form.resource_id" class="form-select" aria-label="Resource"><option value="">— Resource (optional) —</option><option v-for="r in opsRoom.res.list" :key="r.id" :value="r.id">{{ r.name }}</option></select>
                                 <select v-model="opsRoom.inc.form.owner_id" class="form-select" aria-label="Owner"><option value="">— Owner (optional) —</option><option v-for="s in opsOwners" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
@@ -4643,7 +4645,12 @@
                                     
                                     <td><strong>{{ i.name }}</strong><small>{{ i.kind_label }}<template v-if="i.params &amp;&amp; i.params.priority"> · {{ ({urgent:'Urgente',preferente:'Preferente',ordinary:'Ordinaria'})[i.params.priority] }}</template> · per {{ i.period }}</small><small v-if="i.iso_clause" class="opsr-iso">ISO {{ i.iso_clause }}</small></td>
                                     <td><strong>{{ opsIndFmt(i, i.result.last_value ? i.result.last_value.value : null) }}</strong><small v-if="i.result.last_value">{{ formatDateShort(i.result.last_value.start) }}{{ i.result.last_value.partial ? ' (so far)' : '' }}</small><span class="opsr-ind-status" :data-status="i.result.status">{{ OPS_IND_STATUS[i.result.status] }}</span></td>
-                                    <td>{{ i.target === null || i.target === undefined ? '—' : (i.direction==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, Number(i.target)) }}</td>
+                                    <td>{{ i.result.target_now ? ((i.result.target_now.direction||i.direction)==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.result.target_now.value) : '—' }}<button v-if="opsCanManage &amp;&amp; i.targets" type="button" class="btn btn-secondary btn-sm opsr-tgt-btn" @click="opsTgtOpen(i)">{{ opsRoom.tgt.open===i.id ? 'Close' : 'Change' }}</button>
+                                        <div v-if="opsRoom.tgt.open===i.id" class="opsr-tgt">
+                                            <form class="opsr-inline" @submit.prevent="opsTgtSave('unit',i)"><input type="number" min="0" step="any" v-model="opsRoom.tgt.form.value" class="form-control opsr-num" aria-label="New target" placeholder="none"><label>from <input type="date" v-model="opsRoom.tgt.form.valid_from" class="form-control"></label><button type="submit" class="btn btn-primary btn-sm">Save</button></form>
+                                            <small class="ac-meta">From that date on. Earlier periods keep their own target. Empty = no target from that date.</small>
+                                            <ul class="opsr-list"><li v-for="h in (i.targets||[]).slice().sort((a,b)=>a.valid_from&gt;b.valid_from?-1:1)" :key="h.id">from {{ formatDateShort(h.valid_from) }}: {{ h.value===null ? 'no target' : ((h.direction||i.direction)==='min' ? '≥ ' : '≤ ')+opsIndFmt(i, Number(h.value)) }}<template v-if="h.note"> · {{ h.note }}</template><button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsTgtDelete('unit',i,h)">Remove</button></li></ul>
+                                        </div></td>
                                     <td><span class="opsr-series"><span v-for="(p,pi) in i.result.series" :key="pi" class="opsr-dot" :data-met="p.met===null ? 'none' : (p.met ? 'yes' : 'no')" :title="formatDateShort(p.start)+': '+opsIndFmt(i,p.value)">{{ p.value===null ? '·' : opsIndFmt(i,p.value) }}</span></span>
                                         <form v-if="i.kind==='manual' &amp;&amp; opsCanManage" class="opsr-inline" @submit.prevent="opsIndValue('unit',i)"><input type="number" min="0" step="any" v-model="opsRoom.ind.values[i.id]" class="form-control opsr-num" :aria-label="'Value for '+i.name"><button type="submit" class="btn btn-secondary btn-sm">Save this period</button></form></td>
                                     <td>{{ i.owner ? i.owner.full_name : '—' }}</td>
@@ -4692,9 +4699,9 @@
 
                         <form v-if="opsCanLogIc" class="opsr-add" @submit.prevent="opsIcLog">
                             <p class="admin-kicker">LOG AN INTERCONSULTA</p>
-                            <select v-model="opsRoom.ic.form.requesting_service" class="form-select" aria-label="Requesting service" required><option value="">— Requesting service —</option><option v-for="sv in opsRoom.ic.services" :key="sv" :value="sv">{{ sv }}</option></select>
+                            <select v-model="opsRoom.ic.form.requesting_service" class="form-select" aria-label="Requesting service" required><option value="">— Requesting service —</option><option v-for="sv in opsRoom.ic.services.filter(x=>x.active)" :key="sv.code" :value="sv.code">{{ sv.label }}</option></select>
                             <select v-model="opsRoom.ic.form.priority" class="form-select" aria-label="Priority"><option v-for="(l,k) in opsRoom.ic.priorities" :key="k" :value="k">{{ l }}</option></select>
-                            <select v-model="opsRoom.ic.form.reason_category" class="form-select" aria-label="Reason"><option value="">— Reason (optional) —</option><option v-for="(l,k) in opsRoom.ic.reasons" :key="k" :value="k">{{ l }}</option></select>
+                            <select v-model="opsRoom.ic.form.reason_category" class="form-select" aria-label="Reason"><option value="">— Reason (optional) —</option><option v-for="k in opsRoom.ic.reasons_active" :key="k" :value="k">{{ opsRoom.ic.reasons[k] }}</option></select>
                             <label>Received <input type="datetime-local" v-model="opsRoom.ic.form.received_at" class="form-control"></label>
                             <label v-if="opsMyStaffId" class="opsr-check"><input type="checkbox" v-model="opsRoom.ic.form.take"> I take it</label>
                             <input v-model="opsRoom.ic.form.notes" class="form-control opsr-grow" maxlength="300" placeholder="Note (no patient data)" aria-label="Note">
@@ -4707,7 +4714,7 @@
                             <li v-for="ic in opsRoom.ic.open" :key="ic.id" :class="['opsr-incident','opsr-ic-row',{'opsr-ic-over':ic.clock.over &amp;&amp; !ic.clock.answered}]">
                                 <div>
                                     <span :class="['opsr-prio','opsr-prio--'+ic.priority]">{{ opsRoom.ic.priorities[ic.priority] }}</span>
-                                    <strong>{{ ic.requesting_service }}</strong>
+                                    <strong>{{ opsRoom.ic.service_labels[ic.requesting_service] || ic.requesting_service }}</strong>
                                     <small><template v-if="ic.reason_category">{{ opsRoom.ic.reasons[ic.reason_category] }} · </template>received {{ opsFmtTs(ic.received_at) }}</small>
                                     <small :class="{'sync-check-error':ic.clock.over &amp;&amp; !ic.clock.answered}">{{ ic.clock.answered ? 'answered in '+opsHours(ic.clock.hours) : 'waiting '+opsHours(ic.clock.hours)+' (target '+opsHours(ic.clock.target_hours)+')' }}</small>
                                     <small>{{ opsRoom.ic.statuses[ic.status] }}<template v-if="ic.assignee"> · {{ ic.assignee.full_name }}</template></small>
@@ -4728,14 +4735,14 @@
 
                         <div v-if="opsRoom.ic.stats" class="opsr-cols">
                             <div><p class="admin-kicker">BY REQUESTING SERVICE · LAST {{ opsRoom.ic.days }} DAYS</p>
-                                <ul class="opsr-list"><li v-for="sv in opsRoom.ic.stats.by_service" :key="sv.key"><strong>{{ sv.count }}</strong> {{ sv.key }}</li><li v-if="!opsRoom.ic.stats.by_service.length" class="ac-meta">None yet.</li></ul></div>
+                                <ul class="opsr-list"><li v-for="sv in opsRoom.ic.stats.by_service" :key="sv.key"><strong>{{ sv.count }}</strong> {{ opsRoom.ic.service_labels[sv.key] || sv.key }}</li><li v-if="!opsRoom.ic.stats.by_service.length" class="ac-meta">None yet.</li></ul></div>
                             <div><p class="admin-kicker">BY PRIORITY · ANSWERED</p>
                                 <ul class="opsr-list"><li v-for="(b,k) in opsRoom.ic.stats.by_priority" :key="k"><strong>{{ opsRoom.ic.priorities[k] }}</strong> {{ b.answered }} · median {{ opsHours(b.median_hours) }} · {{ b.within_target_pct===null ? '—' : b.within_target_pct+' % in ≤ '+opsHours(b.target_hours) }}</li></ul>
                                 <p class="admin-kicker">ANSWERED BY</p>
                                 <ul class="opsr-list"><li v-for="c in opsRoom.ic.stats.by_clinician" :key="c.key"><strong>{{ c.count }}</strong> {{ opsStaffName(c.key) }}</li><li v-if="!opsRoom.ic.stats.by_clinician.length" class="ac-meta">None yet.</li></ul></div>
                         </div>
                         <details v-if="opsRoom.ic.recent.length" class="opsr-history"><summary>Answered and closed recently ({{ opsRoom.ic.recent.length }})</summary>
-                            <ul class="opsr-list"><li v-for="ic in opsRoom.ic.recent" :key="'r'+ic.id"><span :class="['opsr-prio','opsr-prio--'+ic.priority]">{{ opsRoom.ic.priorities[ic.priority] }}</span> {{ ic.requesting_service }} · {{ opsFmtTs(ic.received_at) }} · {{ ic.clock.answered ? opsHours(ic.clock.hours) : '—' }} <span :class="ic.clock.over ? 'sync-check-error' : 'opsr-ok'">{{ ic.clock.over ? 'over target' : 'within target' }}</span><template v-if="ic.answerer"> · {{ ic.answerer.full_name }}</template> · {{ opsRoom.ic.statuses[ic.status] }}<button v-if="opsIcCanAct(ic) &amp;&amp; ic.status==='closed'" type="button" class="btn btn-secondary btn-sm" @click="opsIcAct(ic,'reopen')">Reopen</button></li></ul></details>
+                            <ul class="opsr-list"><li v-for="ic in opsRoom.ic.recent" :key="'r'+ic.id"><span :class="['opsr-prio','opsr-prio--'+ic.priority]">{{ opsRoom.ic.priorities[ic.priority] }}</span> {{ opsRoom.ic.service_labels[ic.requesting_service] || ic.requesting_service }} · {{ opsFmtTs(ic.received_at) }} · {{ ic.clock.answered ? opsHours(ic.clock.hours) : '—' }} <span :class="ic.clock.over ? 'sync-check-error' : 'opsr-ok'">{{ ic.clock.over ? 'over target' : 'within target' }}</span><template v-if="ic.answerer"> · {{ ic.answerer.full_name }}</template> · {{ opsRoom.ic.statuses[ic.status] }}<button v-if="opsIcCanAct(ic) &amp;&amp; ic.status==='closed'" type="button" class="btn btn-secondary btn-sm" @click="opsIcAct(ic,'reopen')">Reopen</button></li></ul></details>
                     </section>
 
                     <!-- ¿Cumplimos? · Objetivos — every unit's indicators + department-wide ones -->
@@ -4747,7 +4754,12 @@
                                     <td>{{ i.unit ? i.unit.unit_name : 'Departamento' }}</td>
                                     <td><strong>{{ i.name }}</strong><small>{{ i.kind_label }}<template v-if="i.params &amp;&amp; i.params.priority"> · {{ ({urgent:'Urgente',preferente:'Preferente',ordinary:'Ordinaria'})[i.params.priority] }}</template> · per {{ i.period }}</small><small v-if="i.iso_clause" class="opsr-iso">ISO {{ i.iso_clause }}</small></td>
                                     <td><strong>{{ opsIndFmt(i, i.result.last_value ? i.result.last_value.value : null) }}</strong><small v-if="i.result.last_value">{{ formatDateShort(i.result.last_value.start) }}{{ i.result.last_value.partial ? ' (so far)' : '' }}</small><span class="opsr-ind-status" :data-status="i.result.status">{{ OPS_IND_STATUS[i.result.status] }}</span></td>
-                                    <td>{{ i.target === null || i.target === undefined ? '—' : (i.direction==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, Number(i.target)) }}</td>
+                                    <td>{{ i.result.target_now ? ((i.result.target_now.direction||i.direction)==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.result.target_now.value) : '—' }}<button v-if="opsIsAdmin &amp;&amp; i.targets" type="button" class="btn btn-secondary btn-sm opsr-tgt-btn" @click="opsTgtOpen(i)">{{ opsRoom.tgt.open===i.id ? 'Close' : 'Change' }}</button>
+                                        <div v-if="opsRoom.tgt.open===i.id" class="opsr-tgt">
+                                            <form class="opsr-inline" @submit.prevent="opsTgtSave('dept',i)"><input type="number" min="0" step="any" v-model="opsRoom.tgt.form.value" class="form-control opsr-num" aria-label="New target" placeholder="none"><label>from <input type="date" v-model="opsRoom.tgt.form.valid_from" class="form-control"></label><button type="submit" class="btn btn-primary btn-sm">Save</button></form>
+                                            <small class="ac-meta">From that date on. Earlier periods keep their own target. Empty = no target from that date.</small>
+                                            <ul class="opsr-list"><li v-for="h in (i.targets||[]).slice().sort((a,b)=>a.valid_from&gt;b.valid_from?-1:1)" :key="h.id">from {{ formatDateShort(h.valid_from) }}: {{ h.value===null ? 'no target' : ((h.direction||i.direction)==='min' ? '≥ ' : '≤ ')+opsIndFmt(i, Number(h.value)) }}<template v-if="h.note"> · {{ h.note }}</template><button v-if="opsIsAdmin" type="button" class="btn btn-secondary btn-sm" @click="opsTgtDelete('dept',i,h)">Remove</button></li></ul>
+                                        </div></td>
                                     <td><span class="opsr-series"><span v-for="(p,pi) in i.result.series" :key="pi" class="opsr-dot" :data-met="p.met===null ? 'none' : (p.met ? 'yes' : 'no')" :title="formatDateShort(p.start)+': '+opsIndFmt(i,p.value)">{{ p.value===null ? '·' : opsIndFmt(i,p.value) }}</span></span>
                                         <form v-if="i.kind==='manual' &amp;&amp; opsIsAdmin" class="opsr-inline" @submit.prevent="opsIndValue('dept',i)"><input type="number" min="0" step="any" v-model="opsRoom.dept.values[i.id]" class="form-control opsr-num" :aria-label="'Value for '+i.name"><button type="submit" class="btn btn-secondary btn-sm">Save this period</button></form></td>
                                     <td>{{ i.owner ? i.owner.full_name : '—' }}</td>
@@ -4770,6 +4782,44 @@
                                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.dept.form.name||opsRoom.dept.busy">Save</button><button type="button" class="btn btn-secondary btn-sm" @click="opsRoom.dept.form=null">Cancel</button>
                                 <small class="ac-meta">The value is computed from the Ops Room records (interconsultas); only “entered by hand” indicators take values. Leave the target empty until the department sets it.</small>
                             </form>
+                    </section>
+
+                    <!-- Configuración (OR-C): department lists + interconsulta targets. Units themselves are defined in the clinical units module. -->
+                    <section v-if="opsRoom.section==='config' &amp;&amp; opsIsAdmin &amp;&amp; opsRoom.cat.loaded" class="opsr-panel opsr-config" aria-label="Configuración">
+                        <p v-if="opsRoom.cat.error" class="sync-check-error">{{ opsRoom.cat.error }}</p>
+                        <p v-if="opsRoom.cat.loaded &amp;&amp; !opsRoom.cat.migrated" class="sync-check-error">The configuration tables are not in the database yet — run the OR-C SQL file. The built-in lists are in use until then.</p>
+                        <p class="ac-meta">Lists used across the Ops Room. Rename freely; switching an item off hides it from new records but keeps it on the old ones. Items marked 🔒 are used by the system and stay on. Units are created and configured in the clinical units module.</p>
+
+                        <details class="opsr-cfg" open><summary><strong>Interconsulta response targets</strong> <span class="ac-meta">hours, by priority — with history</span></summary>
+                            <div v-for="(label,p) in { urgent:'urgent', preferente:'preferente', ordinary:'ordinary' }" :key="'t'+p" class="opsr-cfg-row">
+                                <div><strong>{{ opsCatLabel('ic_priority', p) }}</strong><small>now: {{ opsRoom.cat.ic_targets.now[p] ?? '—' }} h</small>
+                                    <ul class="opsr-list"><li v-for="h in opsIcHistory(p)" :key="h.id" class="ac-meta">from {{ formatDateShort(h.valid_from) }}: {{ h.value }} h<template v-if="h.note"> · {{ h.note }}</template></li></ul></div>
+                                <form class="opsr-inline" @submit.prevent="opsIcTargetSave(p)">
+                                    <input type="number" min="1" step="1" v-model="opsRoom.cat.icForm[p].value" class="form-control opsr-num" placeholder="hours" :aria-label="'New target for '+p">
+                                    <label>from <input type="date" v-model="opsRoom.cat.icForm[p].valid_from" class="form-control"></label>
+                                    <input v-model="opsRoom.cat.icForm[p].note" class="form-control" maxlength="300" placeholder="Reason (e.g. agreed in service meeting)" aria-label="Note">
+                                    <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.cat.busy">Set</button>
+                                </form>
+                            </div>
+                        </details>
+
+                        <details v-for="name in OPS_CATALOG_ORDER" :key="name" class="opsr-cfg"><summary><strong>{{ opsRoom.cat.names[name] || name }}</strong> <span class="ac-meta">{{ opsCatItems(name).filter(i=>i.active).length }} active</span></summary>
+                            <ul class="opsr-cfg-list">
+                                <li v-for="it in opsCatItems(name)" :key="name+it.code" :class="{off:!it.active}">
+                                    <input class="form-control" :value="it.label" maxlength="80" :aria-label="'Name of '+it.code" :disabled="!opsRoom.cat.migrated" @change="$event.target.value.trim() &amp;&amp; $event.target.value.trim()!==it.label &amp;&amp; opsCatSave(name,it,{label:$event.target.value.trim()})">
+                                    <small class="ac-meta">{{ it.code }}{{ it.locked ? ' · 🔒' : '' }}</small>
+                                    <label v-if="name==='device_type'" class="opsr-cfg-cal">calibrate every <input type="number" min="1" max="3650" class="form-control opsr-num" :value="it.meta &amp;&amp; it.meta.calibration_days" :disabled="!opsRoom.cat.migrated" @change="opsCatSave(name,it,{meta:{calibration_days:$event.target.value===''?null:Number($event.target.value)}})"> days</label>
+                                    <button v-if="!it.locked" type="button" class="btn btn-secondary btn-sm" :disabled="!opsRoom.cat.migrated||opsRoom.cat.busy" @click="opsCatSave(name,it,{active:!it.active})">{{ it.active ? 'Switch off' : 'Switch on' }}</button>
+                                </li>
+                                <li v-if="!opsCatItems(name).length" class="ac-meta">Empty.</li>
+                            </ul>
+                            <form v-if="!(opsRoom.cat.fixed[name]) &amp;&amp; opsRoom.cat.migrated" class="opsr-inline" @submit.prevent="opsCatAdd(name)">
+                                <input v-model="opsRoom.cat.newItem[name].label" class="form-control" maxlength="80" placeholder="New item" :aria-label="'New item in '+name">
+                                <input v-if="name==='device_type'" type="number" min="1" max="3650" v-model="opsRoom.cat.newItem[name].calibration_days" class="form-control opsr-num" placeholder="days" aria-label="Calibration interval">
+                                <button type="submit" class="btn btn-secondary btn-sm" :disabled="opsRoom.cat.busy">Add</button>
+                            </form>
+                            <p v-else-if="opsRoom.cat.fixed[name]" class="ac-meta">This list is fixed (the system logic uses it): rename its items here; change their targets above.</p>
+                        </details>
                     </section>
                 </div>
 
@@ -13031,7 +13081,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.36-20261016-ops-room-or3"></script>
+    <script src="app.js?v=5.4-production.37-20261017-ops-room-orc"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

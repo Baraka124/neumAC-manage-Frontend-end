@@ -1,7 +1,8 @@
 # Pneumo Ops Room — Sala de Operaciones de Neumología · plan of record
 
-Status (16 Oct 2026): **OR-1, OR-2, OR-2b and OR-3 built** — all six questions and Interconsultas are live.
-Next: **OR-4** (refine each unit with the department), **OR-5** (connections), **OR-6** (hospital feed, if approved).
+Status (17 Oct 2026): **OR-1, OR-2, OR-2b, OR-3 and OR-C steps 1–2 built** — all six questions, Interconsultas,
+Objetivos and Configuración (department lists + target history) are live.
+**Next: the interface** (redesign of the Ops Room screens — see §9), then OR-C steps 3–4, OR-4, OR-5, OR-6.
 **§8 is the handoff** — read it first if you are continuing this work in a new session or with another assistant.
 
 ## 1. Purpose
@@ -129,7 +130,8 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
    hand or not shown.
 5. ✅ No single "first unit": the model is capability-driven, so all 9 units got OR-2 at once.
 6. ⏳ **Interconsulta response targets** — OPEN. Provisional 24 h (urgent) / 72 h (preferente) / 168 h (ordinary),
-   constant `IC_TARGET_HOURS` in backend `ops-room.js`. Change there once the department confirms.
+   stored since OR-C in `ops_targets` (valid from 2026-01-01). **Change them in Ops Room → Configuración** (with a
+   valid-from date) once the department confirms; no code change needed. `IC_TARGET_HOURS` is only the pre-migration fallback.
 7. ⏳ **Indicator targets** — OPEN by design: never invented; each unit / the head of department sets them.
 
 ## 7. Build sequence
@@ -140,7 +142,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 | ✅ OR-2 | All units: resources + events, activity catalogue + counts, pending work, incidents (backend #52, frontend #181) |
 | ✅ OR-2b | **Interconsultas**: request record, board, take/assign/answer/follow-up/close, response-time stats |
 | ✅ OR-3 | Indicators (targets, owners, ISO 7101 clause, week/month/quarter, last 6 periods computed from records) |
-| OR-C | **Configuration** (agreed 16 Oct): (1) catalogues as data — interconsulta services/reasons/priorities/**targets**, incident categories, roster roles, device types with default calibration interval; (2) **target history** (valid-from dates; past periods judged with the target in force then); (3) unit **Ops profile inside the existing clinical units module** (see rule below); (4) alert rules (thresholds → owner notifications) |
+| ◐ OR-C | **Configuration** — steps 1 ✅ and 2 ✅ built 17 Oct (see §8); steps 3–4 pending: (1) catalogues as data — interconsulta services/reasons/priorities/**targets**, incident categories, roster roles, device types with default calibration interval; (2) **target history** (valid-from dates; past periods judged with the target in force then); (3) unit **Ops profile inside the existing clinical units module** (see rule below); (4) alert rules (thresholds → owner notifications) |
 | OR-4 | Remaining Pulmonology units, each with only its capabilities |
 | OR-5 | Connections: Mi espacio, resident visibility, Grounded, leadership overview |
 | OR-6 | Hospital feed for high-frequency activity — only with an approved source |
@@ -171,8 +173,12 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 ### Database objects
 - `training_units.ops_enabled`, `training_units.ops_capabilities` (`roster, resources, beds, calibration, loans, activity, pending, incidents, indicators`).
 - `unit_staff` (roster): roles `coordinator | primary | secondary`; one ACTIVE row per person+unit (`unit_staff_one_active`); audit.
-- `ops_resources` + `ops_resource_events` · `ops_measure_types` (flow | stock; 29 seeded) + `ops_measurements` · `ops_incidents`
-  · `ops_interconsults` · `ops_indicators` + `ops_indicator_values` (manual only). All: RLS on (API uses the service role), audit trigger `fn_audit_trigger`.
+- `ops_resources` (+ `device_type`) + `ops_resource_events` · `ops_measure_types` (flow | stock; 29 seeded) + `ops_measurements` · `ops_incidents`
+  · `ops_interconsults` (`requesting_service` stores the catalogue CODE) · `ops_indicators` + `ops_indicator_values` (manual only)
+  · **OR-C:** `ops_catalog_items` (catalog, code, label, sort, active, locked, meta) for `ic_service, ic_reason, ic_priority,
+  incident_category, roster_role, device_type`; `ops_targets` (scope `indicator`|`ic_priority`, ref, value, direction, valid_from, note).
+  `unit_staff.role` and `ops_incidents.category` are no longer fixed lists in the schema: the API validates them against the catalogue.
+  All: RLS on (API uses the service role), audit trigger `fn_audit_trigger`.
 
 ### API (all need a signed-in user)
 | Route | Guard |
@@ -187,6 +193,9 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 | `PUT/DELETE /api/ops/interconsults/:icId` | Units write; `?permanent=true` admin |
 | `GET /api/ops/units/:unitId/indicators`, `POST/PUT/DELETE …/indicators[/:indId]`, `POST …/indicators/:indId/values` | read / Units write |
 | `GET /api/ops/indicators` (department overview), `POST/PUT/DELETE /api/ops/indicators[/:indId]`, `POST …/:indId/values` | read / head of department or admin |
+| `GET /api/ops/catalog` | Units read |
+| `POST /api/ops/catalog/:catalog`, `PUT /api/ops/catalog/:catalog/:code`, `POST /api/ops/targets/ic/:priority` | head of department / admin |
+| `POST/DELETE /api/ops/units/:unitId/indicators/:indId/targets[/:targetId]` · `POST/DELETE /api/ops/indicators/:indId/targets[/:targetId]` | Units write · head of department / admin |
 Every `…?permanent=true` delete is head of department / admin only; normal removes are soft (restorable; audit keeps all).
 
 ### Conventions that must hold (each has a test)
@@ -197,6 +206,11 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 - **Writes check the unit in the URL** and that the row belongs to it (`opsOwned`).
 - **In-DOM templates: never put `<` inside `{{ }}`** in `index.html` (the browser parses it as a tag) — put the logic in a function.
 - Missing OR tables read as empty (`opsSoft`), so a new step never breaks the previous one before its migration runs.
+  Catalogues fall back to the built-in lists (`catalogFallback`) until `ops_catalog_items` exists (`opsCatalog`, 30 s cache).
+- **Targets in force**: an indicator period is judged with the target valid on its last day; an interconsulta with the
+  target valid the day it was received (`targetAt`). Changing a target adds a history row — never edit the past.
+- **Codes are fixed, labels editable**; switching an item off keeps it valid for records that already use it; `locked`
+  items (used by logic: coordinator, priorities, "other") cannot be switched off; priorities cannot be added.
 - Bump cache keys in `index.html` (`app.js?v=…`, `access.css?v=…`) on every frontend change; `scripts/integrity_check.py` must pass.
 
 ### How changes have been shipped
@@ -217,6 +231,12 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
   the *how* that protects the data (privacy, one-rotation-at-a-time, audit, permissions, indicator formulas). Config changes
   are audited and never rewrite the past (rename keeps the code, switch-off keeps history, targets carry valid-from dates).
 
+### Migrations (run in order in Supabase → SQL Editor; all idempotent)
+1. `2026-10-16_ops_room_or1_unit_profile_and_roster.sql` ✅ applied
+2. `2026-10-16_ops_room_or2_resources_measures_incidents.sql` ✅ applied
+3. `2026-10-16_ops_room_or2b_or3_interconsults_indicators.sql` ✅ applied
+4. `2026-10-17_ops_room_orc_catalogues_targets.sql` — check `select count(*) from ops_catalog_items` (expect 58) to confirm.
+
 ### Open items
 - Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
   response targets, whether follow-ups are tracked.
@@ -224,3 +244,12 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 - OR-4: walk each unit with its coordinator — add/rename measures, set indicator targets, register resources.
 - OR-5: Mi espacio "your unit this week / your interconsultas", resident visibility of incidents, Grounded answers from Ops Room records.
 - Security (outside Ops Room): rotate the keys in the committed backend `.env`, move them to Railway Variables, then untrack `.env`.
+
+## 9. Next: the interface (agreed 17 Oct 2026)
+
+The Ops Room works end to end; its screens were built feature by feature (functional, consistent with neumDesk, tested
+on desktop and mobile) but not designed as a whole. The next step is a proper interface pass:
+- one visual language for the six questions (status at a glance before detail), unit cards that read like a control panel;
+- the department view (all units, interconsultas, objectives) as the head of department's daily screen;
+- fewer forms in view at once (progressive disclosure), consistent empty states, Spanish/English labels decided once;
+- keep every rule in §8 (no patient data, no `<` inside `{{ }}`, cache keys, tests per screen, render check).
