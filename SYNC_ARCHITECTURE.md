@@ -245,5 +245,11 @@ Source: **department Excel lists** (one row per study/project). Same engine:
 - Preview with the same time bands (active / upcoming / closed-as-history), person view ("everything Pedro leads"), dry run → commit.
 - Out of scope until requested: registry pulls (ClinicalTrials.gov / EU CTR), protocol PDFs.
 
+### Status (2026-10-16)
+- **A — shipped** (frontend #172): time bands, opens on current & upcoming, person view, year on far dates.
+- **B — shipped** (backend #43, frontend #173): `import_aliases` + `import_layouts`, saved mappings with Forget, unit codes in DB, role-aware guardias, layout-change warning.
+- **C — shipped** (backend #44, frontend PR after #173): `import-review.js` + `POST /api/imports/review`; per-row ✓/⚠/✕ and an impact summary. Implemented checks: consecutive guardias, MIR on external rotation, monthly workload vs average, uncovered days, guardias without MIR, in-file rotation overlaps, 12-month rotation gaps. Absence/leave and capacity conflicts remain hard checks in the per-row dry run (decision engine).
+- **D, E — next.**
+
 ### Order
 A → B → C → D → E. A and B change the daily experience most; C is the intelligence; D keeps files and system in step; E reuses all of it.

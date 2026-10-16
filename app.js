@@ -9171,7 +9171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
         // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
-        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',remembered:[],layout:null,layoutChanges:[],rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
+        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
         const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
         // Tint review rows by duty date: today/future = green (actionable), past = orange (historical import).
         const oncallSyncRowClass=(dateStr)=>{
@@ -9187,7 +9187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncCheckKey=computed(()=>JSON.stringify({shifts:oncallSyncPayload(),history:oncallSync.historyAccepted}))
         const oncallSyncChecked=computed(()=>oncallSyncSelected.value.length>0&&oncallSync.checkKey===oncallSyncCheckKey.value)
         const oncallSyncReady=computed(()=>oncallSyncChecked.value&&oncallSyncSelected.value.every(r=>oncallSync.checkResults[r.date]?.status==='ready'))
-        watch(oncallSyncCheckKey,()=>{oncallSync.checkKey='';oncallSync.checkResults={};oncallSync.checkError=''},{flush:'sync'})
+        watch(oncallSyncCheckKey,()=>{oncallSync.checkKey='';oncallSync.checkResults={};oncallSync.checkError='';oncallSync.review={rows:{},summary:null,error:''}},{flush:'sync'})
         const oncallSyncCheck=async()=>{
           if(oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.value.length||currentUser.value?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW')return
           const shifts=oncallSyncPayload(),key=oncallSyncCheckKey.value,history=oncallSync.historyAccepted
@@ -9195,7 +9195,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const checked={}
           try{
             for(let i=0;i<shifts.length;i+=10){const chunk=shifts.slice(i,i+10);const result=await API.request('/api/oncall/batch',{method:'POST',body:{shifts:chunk,dry_run:true,acknowledge_history:history}});if(result.dry_run!==true||!Array.isArray(result.results)||result.results.length!==chunk.length||chunk.some(r=>result.results.filter(x=>x.date===r.duty_date&&['ready','needs_attention'].includes(x.status)).length!==1))throw Error('Check could not be confirmed. Refresh and try again.');for(const row of result.results)checked[row.date]=row}
-            if(key===oncallSyncCheckKey.value){oncallSync.checkResults=checked;oncallSync.checkKey=key}
+            const rev=await importReview('oncall',shifts.map(x=>({key:x.duty_date,duty_date:x.duty_date,primary_physician_id:x.primary_physician_id,resident_physician_id:x.resident_physician_id||null,shift_type:x.shift_type})))
+            if(key===oncallSyncCheckKey.value){oncallSync.checkResults=checked;oncallSync.checkKey=key;oncallSync.review=rev}
           }catch(e){oncallSync.checkError=e.message}finally{oncallSync.checking=false}
         }
         const oncallSyncMonths=computed(()=>[...new Set(oncallSync.rows.map(r=>r.date?.slice(0,7)).filter(Boolean))].sort())
@@ -9204,6 +9205,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncSelectNew=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const next={...oncallSync.selection};oncallSyncVisible.value.filter(r=>r.status==='new').forEach(r=>next[r.key]=true);oncallSync.selection=next}
         watch(()=>JSON.stringify(oncallSync.filter),()=>{oncallSync.selection={}},{flush:'sync'})
         const SYNC_MAP_KEY='neumdesk_oncall_sync_mappings'
+        // Import cross-checks (Phase C): review the WHOLE selection (rest, workload, coverage, external
+        // rotations, in-file overlaps, gaps). Read-only; findings never block. A failed review is shown as such.
+        const importReview=async(kind,rows)=>{try{const r=await API.request('/api/imports/review',{method:'POST',body:{kind,rows}});return {rows:r?.rows||{},summary:r?.summary||null,error:''}}catch(e){return {rows:{},summary:null,error:e.message||'Review unavailable'}}}
+        // ✓ ready · ⚠ review · ✕ blocked — dry-run result decides blocked; review findings decide ⚠.
+        const importVerdict=(check,findings)=>!check?null:check.status!=='ready'?'blocked':(findings||[]).some(f=>f.severity==='review')?'review':'ready'
         // Import memory (Phase B): saved mappings + layout memory, shared across users and devices.
         const importMemory={
           async aliases(type){try{const r=await API.request('/api/import-aliases?type='+type,{skipCache:true});return r?.data||[]}catch{return []}},
@@ -9218,7 +9224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const oncallSyncParse=async(file)=>{
           if(oncallSync.checking||oncallSync.committing)return
-          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',remembered:[],layout:null,layoutChanges:[],choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},summary:null,filter:{start:'',end:'',search:'',status:''}})
+          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},summary:null,filter:{start:'',end:'',search:'',status:''}})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const active=String(new Date().getFullYear());const sheet=wb.SheetNames.find(n=>n===active+'+'||n===active)||wb.SheetNames.find(n=>/^\d{4}\+?$/.test(n));if(!sheet)throw Error('No dated Guardias sheet found.')
             const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,raw:true});oncallSync.rows=window.NeumOncallSync.parse(aoa,sheet)
@@ -9249,6 +9255,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncFile=ev=>{const file=ev.target.files?.[0];if(file)oncallSyncParse(file);ev.target.value=''}
         const oncallSyncMap=(name,id)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={...oncallSync.mappings,[name]:id};syncRebuild();if(id)importMemory.save('oncall_staff',[id==='skip'?{label:name,action:'skip'}:{label:name,action:'map',target_id:id}]).then(r=>{const a=r?.saved?.[0];if(a)oncallSync.remembered=[...oncallSync.remembered.filter(x=>x.label!==name),{label:name,id:a.id,action:a.action,target_id:a.target_id}]})}
         const oncallSyncPools=computed(()=>window.NeumOncallSync.pools(oncallSync.sourceStaff))
+        const oncallSyncVerdict=r=>importVerdict(oncallSyncChecked.value?oncallSync.checkResults[r.date]:null,oncallSync.review.rows[r.date])
+        const importMonthLabel=m=>new Date(m+'-01T12:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'})
         const oncallSyncForget=async(item)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;if(!(await importMemory.forget(item.id)))return;const m={...oncallSync.mappings};delete m[item.label];oncallSync.mappings=m;oncallSync.remembered=oncallSync.remembered.filter(x=>x.id!==item.id);oncallSync.selection={};syncRebuild()}
         const oncallSyncChoice=(date,choice)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const selection={...oncallSync.selection};oncallSync.entries.filter(r=>r.date===date).forEach(r=>delete selection[r.key]);oncallSync.selection=selection;oncallSync.choices={...oncallSync.choices,[date]:choice};syncRebuild()}
         const oncallSyncClearMappings=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={};oncallSync.remembered=[];try{localStorage.removeItem(SYNC_MAP_KEY)}catch{};syncRebuild()}
@@ -9290,7 +9298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ─── Rotations import (MIR matrix → resident_rotations) — mirrors the on-call sync ───
-        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null})
+        const rotationImport = reactive({fileName:'',parsing:false,done:false,error:'',periods:[],residents:[],unmatchedResidents:[],unmatchedUnits:[],records:[],counts:{ready:0,blocked:0,skipped:0},residentMappings:{},unitChoices:{},staff:[],units:[],selection:{},filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''},checking:false,checkResults:{},checkKey:'',checkError:'',committing:false,committed:false,commitResult:null,progress:null,summary:null})
         // Time bands: current + upcoming are the working set (highlighted, pre-selected); past is
         // history (importable on purpose); far = more than 12 months ahead (flagged, never pre-selected).
         const ROT_BAND_VIEW={now:['current','upcoming'],past:['past'],far:['far'],all:['past','current','upcoming','far']}
@@ -9312,7 +9320,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if(rotationImport.autoSelect){const next={};p.records.filter(r=>r.status==='ready'&&['current','upcoming'].includes(r.band)).forEach(r=>next[r.key]=true);rotationImport.selection=next}}
         const rotationImportParse = async(file)=>{
           if(rotationImport.checking||rotationImport.committing)return
-          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[]})
+          Object.assign(rotationImport,{fileName:file.name,parsing:true,done:false,error:'',residentMappings:{},unitChoices:{},selection:{},committed:false,commitResult:null,checkResults:{},checkKey:'',filter:{resident:'',status:'',band:'now',person:''},autoSelect:true,personExisting:[],personExistingFor:'',remembered:[],layout:null,layoutChanges:[],review:{rows:{},summary:null,error:''}})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true})
             const sheets={};wb.SheetNames.forEach(n=>{sheets[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true})})
@@ -9360,6 +9368,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotationImportSelectReady = ()=>{if(rotationImport.checking||rotationImport.committing||rotationImport.committed)return;const next={...rotationImport.selection};rotationImportVisible.value.filter(r=>r.status==='ready').forEach(r=>next[r.key]=true);rotationImport.selection=next}
         const rotationImportClearSel = ()=>{rotationImport.selection={};rotationImport.autoSelect=false}
         const rotationImportReset = ()=>{if(!rotationImport.checking&&!rotationImport.committing)Object.assign(rotationImport,{done:false,fileName:'',error:'',periods:[],records:[],selection:{},residentMappings:{},unitChoices:{},commitResult:null,committed:false,checkResults:{},checkKey:'',summary:null})}
+        const rotationImportVerdict=r=>importVerdict(rotationImport.checkKey===rotationImportCheckKey.value?rotationImport.checkResults[r.key]:null,rotationImport.review.rows[r.key])
         const rotationImportCheck = async()=>{
           if(rotationImport.checking||rotationImport.committing||rotationImport.committed||!rotationImportCanCommit.value||!rotationImportSelectedKeys.value.length)return
           const recs=rotationImportSelectedKeys.value,body=rotationImportPayload(),key=rotationImportCheckKey.value
@@ -9372,7 +9381,8 @@ document.addEventListener('DOMContentLoaded', () => {
               if(result.dry_run!==true||!Array.isArray(result.results)||result.results.length!==chunk.length)throw Error('Check could not be confirmed. Refresh and try again.')
               result.results.forEach((row,j)=>{checked[chunkRecs[j].key]=row})
             }
-            if(key===rotationImportCheckKey.value){rotationImport.checkResults=checked;rotationImport.checkKey=key}
+            const rev=await importReview('rotations',recs.map(r=>({key:r.key,resident_id:r.resident_id,training_unit_id:r.training_unit_id||null,start_date:r.start_date,end_date:r.end_date})))
+            if(key===rotationImportCheckKey.value){rotationImport.checkResults=checked;rotationImport.checkKey=key;rotationImport.review=rev}
           }catch(e){rotationImport.checkError=e.message}finally{rotationImport.checking=false}
         }
         const rotationImportCommit = async()=>{
@@ -19395,8 +19405,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
-          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportForget,rotationImportTargetName, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
+          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSyncVerdict, importMonthLabel, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportForget,rotationImportTargetName,rotationImportVerdict,rotationImportCheckKey, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,

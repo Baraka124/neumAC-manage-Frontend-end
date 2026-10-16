@@ -25,6 +25,8 @@ jobs:
         run: node --test tests/import-phase-a.test.cjs
       - name: Import memory (Phase B)
         run: node --test tests/import-memory.test.cjs
+      - name: Import Phase C cross-checks
+        run: node --test tests/import-phase-c.test.cjs
       - name: Mi espacio identity and shell contract
         run: node --test tests/mi-espacio-phase1.test.cjs
       - name: Clinician access to Mi espacio
