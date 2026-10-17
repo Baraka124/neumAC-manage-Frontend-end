@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-outlook">
+<link rel="stylesheet" href="access.css?v=20261017-import">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -5136,6 +5136,94 @@
                                 <button type="submit" class="btn btn-secondary btn-sm" :disabled="opsRoom.cat.busy">Add</button>
                             </form>
                             <p v-else-if="opsRoom.cat.fixed[name]" class="ac-meta">This list is fixed (the system logic uses it): rename its items here; change their targets above.</p>
+                        </details>
+
+                        <!-- IM-1 · Importar datos: hospital keys → measures · CSV preview → commit (one batch, undo) · token feed. Counts only. -->
+                        <details class="opsr-cfg im-panel" open><summary><strong>Importar datos del hospital</strong> <span class="ac-meta">counts from hospital systems into unit measures</span></summary>
+                            <p v-if="imp.error" class="sync-check-error">{{ imp.error }}</p>
+                            <p v-if="imp.loaded &amp;&amp; !imp.migrated" class="sync-check-error">Imports need the IM-1 database update (migrations/2026-10-17_import_im1_mappings_batches.sql).</p>
+                            <p class="ac-meta im-rule">🔒 Counts only. A file with a column that could hold patient data (NHC, nombre, DNI, SIP…) is rejected whole. Values entered by hand are never overwritten.</p>
+
+                            <h4 class="im-h">1 · Hospital keys <span class="ac-meta">{{ imp.mappings.filter(m=>m.active).length }} active</span></h4>
+                            <div class="im-table-wrap" v-if="imp.mappings.length">
+                                <table class="im-table">
+                                    <thead><tr><th>System</th><th>Hospital key</th><th>Unit</th><th>Measure</th><th></th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="m in imp.mappings" :key="m.id" :class="{off:!m.active}">
+                                            <td><code>{{ m.system }}</code></td>
+                                            <td><code>{{ m.external_key }}</code><small v-if="m.note" class="ac-meta"> · {{ m.note }}</small></td>
+                                            <td>{{ impUnitName(m.unit_id) }}</td>
+                                            <td>{{ impType(m.unit_id,m.type_id) ? impType(m.unit_id,m.type_id).label : '…' }}<template v-if="m.category_code"> · {{ opsCatLabel(impType(m.unit_id,m.type_id) ? impType(m.unit_id,m.type_id).breakdown : '', m.category_code) }}</template></td>
+                                            <td class="im-actions"><button type="button" class="btn btn-secondary btn-sm" @click="impMapToggle(m)">{{ m.active ? 'Switch off' : 'Switch on' }}</button><button type="button" class="btn btn-secondary btn-sm" @click="impMapRemove(m)" aria-label="Remove mapping">✕</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p v-else-if="imp.loaded" class="ac-meta">No keys yet. Add one per hospital code you will import (e.g. the agenda code for spirometries).</p>
+                            <form v-if="imp.migrated" class="opsr-inline im-form" @submit.prevent="impMapAdd">
+                                <input v-model="imp.form.system" class="form-control im-sys" maxlength="30" placeholder="system" aria-label="Hospital system" list="im-systems">
+                                <datalist id="im-systems"><option v-for="sy in impSystems()" :key="sy" :value="sy"></option></datalist>
+                                <input v-model="imp.form.external_key" class="form-control" maxlength="80" placeholder="Hospital key (e.g. CEX-ESP)" aria-label="Hospital key">
+                                <select v-model="imp.form.unit_id" class="form-control" aria-label="Unit" @change="imp.form.type_id='';imp.form.category_code='';impTypes(imp.form.unit_id)">
+                                    <option value="">Unit…</option><option v-for="u in opsRoom.units" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
+                                </select>
+                                <select v-model="imp.form.type_id" class="form-control" aria-label="Measure" :disabled="!imp.form.unit_id" @change="imp.form.category_code=''">
+                                    <option value="">Measure…</option><option v-for="t in (imp.types[imp.form.unit_id]||[])" :key="t.id" :value="t.id">{{ t.label }} ({{ t.kind === 'stock' ? 'snapshot' : 'per day' }})</option>
+                                </select>
+                                <select v-if="impCats(imp.form.unit_id,imp.form.type_id).length" v-model="imp.form.category_code" class="form-control" aria-label="Category">
+                                    <option value="">Category…</option><option v-for="c in impCats(imp.form.unit_id,imp.form.type_id)" :key="c.code" :value="c.code">{{ c.label }}</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-sm" :disabled="imp.busy || !imp.form.external_key || !imp.form.type_id">Add key</button>
+                            </form>
+
+                            <h4 class="im-h">2 · Import a file</h4>
+                            <p class="ac-meta">CSV (comma or semicolon) with columns <code>key</code> · <code>date</code> · <code>value</code> and optionally <code>category</code> (Spanish headers work: clave, fecha, valor, categoría). Up to {{ imp.maxRows }} rows, 1 MB. <a href="#" @click.prevent="impSample">Start from a template</a></p>
+                            <div class="im-upload">
+                                <label class="im-field">System <select v-model="imp.system" class="form-control" @change="imp.preview=null"><option v-for="sy in impSystems()" :key="sy" :value="sy">{{ sy }}</option></select></label>
+                                <label class="btn btn-secondary btn-sm im-file">Choose file<input type="file" accept=".csv,.txt,text/csv" @change="impFile" hidden></label>
+                                <span v-if="imp.filename" class="ac-meta">{{ imp.filename }}</span>
+                            </div>
+                            <textarea v-model="imp.csv" class="form-control im-csv" rows="5" spellcheck="false" placeholder="…or paste the rows here" aria-label="CSV rows" @input="imp.preview=null"></textarea>
+                            <div class="im-buttons">
+                                <button type="button" class="btn btn-secondary btn-sm" :disabled="imp.busy || !imp.csv.trim() || !imp.migrated" @click="impPreview">{{ imp.busy &amp;&amp; !imp.preview ? 'Checking…' : 'Check (no changes)' }}</button>
+                                <button v-if="imp.preview &amp;&amp; !imp.preview.fatal" type="button" class="btn btn-primary btn-sm" :disabled="imp.busy || !(imp.preview.plan.insert + imp.preview.plan.update) || !!imp.preview.already_imported" @click="impCommit">Import {{ imp.preview.plan.insert + imp.preview.plan.update }} value(s)</button>
+                            </div>
+
+                            <div v-if="imp.preview" class="im-preview" role="status">
+                                <p v-if="imp.preview.fatal" class="sync-check-error">{{ imp.preview.fatal }}</p>
+                                <template v-else>
+                                    <p v-if="imp.preview.already_imported" class="sync-check-error">This exact data was already imported on {{ opsFmtTs(imp.preview.already_imported.created_at) }}. Nothing to do.</p>
+                                    <div class="im-stats">
+                                        <span><strong>{{ imp.preview.rows }}</strong> rows</span>
+                                        <span v-if="imp.preview.range">{{ formatDateShort(imp.preview.range.from) }} → {{ formatDateShort(imp.preview.range.to) }}</span>
+                                        <span class="im-ok"><strong>{{ imp.preview.plan.insert }}</strong> new</span>
+                                        <span class="im-ok"><strong>{{ imp.preview.plan.update }}</strong> updated</span>
+                                        <span><strong>{{ imp.preview.plan.unchanged }}</strong> unchanged</span>
+                                        <span v-if="imp.preview.plan.manual_kept.length" class="im-warn"><strong>{{ imp.preview.plan.manual_kept.length }}</strong> kept (entered by hand)</span>
+                                        <span v-if="imp.preview.error_count" class="im-bad"><strong>{{ imp.preview.error_count }}</strong> row errors</span>
+                                    </div>
+                                    <details v-if="imp.preview.plan.manual_kept.length"><summary class="ac-meta">Values entered by hand are kept</summary>
+                                        <ul class="opsr-list"><li v-for="k in imp.preview.plan.manual_kept.slice(0,30)" :key="k.label+k.date" class="ac-meta">{{ k.label }} · {{ formatDateShort(k.date) }}: by hand {{ k.manual }}, file {{ k.file }}</li></ul></details>
+                                    <details v-if="imp.preview.error_count" open><summary class="ac-meta">Row errors</summary>
+                                        <ul class="opsr-list"><li v-for="e in imp.preview.errors.slice(0,30)" :key="'e'+e.line+e.error" class="ac-meta">line {{ e.line }}: {{ e.error }}</li></ul>
+                                        <p v-if="imp.preview.unknown_keys.length" class="ac-meta">Keys without a mapping: <code v-for="k in imp.preview.unknown_keys" :key="k" class="im-key">{{ k }}</code> — add them above.</p></details>
+                                    <p v-if="imp.preview.columns &amp;&amp; imp.preview.columns.ignored.length" class="ac-meta">Ignored columns: {{ imp.preview.columns.ignored.join(', ') }}</p>
+                                </template>
+                            </div>
+
+                            <h4 class="im-h">3 · History</h4>
+                            <ul v-if="imp.batches.length" class="im-batches">
+                                <li v-for="b in imp.batches.slice(0,20)" :key="b.id" :class="{off:b.status==='undone'}">
+                                    <div><strong>{{ b.filename || (b.channel === 'feed' ? 'Feed' : 'Upload') }}</strong> <small class="ac-meta"><code>{{ b.system }}</code> · {{ opsFmtTs(b.created_at) }}<template v-if="b.range_from"> · {{ formatDateShort(b.range_from) }} → {{ formatDateShort(b.range_to) }}</template></small></div>
+                                    <small class="ac-meta">{{ (b.counts && b.counts.inserted) || 0 }} new · {{ (b.counts && b.counts.updated) || 0 }} updated<template v-if="b.counts &amp;&amp; b.counts.manual_kept"> · {{ b.counts.manual_kept }} kept by hand</template><template v-if="b.status==='undone'"> · undone {{ opsFmtTs(b.undone_at) }}</template></small>
+                                    <button v-if="b.status==='committed'" type="button" class="btn btn-secondary btn-sm" @click="impUndo(b)">Undo</button>
+                                </li>
+                            </ul>
+                            <p v-else-if="imp.loaded" class="ac-meta">No imports yet.</p>
+
+                            <h4 class="im-h">4 · Automatic feed</h4>
+                            <p class="ac-meta" v-if="imp.feed">✅ On. Hospital systems can POST to <code>/api/feed/ops/measurements</code> with the feed token (header <code>Authorization: Bearer …</code>) and <code>{ "system": "his", "rows": [{ "key", "date", "value", "category" }] }</code>. Re-sending the same data does nothing; each call appears in History.</p>
+                            <p class="ac-meta" v-else>Off. To let a hospital system send counts automatically, set <code>OPS_FEED_TOKEN</code> in the server settings (Railway) and share it only with the hospital IT team.</p>
                         </details>
                     </section>
                 </div>
@@ -13543,7 +13631,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.48-20261017-outlook"></script>
+    <script src="app.js?v=5.4-production.49-20261017-import"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

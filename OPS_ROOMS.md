@@ -189,6 +189,10 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
   (`formal`|`phone`|`in_person`), `outcome` (`advice`|`seen`|`converted`), `duration_min`; `ops_reports` (scope unit|department,
   unit_id, period week|month, period_start/end, content jsonb, generated_at, generated_by null = automatic; one per
   scope+unit+period+start).
+  **JB-1:** `job_runs` (scheduler run log + lock); functions `comms_send_message`, `comms_send_brief`, `ops_store_report`.
+  **IM-1:** `ops_import_mappings` (system + hospital key → unit measure [+ category]), `ops_import_batches` (one per
+  committed file/feed call, checksum unique while committed); `ops_measurements.import_batch_id`, `import_previous`;
+  functions `ops_import_commit`, `ops_import_undo`. Rules: backend `OPS_ROOM_BACKEND.md` §5 and §10.
   All: RLS on (API uses the service role), audit trigger `fn_audit_trigger`.
 
 ### API (all need a signed-in user)
@@ -209,6 +213,9 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 | `POST/DELETE /api/ops/units/:unitId/indicators/:indId/targets[/:targetId]` · `POST/DELETE /api/ops/indicators/:indId/targets[/:targetId]` | Units write · head of department / admin |
 | `GET /api/ops/units/:unitId/reports` (lists; creates the last complete week + month if missing), `GET …/reports/:reportId`, `POST …/reports/generate` {period, period_start?} | Units read · read · Units write |
 | `GET /api/ops/reports`, `GET /api/ops/reports/:reportId`, `POST /api/ops/reports/generate` (department roll-up) | Units read · read · head of department / admin |
+| `GET/POST/PUT/DELETE /api/ops/import/mappings[/:id]`, `POST /api/ops/import/preview`, `POST /api/ops/import/commit`, `GET /api/ops/import/batches`, `POST …/batches/:id/undo` | head of department / admin |
+| `POST /api/feed/ops/measurements` (no user: `OPS_FEED_TOKEN` bearer; 404 when unset) | feed token |
+| `GET /api/admin/jobs`, `POST /api/admin/jobs/:job/run` | head of department / admin |
 Measures accept `breakdown` on `POST …/measure-types` and `{type_id, breakdown:{code:n}}` items on `PUT …/measures`;
 `POST /api/ops/interconsults` with `channel: phone|in_person` + `outcome` (+ `duration_min`) logs a resolved call.
 Every `…?permanent=true` delete is head of department / admin only; normal removes are soft (restorable; audit keeps all).
@@ -257,11 +264,14 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 3. `2026-10-16_ops_room_or2b_or3_interconsults_indicators.sql` ✅ applied
 4. `2026-10-17_ops_room_orc_catalogues_targets.sql` ✅ applied (58 items)
 5. `2026-10-17_ops_room_orr_breakdowns_calls_reports.sql` ✅ applied 17 Oct (18 breakdown items, 5 new columns, `ops_reports` with RLS + unique index + audit trigger)
+6. `2026-10-17_jobs_jb1_runs_and_atomic_writes.sql` — scheduler log + atomic writes (the API falls back until applied)
+7. `2026-10-17_import_im1_mappings_batches.sql` — Importar datos (Configuración shows "needs IM-1" until applied)
 
 ### Open items
 - Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
   response targets, whether follow-ups are tracked.
 - Ask on the Urology visit (Monday): how the ADX data reaches them (export, API, manual).
+- IM-1 is ready: agree with hospital IT which codes (keys) and which export (CSV or feed) — then add the keys in Configuración.
 - "IIP" (mentioned for returning exacerbated patients) — meaning to confirm; no readmissions measure was pre-created. Units add their own (e.g. "Reingresos a 30 días" by condition).
 - The 11 conditions are a starting list for the department to rename / extend in Configuración.
 - OR-4: walk each unit with its coordinator — add/rename measures, set indicator targets, register resources.
