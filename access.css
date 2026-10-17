@@ -1018,3 +1018,44 @@ html body #app .cm-seg label.active,html body #app .opsr-seg label.active{color:
 .cm-items-edit li>.form-control,.cm-items-edit li>.form-select{width:auto;flex:0 1 180px;min-width:0}
 .cm-items-edit li>.form-control.cm-grow{flex:1 1 220px}
 .cm-items-edit li>.opsr-num{flex:0 0 80px}
+/* ── Communication CM-2: calendar · banner / flyer · internal / public ── */
+.cm-cal-bar{align-items:center}
+.cm-seg--inline{margin:0}
+.cm-cal-title{min-width:150px;text-align:center;color:#10283c}
+.cm-cal{background:var(--surface,#fff);border:1px solid rgba(15,40,60,.10);border-radius:14px;overflow:hidden;margin:6px 0 14px}
+.cm-cal-head,.cm-cal-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cm-cal-head span{padding:6px 8px;font:700 11px/1.4 system-ui,sans-serif;letter-spacing:.06em;color:#5b6b78;background:rgba(15,40,60,.03);border-bottom:1px solid rgba(15,40,60,.08)}
+.cm-cal-day{min-height:96px;padding:4px 5px;border-right:1px solid rgba(15,40,60,.06);border-bottom:1px solid rgba(15,40,60,.06);display:flex;flex-direction:column;gap:3px;min-width:0}
+.cm-cal-day:nth-child(7n){border-right:0}
+.cm-cal-day.out{background:rgba(15,40,60,.025)}.cm-cal-day.out .cm-cal-num{color:#a3adb5}
+.cm-cal-num{font-size:12px;font-weight:600;color:#33434f}
+.cm-cal-dow{display:none}
+.cm-cal-day.today .cm-cal-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#10283c;color:#fff}
+.cm-cal-ev{display:flex;align-items:center;gap:4px;width:100%;text-align:left;padding:2px 5px;border:0;border-left:3px solid #7c4dbd;border-radius:5px;background:rgba(124,77,189,.08);font-size:11.5px;line-height:1.3;color:#10283c;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.cm-cal-ev--sesion_clinica{border-left-color:#206e96;background:rgba(32,110,150,.08)}
+.cm-cal-ev--seminario{border-left-color:#7c4dbd;background:rgba(124,77,189,.08)}
+.cm-cal-ev--reunion_servicio{border-left-color:#2a9d78;background:rgba(42,157,120,.08)}
+.cm-cal-ev--comite{border-left-color:#d99a1e;background:rgba(217,154,30,.10)}
+.cm-cal-ev.cancelled{text-decoration:line-through;opacity:.6}
+.cm-cal-ev.active{box-shadow:0 0 0 2px rgba(16,40,60,.35)}
+.cm-cal-time{font-weight:700;flex:0 0 auto}
+.cm-cal-thumb{width:16px;height:16px;border-radius:3px;object-fit:cover;flex:0 0 16px}
+.cm-pub{padding:1px 7px;border-radius:999px;background:rgba(32,110,150,.12);color:#1d5f80;font-size:10.5px;font-weight:700;flex:0 0 auto}
+.cm-int{padding:1px 7px;border-radius:999px;background:rgba(15,40,60,.08);color:#33434f;font-size:10.5px;font-weight:700}
+.cm-tags{align-items:center;margin:4px 0}
+.cm-agenda-layout--cal{grid-template-columns:1fr}
+.cm-mt-thumb{width:100%;height:84px;object-fit:cover;border-radius:8px;margin-bottom:4px}
+.cm-banner{display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-bottom:12px}
+.cm-files{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;padding:8px 10px;border:1px dashed rgba(15,40,60,.18);border-radius:10px}
+.cm-file-btn{position:relative;overflow:hidden;cursor:pointer;margin:0}
+.cm-file-input{position:absolute;inset:0;opacity:0;cursor:pointer}
+@media (max-width:760px){
+  .cm-cal-head{display:none}
+  .cm-cal-week{grid-template-columns:1fr}
+  .cm-cal-day{min-height:0;border-right:0}
+  .cm-cal-day:not(.has){display:none}
+  .cm-cal-dow{display:inline;margin-left:6px;font-weight:400;color:#5b6b78}
+  .cm-cal-ev{white-space:normal;font-size:13px;padding:6px 8px}
+}
+@media print{.cm-banner{max-height:180px}}
+@media (min-width:761px){.cm-cal-ev .cm-pub{font-size:0;width:8px;height:8px;padding:0;border-radius:50%;background:#206e96;margin-left:auto}}

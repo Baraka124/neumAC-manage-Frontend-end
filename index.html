@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-comms-cm1">
+<link rel="stylesheet" href="access.css?v=20261017-comms-cm2b">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -5175,12 +5175,28 @@
 
                     <!-- ── AGENDA ── -->
                     <section v-if="comms.tab==='agenda'" class="cm-agenda" aria-label="Agenda">
-                        <div class="cm-agenda-layout">
-                            <div class="cm-agenda-list">
-                                <div class="cm-row"><p class="admin-kicker">UPCOMING</p><span class="cm-grow"></span><button v-if="commsCanPost" type="button" class="btn btn-primary btn-sm" @click="commsMtNew">+ New meeting</button></div>
+                        <div class="cm-row cm-cal-bar">
+                            <span class="cm-seg cm-seg--inline" role="radiogroup" aria-label="View"><label :class="{active:comms.mt.view==='calendar'}"><input type="radio" value="calendar" :checked="comms.mt.view==='calendar'" @change="commsAgendaView('calendar')"> Calendar</label><label :class="{active:comms.mt.view==='list'}"><input type="radio" value="list" :checked="comms.mt.view==='list'" @change="commsAgendaView('list')"> List</label></span>
+                            <template v-if="comms.mt.view==='calendar'"><button type="button" class="btn btn-secondary btn-sm" aria-label="Previous month" @click="commsCalShift(-1)">‹</button><strong class="cm-cal-title">{{ commsCalTitle }}</strong><button type="button" class="btn btn-secondary btn-sm" aria-label="Next month" @click="commsCalShift(1)">›</button><button type="button" class="btn btn-secondary btn-sm" @click="commsCalToday">Today</button></template>
+                            <span class="cm-grow"></span>
+                            <button v-if="commsCanPost" type="button" class="btn btn-primary btn-sm" @click="commsMtNew">+ New event</button>
+                        </div>
+                        <div v-if="comms.mt.view==='calendar'" class="cm-cal" role="grid" :aria-label="commsCalTitle">
+                            <div class="cm-cal-head" role="row"><span v-for="w in COMMS_WEEKDAYS" :key="w" role="columnheader">{{ w }}</span></div>
+                            <div v-for="(wk,wi) in commsCalGrid" :key="wi" class="cm-cal-week" role="row">
+                                <div v-for="d in wk" :key="d.date" role="gridcell" :class="['cm-cal-day',{out:!d.in_month,today:d.today,has:d.events.length}]">
+                                    <span class="cm-cal-num">{{ d.day }}<small class="cm-cal-dow">{{ formatDateShort(d.date) }}</small></span>
+                                    <button v-for="ev in d.events" :key="ev.id" type="button" :class="['cm-cal-ev','cm-cal-ev--'+ev.kind,{cancelled:ev.status==='cancelled',active:comms.mt.open &amp;&amp; comms.mt.open.meeting.id===ev.id}]" :title="ev.title" @click="commsMtOpen(ev)">
+                                        <img v-if="ev.banner_url" :src="ev.banner_url" alt="" class="cm-cal-thumb" loading="lazy"><span class="cm-cal-time">{{ commsFmtTime(ev.starts_at) }}</span> {{ ev.title }}<span v-if="ev.visibility==='public'" class="cm-pub" title="Public">Público</span></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div :class="['cm-agenda-layout',{'cm-agenda-layout--cal':comms.mt.view==='calendar'}]">
+                            <div v-if="comms.mt.view==='list'" class="cm-agenda-list">
+                                <p class="admin-kicker">UPCOMING</p>
                                 <ul class="cm-mt-list">
                                     <li v-for="m in commsMtUpcoming" :key="m.id"><button type="button" :class="['cm-mt-item',{active:comms.mt.open &amp;&amp; comms.mt.open.meeting.id===m.id}]" @click="commsMtOpen(m)">
-                                        <span class="cm-mt-date">{{ commsFmtWhen(m.starts_at) }}</span><strong>{{ m.title }}</strong><small>{{ m.kind_label }}<template v-if="m.location"> · {{ m.location }}</template><template v-if="m.item_count"> · {{ m.item_count }} items</template></small><span v-if="m.for_me" class="cm-forme">Para mí</span></button></li>
+                                        <img v-if="m.banner_url" :src="m.banner_url" alt="" class="cm-mt-thumb" loading="lazy"><span class="cm-mt-date">{{ commsFmtWhen(m.starts_at) }}</span><strong>{{ m.title }}</strong><small>{{ m.kind_label }}<template v-if="m.location"> · {{ m.location }}</template><template v-if="m.item_count"> · {{ m.item_count }} items</template></small><span class="cm-row cm-tags"><span v-if="m.visibility==='public'" class="cm-pub">Público</span><span v-if="m.for_me" class="cm-forme">Para mí</span></span></button></li>
                                     <li v-if="!commsMtUpcoming.length" class="ac-meta">Nothing scheduled.</li>
                                 </ul>
                                 <details class="opsr-history" :open="comms.mt.showPast"><summary>Past and cancelled ({{ commsMtPast.length }})</summary>
@@ -5189,11 +5205,14 @@
 
                             <!-- Meeting editor -->
                             <form v-if="comms.mt.form" class="cm-mt-detail cm-mt-form" @submit.prevent="commsMtSave">
-                                <p class="admin-kicker">{{ comms.mt.form.id ? 'EDIT MEETING' : 'NEW MEETING' }}</p>
+                                <p class="admin-kicker">{{ comms.mt.form.id ? 'EDIT EVENT' : 'NEW EVENT' }}</p><p v-if="!comms.mt.form.id" class="ac-meta">Banner and flyer can be added once it is saved.</p>
                                 <div class="cm-row"><label class="cm-field cm-grow">Title <input v-model="comms.mt.form.title" class="form-control" maxlength="160" required placeholder="e.g. Sesión clínica: manejo de la EPID"></label>
                                     <label class="cm-field">Kind <select v-model="comms.mt.form.kind" class="form-select"><option v-for="k in comms.lists.meeting_kinds.filter(x=>x.active)" :key="k.code" :value="k.code">{{ k.label }}</option></select></label></div>
                                 <div class="cm-row"><label class="cm-field">Starts <input type="datetime-local" v-model="comms.mt.form.starts_at" class="form-control" required></label><label class="cm-field">Ends <input type="datetime-local" v-model="comms.mt.form.ends_at" class="form-control"></label>
                                     <label class="cm-field cm-grow">Place <input v-model="comms.mt.form.location" class="form-control" maxlength="120" placeholder="Aula, sala…"></label></div>
+                                <div class="cm-row"><label class="cm-field">Visibility <select v-model="comms.mt.form.visibility" class="form-select"><option value="internal">Internal (the department)</option><option value="public">Public (can be shown outside neumDesk)</option></select></label>
+                                    <label class="cm-field cm-grow">Description <textarea v-model="comms.mt.form.description" class="form-control" rows="2" maxlength="2000" placeholder="What it is about, who it is for (no patient data)"></textarea></label></div>
+                                <p v-if="comms.mt.form.visibility==='public'" class="cm-note ac-meta">Public shows only the title, kind, time, place, online link, description, banner and flyer — never the minutes, follow-ups or who it concerns.</p>
                                 <div class="cm-row"><label class="cm-field cm-grow">Online link <input v-model="comms.mt.form.online_url" class="form-control" maxlength="300" placeholder="https://…"></label>
                                     <label class="cm-field">Organiser <select v-model="comms.mt.form.organizer_id" class="form-select"><option value="">—</option><option v-for="s in commsStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label></div>
                                 <p class="admin-kicker">ORDEN DEL DÍA</p>
@@ -5222,6 +5241,7 @@
 
                             <!-- Meeting detail -->
                             <article v-else-if="comms.mt.open" class="cm-mt-detail opsr-report">
+                                <img v-if="comms.mt.open.meeting.banner_url" :src="comms.mt.open.meeting.banner_url" :alt="comms.mt.open.meeting.banner_alt || comms.mt.open.meeting.title" class="cm-banner">
                                 <header class="opsr-rep-head">
                                     <div><span class="module-header-kicker">{{ comms.mt.open.meeting.kind_label }}<template v-if="comms.mt.open.meeting.status!=='planned'"> · {{ comms.mt.open.meeting.status==='held' ? 'HELD' : 'CANCELLED' }}</template></span><h3>{{ comms.mt.open.meeting.title }}</h3>
                                         <small>{{ commsFmtWhen(comms.mt.open.meeting.starts_at) }}<template v-if="comms.mt.open.meeting.ends_at">–{{ commsFmtTime(comms.mt.open.meeting.ends_at) }}</template><template v-if="comms.mt.open.meeting.location"> · {{ comms.mt.open.meeting.location }}</template><template v-if="comms.mt.open.meeting.organizer_name"> · organiza {{ comms.mt.open.meeting.organizer_name }}</template></small>
@@ -5235,7 +5255,15 @@
                                         <button v-if="commsMtCanChange()" type="button" class="btn btn-secondary btn-sm" @click="commsMtRemove">Remove</button>
                                     </span>
                                 </header>
-                                <p v-if="comms.mt.open.meeting.online_url"><a :href="comms.mt.open.meeting.online_url" target="_blank" rel="noopener">Join online</a></p>
+                                <p class="cm-row cm-tags"><span :class="comms.mt.open.meeting.visibility==='public' ? 'cm-pub' : 'cm-int'">{{ comms.mt.open.meeting.visibility==='public' ? 'Público' : 'Interno' }}</span><a v-if="comms.mt.open.meeting.online_url" :href="comms.mt.open.meeting.online_url" target="_blank" rel="noopener">Join online</a><a v-if="comms.mt.open.meeting.flyer_url" :href="comms.mt.open.meeting.flyer_url" target="_blank" rel="noopener">Flyer: {{ comms.mt.open.meeting.flyer_name || 'download' }}</a></p>
+                                <p v-if="comms.mt.open.meeting.description" class="cm-post-text">{{ comms.mt.open.meeting.description }}</p>
+                                <div v-if="commsMtCanChange()" class="cm-files no-print">
+                                    <label class="btn btn-secondary btn-sm cm-file-btn">{{ comms.mt.uploading==='banner' ? 'Uploading…' : (comms.mt.open.meeting.banner_url ? 'Change banner' : '+ Banner (image)') }}<input type="file" accept="image/jpeg,image/png,image/webp" class="cm-file-input" :disabled="!!comms.mt.uploading" @change="commsMtFile('banner',$event)"></label>
+                                    <button v-if="comms.mt.open.meeting.banner_url" type="button" class="btn btn-secondary btn-sm" @click="commsMtFileRemove('banner')">Remove banner</button>
+                                    <label class="btn btn-secondary btn-sm cm-file-btn">{{ comms.mt.uploading==='flyer' ? 'Uploading…' : (comms.mt.open.meeting.flyer_url ? 'Change flyer' : '+ Flyer (PDF or image)') }}<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" class="cm-file-input" :disabled="!!comms.mt.uploading" @change="commsMtFile('flyer',$event)"></label>
+                                    <button v-if="comms.mt.open.meeting.flyer_url" type="button" class="btn btn-secondary btn-sm" @click="commsMtFileRemove('flyer')">Remove flyer</button>
+                                    <small class="ac-meta">Banner: JPEG, PNG or WEBP up to 5 MB. Flyer: PDF or image up to 10 MB.</small>
+                                </div>
                                 <h4>Orden del día</h4>
                                 <ol class="cm-items"><li v-for="it in comms.mt.open.items" :key="it.id"><span class="cm-mt-date">{{ commsFmtTime(it.at) }}</span> <strong>{{ it.topic }}</strong><template v-if="it.presenter"> — {{ it.presenter }}</template><small v-if="it.duration_min"> · {{ it.duration_min }} min</small><small v-if="it.notes" class="cm-block">{{ it.notes }}</small></li>
                                     <li v-if="!comms.mt.open.items.length" class="ac-meta">No agenda items yet.</li></ol>
@@ -5246,7 +5274,7 @@
                                     <li v-if="!comms.mt.open.actions.length" class="ac-meta">None.</li></ul>
                                 <form v-if="commsCanPost" class="cm-row no-print" @submit.prevent="commsActionAdd({meeting_id:comms.mt.open.meeting.id})"><input v-model="comms.mt.actionForm.text" class="form-control cm-grow" maxlength="300" placeholder="Add a follow-up from this meeting"><select v-model="comms.mt.actionForm.owner_id" class="form-select"><option value="">Owner</option><option v-for="s in commsStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select><input type="date" v-model="comms.mt.actionForm.due_on" class="form-control"><button type="submit" class="btn btn-secondary btn-sm" :disabled="!comms.mt.actionForm.text">Add</button></form>
                             </article>
-                            <p v-else class="ac-meta cm-mt-detail">Choose a meeting, or create one.</p>
+                            <p v-else class="ac-meta cm-mt-detail">Choose an event, or create one.</p>
                         </div>
                     </section>
 
@@ -13343,7 +13371,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.41-20261017-comms-cm1"></script>
+    <script src="app.js?v=5.4-production.42-20261017-comms-cm2"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
