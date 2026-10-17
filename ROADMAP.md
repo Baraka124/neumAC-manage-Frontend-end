@@ -80,8 +80,13 @@ Only what the pilot shows is needed, roughly in this order:
    calibration due within N days, urgent interconsulta unassigned > N h, incident open > N days, no activity for N days.
    Checked hourly 07–21 h; one email per rule per day to the owner (else coordinators, else head of department); every
    firing kept in `ops_alert_events`; never fires on missing or stale numbers; "Check now" previews without emailing.
-4. **Disease programmes (counts):** EPOC, Asma, Asma grave, EPID, SAHS… as cross-unit programmes built on the
-   `clinical_condition` breakdown; a programme dashboard; then the **care map** (disease → units → outcomes).
+4. **Diseases (DP-1):** ✅ built 17 Oct. A configurable catalogue (groups, parent/child, lead, on/off; seeded with
+   20 pulmonology diseases in 8 groups) where each disease is a **hub computed from its links**: units, measures
+   (activity / waiting / in hospital now), condition codes, interconsulta reasons, device types, team, research lines,
+   trials, committee meetings. Units → **By disease**: one scannable table (In hospital now, by condition 30 d, activity,
+   waiting + oldest, interconsultas, equipment issues, open trials) and a page per disease with where each number comes
+   from and coverage when the lead is away. Follow-up windows (back ≤ 3 m, readmitted ≤ 30 d / ≤ 1 y) are columns now and
+   fill when neumACt sends those totals into a measure linked with that role. Next: the **care map** (disease → units).
 5. **OR-5:** resident visibility of incidents, Grounded from Ops records, leadership overview.
 
 ### Phase 4 — Hospital data
