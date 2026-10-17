@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-alerts">
+<link rel="stylesheet" href="access.css?v=20261017-diseases">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4632,7 +4632,105 @@
                     </section>
 
                     <!-- Units -->
-                    <section v-if="opsRoom.section==='units' && !opsRoom.unit" class="opsr-grid" aria-label="Pulmonology units">
+                    <!-- DP-1 · Units can be seen by unit or by disease (a disease is computed from what is linked to it). -->
+                    <div v-if="opsRoom.section==='units' &amp;&amp; !opsRoom.unit" class="dz-switch" role="group" aria-label="View">
+                        <button type="button" :class="{active:dz.view==='units'}" :aria-pressed="dz.view==='units'" @click="dzView('units')">By unit</button>
+                        <button type="button" :class="{active:dz.view==='diseases'}" :aria-pressed="dz.view==='diseases'" @click="dzView('diseases')">By disease</button>
+                    </div>
+                    <section v-if="opsRoom.section==='units' &amp;&amp; !opsRoom.unit &amp;&amp; dz.view==='diseases'" class="dz" aria-label="Diseases">
+                        <p v-if="dz.error" class="sync-check-error">{{ dz.error }}</p>
+                        <p v-if="dz.loaded &amp;&amp; !dz.migrated" class="sync-check-error">Diseases appear after the DP-1 database update (Configuración → Estado del sistema → Database updates).</p>
+                        <p v-if="dz.loading &amp;&amp; !dz.loaded" class="ac-meta">Loading…</p>
+                        <template v-if="dz.loaded &amp;&amp; dz.migrated">
+                            <p class="ac-meta dz-intro">Each disease is a hub. Its figures come from what is connected to it: units, measures, condition codes, interconsulta reasons, equipment, people, trials. Counts only. <span class="dz-key"><span class="dz-empty">—</span> nothing connected yet</span> <span class="dz-key"><span class="dz-stale">old</span> out of date</span> <span class="dz-key"><span class="dz-await">neumACt</span> arrives from the clinical platform</span></p>
+                            <div class="dz-tools">
+                                <button v-if="dz.canEdit &amp;&amp; !dz.form" type="button" class="btn btn-secondary btn-sm" @click="dzNew">+ Disease</button>
+                                <label v-if="dz.canEdit" class="ac-meta"><input type="checkbox" v-model="dz.showOff" @change="dzLoad"> show switched-off</label>
+                            </div>
+                            <form v-if="dz.form" class="opsr-add dz-form" @submit.prevent="dzCreate">
+                                <p class="admin-kicker">NEW DISEASE</p>
+                                <input v-model="dz.form.name" class="form-control opsr-grow" maxlength="80" placeholder="Name (e.g. Hipertensión pulmonar)" aria-label="Name" required>
+                                <input v-model="dz.form.short_name" class="form-control" maxlength="20" placeholder="Short name" aria-label="Short name">
+                                <select v-model="dz.form.group_code" class="form-select" aria-label="Group"><option v-for="g in dz.groups" :key="g.code" :value="g.code">{{ g.label }}</option><option value="__new">+ New group…</option></select>
+                                <input v-if="dz.form.group_code==='__new'" v-model="dz.form.newGroup" class="form-control" maxlength="80" placeholder="New group name" aria-label="New group name">
+                                <select v-model="dz.form.parent_id" class="form-select" aria-label="Part of"><option value="">Not part of another disease</option><option v-for="p in dzParents(null)" :key="p.id" :value="p.id">Part of {{ p.name }}</option></select>
+                                <button type="submit" class="btn btn-primary btn-sm" :disabled="dz.busy || !dz.form.name.trim()">Add</button><button type="button" class="btn btn-secondary btn-sm" @click="dz.form=null">Cancel</button>
+                            </form>
+                            <div class="dz-scroll" tabindex="0" aria-label="Diseases table (scrolls sideways)">
+                                <table class="dz-table">
+                                    <thead><tr><th scope="col" class="dz-name">Disease</th><th scope="col">Lead</th><th v-for="c in dz.columns" :key="c.key" scope="col" :class="{'dz-col-await':c.source==='neumact'}">{{ c.label }}</th></tr></thead>
+                                    <tbody>
+                                        <template v-for="r in dzTable" :key="r.key">
+                                            <tr v-if="r.kind==='group'" class="dz-group"><th :colspan="dz.columns.length + 2" scope="rowgroup">{{ r.label }}</th></tr>
+                                            <tr v-else :class="{'dz-open':dz.open===r.d.id,'dz-off':r.d.active===false}" @click="dzOpen(r.d)">
+                                                <th scope="row" class="dz-name" :class="{'dz-child':r.d.depth}"><button type="button" class="dz-link" :aria-expanded="dz.open===r.d.id">{{ r.d.name }}</button><small v-if="r.d.active===false" class="ac-meta"> (off)</small></th>
+                                                <td class="dz-lead"><template v-if="dzTeam(r.d).lead">{{ dzTeam(r.d).lead.name || '—' }}<span v-if="dzTeam(r.d).lead.away" class="dz-away" title="Away today">away</span></template><span v-else class="dz-empty">—</span></td>
+                                                <td v-for="c in dz.columns" :key="c.key" :class="dzCell(r.d,c.key).cls" :title="dzCell(r.d,c.key).title">{{ dzCell(r.d,c.key).t }}</td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- One disease -->
+                            <article v-if="dzOpenD" id="dz-page" class="dz-page" :aria-label="dzOpenD.name">
+                                <header class="dz-page-head">
+                                    <div><p class="admin-kicker">{{ dzGroupLabel(dzOpenD.group_code) }}</p><h3>{{ dzOpenD.name }}</h3>
+                                        <p class="ac-meta">Lead: {{ dzOpenD.lead_id ? (dz.staffNames[dzOpenD.lead_id] || '—') : 'not set' }}<template v-if="dzTeam(dzOpenD).lead &amp;&amp; dzTeam(dzOpenD).lead.away"> · <strong class="dz-away">away today</strong></template> · team {{ dzTeam(dzOpenD).size || 0 }}<template v-if="dzTeam(dzOpenD).away"> ({{ dzTeam(dzOpenD).away }} away today)</template></p>
+                                        <p v-if="dzTeam(dzOpenD).coverage_risk" class="sync-check-error">Coverage: the lead is away today and no other team member is available for this disease.</p>
+                                        <p v-if="dzOpenD.description" class="dz-desc">{{ dzOpenD.description }}</p></div>
+                                    <div class="dz-page-acts"><button v-if="dz.canEdit &amp;&amp; !dz.edit" type="button" class="btn btn-secondary btn-sm" @click="dzEditStart(dzOpenD)">Edit</button><button type="button" class="btn btn-secondary btn-sm" @click="dz.open=null">Close</button></div>
+                                </header>
+                                <form v-if="dz.edit" class="opsr-add dz-form" @submit.prevent="dzSave">
+                                    <input v-model="dz.edit.name" class="form-control opsr-grow" maxlength="80" aria-label="Name" required>
+                                    <input v-model="dz.edit.short_name" class="form-control" maxlength="20" placeholder="Short name" aria-label="Short name">
+                                    <select v-model="dz.edit.group_code" class="form-select" aria-label="Group"><option v-for="g in dz.groups" :key="g.code" :value="g.code">{{ g.label }}</option></select>
+                                    <select v-model="dz.edit.parent_id" class="form-select" aria-label="Part of"><option value="">Not part of another disease</option><option v-for="p in dzParents(dzOpenD)" :key="p.id" :value="p.id">Part of {{ p.name }}</option></select>
+                                    <select v-model="dz.edit.lead_id" class="form-select" aria-label="Lead"><option value="">— Lead —</option><option v-for="s in (dz.options &amp;&amp; dz.options.staff) || []" :key="s.id" :value="s.id">{{ s.name }}</option></select>
+                                    <input v-model="dz.edit.description" class="form-control opsr-grow" maxlength="500" placeholder="What this covers (optional)" aria-label="Description">
+                                    <label class="ac-meta"><input type="checkbox" v-model="dz.edit.active"> in use</label>
+                                    <button type="submit" class="btn btn-primary btn-sm" :disabled="dz.busy">Save</button><button type="button" class="btn btn-secondary btn-sm" @click="dz.edit=null">Cancel</button>
+                                </form>
+                                <div class="dz-figs">
+                                    <div v-for="c in dz.columns" :key="c.key" class="dz-fig" :class="dzCell(dzOpenD,c.key).cls"><span class="dz-fig-v">{{ dzCell(dzOpenD,c.key).t }}</span><span class="dz-fig-l">{{ c.label }}</span><small v-if="dzCell(dzOpenD,c.key).title" class="ac-meta">{{ dzCell(dzOpenD,c.key).title }}</small></div>
+                                </div>
+                                <div class="dz-cols">
+                                    <section v-if="(dzDetail(dzOpenD.id).census||[]).length || (dzDetail(dzOpenD.id).episodes||[]).length || (dzDetail(dzOpenD.id).activity||[]).length || (dzDetail(dzOpenD.id).pending||[]).length"><h4>Where the numbers come from</h4>
+                                        <ul class="opsr-list">
+                                            <li v-for="(x,i) in dzDetail(dzOpenD.id).census||[]" :key="'c'+i" class="ac-meta">In hospital now · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong> ({{ formatDateShort(x.date) }})</li>
+                                            <li v-for="(x,i) in dzDetail(dzOpenD.id).episodes||[]" :key="'e'+i" class="ac-meta">By condition, 30 d · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong></li>
+                                            <li v-for="(x,i) in dzDetail(dzOpenD.id).activity||[]" :key="'a'+i" class="ac-meta">Activity, 30 d · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong></li>
+                                            <li v-for="(x,i) in dzDetail(dzOpenD.id).pending||[]" :key="'p'+i" class="ac-meta">Waiting · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong><template v-if="x.oldest_days != null"> · oldest {{ x.oldest_days }} d</template> ({{ formatDateShort(x.date) }})</li>
+                                        </ul></section>
+                                    <section v-if="(dzDetail(dzOpenD.id).equipment||[]).length"><h4>Equipment</h4>
+                                        <ul class="opsr-list"><li v-for="(x,i) in dzDetail(dzOpenD.id).equipment" :key="'q'+i" class="ac-meta">{{ x.name }} · {{ x.unit }} · {{ x.status }}<strong v-if="x.calibration_overdue" class="dz-warn"> · calibration overdue</strong></li></ul></section>
+                                    <section v-if="(dzDetail(dzOpenD.id).team||[]).length"><h4>Team</h4>
+                                        <ul class="opsr-list"><li v-for="x in dzDetail(dzOpenD.id).team" :key="x.id" class="ac-meta">{{ x.name || '—' }}<span v-if="x.away" class="dz-away">away today</span></li></ul></section>
+                                    <section v-if="(dzDetail(dzOpenD.id).trials||[]).length || (dzDetail(dzOpenD.id).lines||[]).length"><h4>Research</h4>
+                                        <ul class="opsr-list"><li v-for="x in dzDetail(dzOpenD.id).trials||[]" :key="x.id" class="ac-meta">Trial · {{ x.title }} · <strong :class="{'dz-ok':x.open}">{{ x.status }}</strong></li>
+                                            <li v-for="x in dzDetail(dzOpenD.id).lines||[]" :key="x.id" class="ac-meta">Research line · {{ x.name }}</li></ul></section>
+                                    <section v-if="dzLinksOf(dzOpenD.id,'meeting_title').length"><h4>Committees</h4>
+                                        <p class="ac-meta">{{ (dzDetail(dzOpenD.id).meetings||{}).last_90d || 0 }} in the last 90 days<template v-if="(dzDetail(dzOpenD.id).meetings||{}).next"> · next {{ opsFmtTs(dzDetail(dzOpenD.id).meetings.next.starts_at) }}</template></p></section>
+                                </div>
+                                <section class="dz-conn"><h4>Connections <span class="ac-meta">({{ dzLinksOf(dzOpenD.id).length }})</span></h4>
+                                    <ul class="dz-conn-list">
+                                        <li v-for="l in dzLinksOf(dzOpenD.id)" :key="l.id"><span class="dz-conn-type">{{ (dz.linkTypes[l.link_type]||{}).label || l.link_type }}</span> {{ dz.labels[l.id] || l.target }}<small v-if="l.role" class="ac-meta"> → {{ dz.roles[l.role] || l.role }}</small>
+                                            <button v-if="dz.canEdit" type="button" class="btn-link" @click.stop="dzLinkRemove(l)">remove</button></li>
+                                        <li v-if="!dzLinksOf(dzOpenD.id).length" class="ac-meta">Nothing connected yet{{ dz.canEdit ? ' — connect units, measures, condition codes and the rest below.' : '.' }}</li>
+                                    </ul>
+                                    <form v-if="dz.canEdit &amp;&amp; dz.options" class="opsr-add dz-form" @submit.prevent="dzLinkAdd">
+                                        <select v-model="dz.link.link_type" class="form-select" aria-label="Connect" @change="dz.link.target='';dz.link.role=''"><option value="">Connect…</option><option v-for="(t,k) in dz.linkTypes" :key="k" :value="k">{{ t.label }}</option></select>
+                                        <select v-if="dz.link.link_type==='measure'" v-model="dz.link.unit" class="form-select" aria-label="Unit" @change="dz.link.target=''"><option value="">All units</option><option v-for="u in dz.options.units" :key="u.id" :value="u.id">{{ u.name }}</option></select>
+                                        <input v-if="dz.link.link_type==='meeting_title'" v-model="dz.link.target" class="form-control" maxlength="80" placeholder="Text in the meeting title, e.g. Comité EPID" aria-label="Meeting title contains">
+                                        <select v-else-if="dz.link.link_type" v-model="dz.link.target" class="form-select opsr-grow" aria-label="Item"><option value="">— Choose —</option><option v-for="o in dzLinkTargets()" :key="o.v" :value="o.v">{{ o.l }}</option></select>
+                                        <select v-if="dz.link.link_type==='measure' &amp;&amp; dz.link.target" v-model="dz.link.role" class="form-select" aria-label="Counts as"><option value="">Counts as… (default)</option><option v-for="o in dzRoleOptions()" :key="o.v" :value="o.v">{{ o.l }}</option></select>
+                                        <button type="submit" class="btn btn-primary btn-sm" :disabled="dz.busy || !dz.link.link_type || !dz.link.target">Connect</button>
+                                    </form>
+                                </section>
+                            </article>
+                        </template>
+                    </section>
+                    <section v-if="opsRoom.section==='units' &amp;&amp; !opsRoom.unit &amp;&amp; dz.view==='units'" class="opsr-grid" aria-label="Pulmonology units">
                         <div v-if="opsRoom.units.length" class="opsr-overview" aria-label="Units by status">
                             <span class="opsr-ov" data-level="alert"><b>{{ opsLevelCount('alert') }}</b> need action</span>
                             <span class="opsr-ov" data-level="watch"><b>{{ opsLevelCount('watch') }}</b> to watch</span>
@@ -13775,7 +13873,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.54-20261017-alerts"></script>
+    <script src="app.js?v=5.4-production.55-20261017-diseases"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
