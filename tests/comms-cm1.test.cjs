@@ -9,8 +9,8 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(__dirname, '..', 'access.css'), 'utf8');
 const view = html.slice(html.indexOf(`<div v-if="currentView === 'communications'" class="ops-view">`), html.indexOf('<!-- ============ SYSTEM SETTINGS VIEW ============ -->'));
 
-test('four tabs in the Communication view; loads its overview on entry', () => {
-  assert.match(app, /const COMMS_TABS=\[\{key:'feed',l:'Feed'\},\{key:'parte',l:'Parte del día'\},\{key:'agenda',l:'Agenda'\},\{key:'pendientes',l:'Pendientes'\}\]/);
+test('tabs in the Communication view; loads its overview on entry', () => {
+  assert.match(app, /const COMMS_TABS=\[\{key:'feed',l:'Feed'\},\{key:'parte',l:'Parte del día'\},\{key:'agenda',l:'Agenda'\},\{key:'pendientes',l:'Pendientes'\}(,\{key:'mensajes'[^\]]*)?\]/);   // + Mensajes since CM-3
   for (const t of ['feed', 'parte', 'agenda', 'pendientes']) assert.ok(view.includes(`v-if="comms.tab==='${t}'"`), t);
   assert.match(app, /if \(v === 'communications'\)\s*\{ commsOps\.loadAnnouncements\(\); commsOps\.loadOpsMetrics\(\); commsLoad\(\) \}/);
   assert.doesNotMatch(view, /briefingForm\.show = true/);                       // the dead "Edit & post briefing" rail is gone
