@@ -1341,3 +1341,7 @@ html body #app .sys-errors code{color:#1f2937}
 .oq-card{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.78rem;margin-top:4px}
 .oq-card-alert{font-weight:700;color:#b45309}
 .dz-up{color:inherit}.dz-down{color:inherit}
+
+/* OQ-1 · sharing */
+.oq-safe{display:inline-flex;gap:5px;align-items:center;font-size:.8rem;margin-right:6px}
+.oq-dq li{padding:2px 0}
