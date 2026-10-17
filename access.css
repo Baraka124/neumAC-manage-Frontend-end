@@ -1315,3 +1315,29 @@ html body #app .sys-errors code{color:#1f2937}
 .dz-conn-list{list-style:none;padding:0;margin:4px 0 8px}
 .dz-conn-list li{padding:4px 0;border-bottom:1px solid var(--border,rgba(127,127,127,.12));font-size:.86rem;overflow-wrap:anywhere}
 .dz-conn-type{display:inline-block;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;opacity:.7;margin-right:6px}
+
+/* OQ-1 · trustworthy numbers */
+.oq-def{display:block;font-size:.76rem;opacity:.75;max-width:60ch}
+.oq-src{display:inline-block;font-size:.68rem;padding:0 6px;border-radius:999px;background:rgba(99,102,241,.12);color:#4f46e5;margin-left:4px}
+.oq-comp{font-size:.82rem;margin:4px 0 8px;padding:4px 10px;border-radius:8px;display:inline-block}
+.oq-ok{color:#047857}.oq-watch{color:#b45309}.oq-alert{color:#b91c1c}
+.oq-comp.oq-watch{background:rgba(180,83,9,.08)}.oq-comp.oq-alert{background:rgba(185,28,28,.08)}
+.oq-cap{display:block;margin-top:4px;font-weight:600}
+.oq-defs .oq-def-row{flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border,rgba(127,127,127,.15));padding:6px 0}
+.oq-def-name{min-width:160px}
+.oq-alerts{list-style:none;margin:8px 0;padding:0}
+.oq-alerts li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;padding:6px 10px;border-radius:8px;background:rgba(180,83,9,.08);margin-bottom:4px}
+.oq-alerts li[data-status=acting]{background:rgba(0,179,179,.08)}
+.oq-alert-tag{font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;font-weight:700;color:#b45309}
+.oq-alerts li[data-status=acting] .oq-alert-tag{color:#0e7490}
+.oq-alert-acts{display:flex;gap:10px;margin-left:auto}
+.oq-setup,.oq-setup-unit{margin:6px 0 10px}
+.oq-setup>summary,.oq-setup-unit>summary{cursor:pointer}
+.oq-setup-list{list-style:none;padding:0;margin:6px 0;display:grid;gap:4px}
+.oq-setup-list li{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.oq-bar{display:inline-block;width:80px;height:6px;border-radius:999px;background:linear-gradient(90deg,#00B3B3 var(--p),rgba(127,127,127,.2) var(--p))}
+.oq-steps{list-style:none;padding:0;margin:6px 0}
+.oq-steps li{padding:2px 0}.oq-steps li.done{opacity:.6}
+.oq-card{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.78rem;margin-top:4px}
+.oq-card-alert{font-weight:700;color:#b45309}
+.dz-up{color:inherit}.dz-down{color:inherit}

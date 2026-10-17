@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-diseases">
+<link rel="stylesheet" href="access.css?v=20261017-quality">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4700,7 +4700,7 @@
                                             <li v-for="(x,i) in dzDetail(dzOpenD.id).census||[]" :key="'c'+i" class="ac-meta">In hospital now · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong> ({{ formatDateShort(x.date) }})</li>
                                             <li v-for="(x,i) in dzDetail(dzOpenD.id).episodes||[]" :key="'e'+i" class="ac-meta">By condition, 30 d · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong></li>
                                             <li v-for="(x,i) in dzDetail(dzOpenD.id).activity||[]" :key="'a'+i" class="ac-meta">Activity, 30 d · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong></li>
-                                            <li v-for="(x,i) in dzDetail(dzOpenD.id).pending||[]" :key="'p'+i" class="ac-meta">Waiting · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong><template v-if="x.oldest_days != null"> · oldest {{ x.oldest_days }} d</template> ({{ formatDateShort(x.date) }})</li>
+                                            <li v-for="(x,i) in dzDetail(dzOpenD.id).pending||[]" :key="'p'+i" class="ac-meta">Waiting · {{ x.unit }} · {{ x.measure }}: <strong>{{ x.value }}</strong><template v-if="x.oldest_days != null"> · oldest {{ x.oldest_days }} d</template> ({{ formatDateShort(x.date) }})<template v-if="x.capacity &amp;&amp; oqCap(x.capacity)"> · {{ oqCap(x.capacity) }}</template></li>
                                         </ul></section>
                                     <section v-if="(dzDetail(dzOpenD.id).equipment||[]).length"><h4>Equipment</h4>
                                         <ul class="opsr-list"><li v-for="(x,i) in dzDetail(dzOpenD.id).equipment" :key="'q'+i" class="ac-meta">{{ x.name }} · {{ x.unit }} · {{ x.status }}<strong v-if="x.calibration_overdue" class="dz-warn"> · calibration overdue</strong></li></ul></section>
@@ -4731,6 +4731,9 @@
                         </template>
                     </section>
                     <section v-if="opsRoom.section==='units' &amp;&amp; !opsRoom.unit &amp;&amp; dz.view==='units'" class="opsr-grid" aria-label="Pulmonology units">
+                        <details v-if="oqSetup.total" class="oq-setup" :open="oqSetup.ready===0"><summary><strong>Setup: {{ oqSetup.ready }} of {{ oqSetup.total }} units ready</strong> <span class="ac-meta">— what each unit still needs</span></summary>
+                            <ul class="oq-setup-list"><li v-for="u in oqSetup.units" :key="u.id"><button type="button" class="dz-link" @click="opsOpen(u)">{{ u.unit_name }}</button> <span class="oq-bar" :style="{'--p':(100*u.quality.readiness.done/u.quality.readiness.total)+'%'}" :title="u.quality.readiness.done+' of '+u.quality.readiness.total"></span> <small class="ac-meta">{{ u.quality.readiness.ready ? 'ready' : 'next: '+u.quality.readiness.next.label.toLowerCase() }}</small></li></ul>
+                        </details>
                         <div v-if="opsRoom.units.length" class="opsr-overview" aria-label="Units by status">
                             <span class="opsr-ov" data-level="alert"><b>{{ opsLevelCount('alert') }}</b> need action</span>
                             <span class="opsr-ov" data-level="watch"><b>{{ opsLevelCount('watch') }}</b> to watch</span>
@@ -4749,6 +4752,11 @@
                                 <span v-if="u.pulse &amp;&amp; u.pulse.activity.measures">activity <b>{{ opsAgo(u.pulse.activity.days_since) }}</b></span>
                                 <span v-if="u.alerts &amp;&amp; u.alerts.resources.beds"><b>{{ u.alerts.resources.beds_available }}/{{ u.alerts.resources.beds }}</b> beds free</span>
                             </span>
+                            <span v-if="u.quality" class="oq-card">
+                                <span v-if="u.quality.open_alerts.length" class="oq-card-alert">{{ u.quality.open_alerts.length }} alert{{ u.quality.open_alerts.length===1?'':'s' }} open</span>
+                                <span v-if="u.quality.completeness.level!=='none'" :class="'oq-'+u.quality.completeness.level">{{ oqCompText(u.quality.completeness) || 'recording every weekday' }}</span>
+                                <span v-if="!u.quality.readiness.ready" class="ac-meta">setup {{ u.quality.readiness.done }}/{{ u.quality.readiness.total }}</span>
+                            </span>
                         </button>
                         <p v-if="!opsRoom.loading && !opsRoom.units.length && !opsRoom.error" class="ac-meta">No units are switched on for the Ops Room yet.</p>
                     </section>
@@ -4761,6 +4769,14 @@
                                 <p v-if="opsReasons(opsRoom.unit).length" class="opsr-reasons-line"><span v-for="(r,ri) in opsReasons(opsRoom.unit)" :key="ri" :data-level="r.level">{{ r.text }}</span></p></div>
                             <button type="button" class="btn btn-secondary btn-sm opsr-head-btn" @click="opsRepFromUnit">Informes de la unidad</button>
                         </div>
+                        <!-- OQ-1 · alerts that fired and are not resolved, and the unit's setup checklist -->
+                        <ul v-if="opsRoom.unit.quality &amp;&amp; opsRoom.unit.quality.open_alerts.length" class="oq-alerts" aria-label="Open alerts">
+                            <li v-for="ev in opsRoom.unit.quality.open_alerts" :key="ev.id" :data-status="ev.status"><span class="oq-alert-tag">{{ OQ_ACK[ev.status] }}</span> <strong>{{ ev.text }}</strong> <small class="ac-meta">alerted {{ formatDateShort(ev.fired_on) }}</small>
+                                <span class="oq-alert-acts"><button v-if="ev.status==='open'" type="button" class="btn-link" @click="oqAck(ev,'seen')">Seen</button><button v-if="ev.status!=='acting'" type="button" class="btn-link" @click="oqAck(ev,'acting')">Acting</button><button type="button" class="btn-link" @click="oqAck(ev,'resolved')">Resolve…</button></span></li>
+                        </ul>
+                        <details v-if="opsRoom.unit.quality &amp;&amp; !opsRoom.unit.quality.readiness.ready" class="oq-setup-unit"><summary>Setup {{ opsRoom.unit.quality.readiness.done }}/{{ opsRoom.unit.quality.readiness.total }} · next: {{ opsRoom.unit.quality.readiness.next.label.toLowerCase() }}</summary>
+                            <ul class="oq-steps"><li v-for="st in opsRoom.unit.quality.readiness.steps" :key="st.key" :class="{done:st.done}"><span aria-hidden="true">{{ st.done ? '✓' : '○' }}</span> {{ st.label }}<small v-if="!st.done" class="ac-meta"> — {{ st.hint }}</small></li></ul>
+                        </details>
                         <nav class="opsr-tabs" role="tablist" aria-label="Six questions">
                             <button v-for="q in OPS_QUESTIONS" :key="q.key" type="button" role="tab" :aria-selected="opsRoom.tab===q.key" :class="['opsr-tab',{active:opsRoom.tab===q.key,off:!opsQuestionOn(opsRoom.unit,q)}]" :data-level="opsQuestionOn(opsRoom.unit,q) ? opsQStatus(opsRoom.unit,q.key).level : null" :disabled="!opsQuestionOn(opsRoom.unit,q)" :title="opsQuestionOn(opsRoom.unit,q)?q.hint:'Not used by this unit'" @click="opsTab(q.key)"><span class="opsr-tab-q">{{ q.q }}</span><template v-if="opsQuestionOn(opsRoom.unit,q)"><b class="opsr-tab-val">{{ opsQStatus(opsRoom.unit,q.key).value }}</b><small>{{ opsQStatus(opsRoom.unit,q.key).note }}</small></template><small v-else>Not used here</small></button>
                         </nav>
@@ -4875,10 +4891,11 @@
                                 <p class="admin-kicker">ACTIVITY · {{ opsRoom.meas.from ? formatDateShort(opsRoom.meas.from)+' → '+formatDateShort(opsRoom.meas.to) : '' }}</p>
                                 <select v-model.number="opsRoom.meas.days" class="form-select form-select-sm opsr-period" aria-label="Period" @change="opsLoadMeas"><option :value="7">Last 7 days</option><option :value="30">Last 30 days</option><option :value="90">Last 90 days</option><option :value="365">Last 12 months</option></select>
                             </div>
-                            <table class="sync-table opsr-table"><thead><tr><th scope="col">Activity</th><th scope="col">Total</th><th scope="col">Days recorded</th></tr></thead><tbody>
-                                <tr v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="m.type_id"><td><strong>{{ m.label }}</strong><small v-if="m.breakdown">by {{ opsBdName(m.breakdown) }}</small>
-                                    <span v-if="m.breakdown &amp;&amp; m.by_category" class="opsr-bd"><span v-for="c in opsBdList(m.by_category,m.breakdown)" :key="c.code" class="opsr-bd-item"><span class="opsr-bd-bar" :style="{width:c.pct+'%'}"></span><span class="opsr-bd-text">{{ c.label }} <b>{{ c.count }}</b> · {{ c.pct }} %</span></span></span></td><td><strong>{{ m.total }}</strong></td><td>{{ m.days_recorded }}</td></tr>
-                                <tr v-if="!opsRoom.meas.loading && !opsRoom.meas.summary.some(x=>x.kind==='flow')"><td colspan="3" class="sync-empty">No activity measures for this unit.</td></tr>
+                            <p v-if="opsRoom.meas.completeness &amp;&amp; opsRoom.meas.completeness.level!=='none'" :class="['oq-comp','oq-'+opsRoom.meas.completeness.level]">Last 2 weeks: {{ oqCompText(opsRoom.meas.completeness) || 'recorded every weekday' }}<template v-if="opsRoom.meas.completeness.flow &amp;&amp; opsRoom.meas.completeness.flow.missing.length"> · missing {{ opsRoom.meas.completeness.flow.missing.map(d=>formatDateShort(d)).join(', ') }}</template></p>
+                            <table class="sync-table opsr-table"><thead><tr><th scope="col">Activity</th><th scope="col">Total</th><th scope="col">vs before</th><th scope="col">Days recorded</th></tr></thead><tbody>
+                                <tr v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="m.type_id"><td><strong>{{ m.label }}</strong><small v-if="m.breakdown">by {{ opsBdName(m.breakdown) }}</small><small v-if="m.definition" class="oq-def">{{ m.definition }}</small><small v-if="m.source &amp;&amp; m.source!=='manual'" class="oq-src">{{ OQ_SOURCE[m.source] }}</small>
+                                    <span v-if="m.breakdown &amp;&amp; m.by_category" class="opsr-bd"><span v-for="c in opsBdList(m.by_category,m.breakdown)" :key="c.code" class="opsr-bd-item"><span class="opsr-bd-bar" :style="{width:c.pct+'%'}"></span><span class="opsr-bd-text">{{ c.label }} <b>{{ c.count }}</b> · {{ c.pct }} %</span></span></span></td><td><strong>{{ m.total }}</strong></td><td><span v-if="oqVs(m.total,m.previous_total,m.last_year_total)" :class="['opsr-trend',oqVs(m.total,m.previous_total,m.last_year_total).cls]" :title="oqVs(m.total,m.previous_total,m.last_year_total).title">{{ oqVs(m.total,m.previous_total,m.last_year_total).t }}</span><span v-else class="ac-meta" title="No data in the previous period or the same period last year">—</span></td><td>{{ m.days_recorded }}</td></tr>
+                                <tr v-if="!opsRoom.meas.loading && !opsRoom.meas.summary.some(x=>x.kind==='flow')"><td colspan="4" class="sync-empty">No activity measures for this unit.</td></tr>
                             </tbody></table>
                             <form v-if="opsCanManage && opsRoom.meas.summary.some(x=>x.kind==='flow')" class="opsr-add" @submit.prevent="opsSaveFlows">
                                 <p class="admin-kicker">RECORD A DAY</p>
@@ -4899,6 +4916,17 @@
                                 <form class="opsr-add" @submit.prevent="opsAddMeasure"><input v-model="opsRoom.meas.newType.label" class="form-control" maxlength="80" placeholder="Name (e.g. Prick test)" aria-label="Measure name"><select v-model="opsRoom.meas.newType.kind" class="form-select" aria-label="Measure kind"><option value="flow">Activity (counted per day)</option><option value="stock">Pending (snapshot)</option></select><select v-model="opsRoom.meas.newType.breakdown" class="form-select" aria-label="Breakdown"><option value="">Total only</option><option value="clinical_condition">By condition</option><option value="age_band">By age band</option><option value="sex">By sex</option></select><button type="submit" class="btn btn-secondary btn-sm" :disabled="!opsRoom.meas.newType.label||opsRoom.meas.busy">Add</button></form>
                                 <small class="ac-meta">One breakdown per measure, counts only (e.g. “Ingresos hospitalarios” by condition). Need two views? Add two measures. The lists are in Configuración.</small>
                             </details>
+                            <details v-if="opsCanManage &amp;&amp; opsRoom.meas.summary.length &amp;&amp; opsRoom.meas.meta" class="opsr-history oq-defs"><summary>Definitions — what each measure counts, who answers for it, where it comes from</summary>
+                                <form v-for="s in opsRoom.meas.summary" :key="'d'+s.type_id" class="opsr-add oq-def-row" @submit.prevent="oqMetaSave(s)">
+                                    <strong class="oq-def-name">{{ s.label }} <small class="ac-meta">{{ s.kind==='stock' ? 'pending' : 'activity' }}</small></strong>
+                                    <input v-model="opsRoom.meas.meta[s.type_id].definition" class="form-control opsr-grow" maxlength="300" placeholder="What exactly counts (e.g. pacientes con la prueba solicitada y sin cita, al cierre del día)" :aria-label="'Definition of '+s.label">
+                                    <select v-model="opsRoom.meas.meta[s.type_id].owner_id" class="form-select" :aria-label="'Who answers for '+s.label"><option value="">— Owner —</option><option v-for="o in opsOwners" :key="o.id" :value="o.id">{{ o.full_name }}</option></select>
+                                    <select v-model="opsRoom.meas.meta[s.type_id].source" class="form-select" :aria-label="'Source of '+s.label"><option v-for="(l,k) in OQ_SOURCE" :key="k" :value="k">{{ l }}</option></select>
+                                    <select v-if="s.kind==='stock'" v-model="opsRoom.meas.meta[s.type_id].clears_with" class="form-select" :aria-label="'Which activity clears '+s.label"><option value="">Cleared by… (activity)</option><option v-for="f in opsRoom.meas.summary.filter(x=>x.kind==='flow')" :key="f.type_id" :value="f.type_id">Cleared by {{ f.label }}</option></select>
+                                    <button type="submit" class="btn btn-secondary btn-sm" :disabled="opsRoom.meas.busy">Save</button>
+                                </form>
+                                <small class="ac-meta">A one-line definition makes the number comparable between units and lets hospital IT map their data to it. “Cleared by” lets the Pending tab show weeks to clear.</small>
+                            </details>
                         </div>
 
                         <!-- ¿Qué está pendiente? -->
@@ -4907,11 +4935,14 @@
                             <div class="opsr-stocks">
                                 <div v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='stock')" :key="m.type_id" class="opsr-stock">
                                     <p class="admin-kicker">{{ m.label }}</p>
+                                    <small v-if="m.definition" class="oq-def">{{ m.definition }}</small>
                                     <template v-if="m.latest">
                                         <div class="opsr-stock-value">{{ m.latest.value }}<span v-if="m.previous" :class="['opsr-trend', opsTrend(m).cls]">{{ opsTrend(m).text }}</span></div>
                                         <small>as of {{ formatDateShort(m.latest.date) }}<template v-if="m.previous"> · before: {{ m.previous.value }} ({{ formatDateShort(m.previous.date) }})</template></small>
                                         <small v-if="m.latest.oldest_pending_on" :class="{'sync-check-error':opsDaysAgo(m.latest.oldest_pending_on)>60}">Oldest pending: {{ formatDateShort(m.latest.oldest_pending_on) }} ({{ opsDaysAgo(m.latest.oldest_pending_on) }} days)</small>
                                         <small v-if="m.history.length>1" class="opsr-spark">{{ m.history.slice().reverse().map(h=>h.value).join(' · ') }}</small>
+                                        <small v-if="m.capacity &amp;&amp; oqCap(m.capacity)" :class="['oq-cap',m.capacity.trend==='growing'?'oq-watch':'']">{{ oqCap(m.capacity) }}</small>
+                                        <small v-else-if="!m.clears_with &amp;&amp; opsCanManage" class="ac-meta">Set which activity clears this list (Activity → Definitions) to see weeks to clear.</small>
                                         <span v-if="m.breakdown &amp;&amp; m.latest.breakdown" class="opsr-bd"><span v-for="c in opsBdList(m.latest.breakdown,m.breakdown)" :key="c.code" class="opsr-bd-item"><span class="opsr-bd-bar" :style="{width:c.pct+'%'}"></span><span class="opsr-bd-text">{{ c.label }} <b>{{ c.count }}</b></span></span></span>
                                     </template>
                                     <p v-else class="ac-meta">Nothing recorded yet.</p>
@@ -5288,7 +5319,7 @@
                                         <div class="alr-main"><strong>{{ alrUnitName(r.unit_id) }}</strong> · <template v-if="r.type_id">{{ alrTypeLabel(r) }}: </template>{{ alrDesc(r) }}
                                             <small class="ac-meta">→ {{ alrOwner(r) }} · {{ r.remind_every_days === 1 ? 'reminds daily' : 'reminds every ' + r.remind_every_days + ' days' }}<template v-if="r.note"> · {{ r.note }}</template></small>
                                             <small v-if="alr.check &amp;&amp; alr.check[r.id]" :class="['alr-check', alr.check[r.id].fires ? 'alr-fires' : alr.check[r.id].skip ? 'alr-skip' : 'alr-ok']">{{ alr.check[r.id].fires ? '⚠ Would alert now: ' + alr.check[r.id].text : alr.check[r.id].skip ? 'Cannot judge: ' + alr.check[r.id].skip : '✓ Within the threshold' + (alr.check[r.id].text ? ' — ' + alr.check[r.id].text : '') }}</small>
-                                            <small v-for="e in r.events.slice(0,2)" :key="e.fired_on" class="ac-meta alr-ev">Alerted {{ formatDateShort(e.fired_on) }}: {{ e.text }} ({{ e.recipients }} email{{ e.recipients === 1 ? '' : 's' }})</small></div>
+                                            <small v-for="e in r.events.slice(0,2)" :key="e.fired_on" class="ac-meta alr-ev">Alerted {{ formatDateShort(e.fired_on) }}: {{ e.text }} ({{ e.recipients }} email{{ e.recipients === 1 ? '' : 's' }})<template v-if="e.status"> · <strong>{{ OQ_ACK[e.status] }}</strong><template v-if="e.ack_note"> — {{ e.ack_note }}</template></template></small></div>
                                         <div v-if="alr.canEdit" class="alr-acts"><button type="button" class="btn-link" @click="alrToggle(r)">{{ r.active ? 'pause' : 'resume' }}</button><button type="button" class="btn-link" @click="alrRemove(r)">remove</button></div>
                                     </li>
                                     <li v-if="!alr.rules.length" class="ac-meta">No alert rules yet.</li>
@@ -10420,6 +10451,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                                             <li v-if="uOps.plan.capabilities_add.length">Turn on: {{ uOpsCapText(uOps.plan.capabilities_add) }}</li>
                                             <li v-for="m in uOps.plan.measures_add" :key="'a'+m.code">Add measure <strong>{{ m.label }}</strong> ({{ uOpsKind(m.kind) }})</li>
                                             <li v-for="m in uOps.plan.measures_skip" :key="'s'+m.code" class="uops-skip">Keep {{ m.existing.label }}{{ m.existing.active ? '' : ' (switched off)' }} — already there</li>
+                                            <li v-for="d in uOps.plan.definitions||[]" :key="'d'+d.code">Add the missing definition to {{ d.code.replace(/_/g,' ') }}</li>
+                                            <li v-for="l in uOps.plan.links||[]" :key="'l'+l.stock">Link {{ l.stock.replace(/_/g,' ') }} → cleared by {{ l.flow.replace(/_/g,' ') }} (for weeks to clear)</li>
+                                            <li v-for="a in uOps.plan.alerts_add||[]" :key="'a'+a.kind">Add alert rule: {{ ({activity_not_recorded:'no activity for more than '+a.threshold+' days',calibration_due:'calibration due within '+a.threshold+' days',oldest_pending_days:'oldest pending older than '+a.threshold+' days',incident_open_days:'incident open more than '+a.threshold+' days'})[a.kind] || a.kind }}</li>
                                         </ul>
                                         <button v-if="uOps.plan.changes" type="button" class="btn btn-primary btn-sm" :disabled="uOps.busy" @click="uOpsApply">{{ uOps.busy ? 'Applying…' : 'Apply template' }}</button>
                                         <small class="uops-note">Only adds. Nothing is removed or renamed; rename measures afterwards in the unit's Activity tab.</small>
@@ -13873,7 +13907,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.55-20261017-diseases"></script>
+    <script src="app.js?v=5.4-production.56-20261017-quality"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
