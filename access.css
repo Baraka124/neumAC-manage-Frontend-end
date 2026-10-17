@@ -1133,3 +1133,24 @@ body:has(.nd-focus) .grounded-orb-wrap{display:none!important}
 .nd-switch span{font-weight:600;color:var(--nd-ink);font-size:14px}
 .nd-switch small{color:var(--nd-muted);font-size:12px}
 .nd-email-admin{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:8px 0;padding:10px 12px;border-radius:10px;font-size:13px}
+/* ── Mi espacio — Hoy para ti ── */
+.nd-today{background:var(--surface,#fff);border:1px solid var(--nd-line);border-top:4px solid var(--nd-ink);border-radius:14px;padding:14px 16px;margin:0 0 14px}
+.nd-today-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px}
+.nd-today-head h3{margin:2px 0 0;font-size:18px;color:var(--nd-ink)}
+.nd-today-tags{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.nd-today-tags li{padding:3px 10px;border-radius:999px;background:rgba(15,40,60,.06);font-size:12.5px;font-weight:600;color:var(--nd-ink)}
+.nd-today-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.nd-today-box{border:1px solid rgba(15,40,60,.08);border-radius:12px;padding:10px 12px;min-width:0}
+.nd-today-box ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.nd-today-box li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;color:#22313c;min-height:36px}
+.nd-today-box li small{color:var(--nd-muted)}
+.nd-today-box li[data-state="overdue"] .nd-state,.nd-today-box li[data-state="overdue"]>span>b:first-child{color:#a2321f}
+.nd-today-box li[data-state="due_today"] .nd-state{color:#8a5a00}
+.nd-today-box--oncall{background:rgba(32,110,150,.06)}
+.nd-today-lbl{margin:0;font:700 11px/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--nd-muted)}
+.nd-state{font-size:12px;color:#a2321f}
+.nd-linkish{background:none;border:0;padding:4px 0;color:var(--nd-ink);text-align:left;cursor:pointer;font:inherit;width:100%}
+.nd-linkish:hover,.nd-linkish:focus-visible{text-decoration:underline;outline:none}
+.nd-today-tags .nd-linkish{width:auto;padding:0;font-weight:600;color:#0b6f6f}
+.nd-today-tags li:has(.nd-linkish){padding:0;background:none}
+.nd-today-tags .nd-linkish{padding:3px 10px;border-radius:999px;background:rgba(14,143,143,.1);min-height:0;line-height:1.5}

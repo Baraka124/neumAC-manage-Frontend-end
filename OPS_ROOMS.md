@@ -301,6 +301,11 @@ outcome, minutes; remembers choices per device) from Hoy and Interconsultas. (3)
 (4) Shared components in access.css (`--nd-*` tokens, `.nd-chip`, `.nd-sheet`, `.nd-quick-btn`, `.nd-step`,
 `.nd-focusbar`) — reuse these for new screens.
 
+**Built — Mi espacio "Hoy para ti" (17 Oct):** card at the top of Mi espacio from `GET /api/me/today` (own records
+only): on call today, current rotation, my units' status, my follow-ups (overdue first, one-tap Hecho), interconsultas
+assigned to me (over target first), sessions today + 2 days that concern me (or I present), posts for me (48 h),
+unread messages. Each item opens the right place in the full app (same routes as shared links).
+
 Possible pass 3 (not started): Interconsultas board as a queue (oldest first, one-tap take/answer); Objetivos as a
 grid by unit; consistent empty states for brand-new units.
 
