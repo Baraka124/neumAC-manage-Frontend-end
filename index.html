@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-audit">
+<link rel="stylesheet" href="access.css?v=20261017-templates">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -10265,6 +10265,36 @@ Use Section heading to structure longer clinical or research articles."></textar
                                       placeholder="Brief description of this unit's scope…"></textarea>
                         </div>
 
+                        <!-- OR-C 3 · Ops Room profile: saved straight away, separately from the unit fields above. -->
+                        <div v-if="opsIsAdmin &amp;&amp; trainingUnitModal.mode==='add'" class="sm-field uops"><div class="sm-label">Ops Room</div><p class="uops-note">After adding the unit, open it again to switch it on in the Ops Room, starting from a template.</p></div>
+                        <div v-if="opsIsAdmin &amp;&amp; trainingUnitModal.mode==='edit'" class="sm-field uops" aria-label="Ops Room profile">
+                            <div class="sm-label">Ops Room <span class="hint">— saved immediately</span></div>
+                            <p v-if="uOps.loading" class="uops-note">Loading…</p>
+                            <p v-if="uOps.error" class="sync-check-error">{{ uOps.error }}</p>
+                            <template v-if="uOps.unit &amp;&amp; uOps.canEdit">
+                                <label class="uops-switch"><input type="checkbox" :checked="uOps.unit.ops_enabled" :disabled="uOps.busy" @change="uOpsToggle"> Show this unit in the Ops Room</label>
+                                <div v-if="uOps.unit.ops_enabled" class="uops-caps" role="group" aria-label="Areas this unit uses">
+                                    <label v-for="c in uOps.caps" :key="c" class="uops-cap" :class="{on:(uOps.unit.ops_capabilities||[]).includes(c)}"><input type="checkbox" :checked="(uOps.unit.ops_capabilities||[]).includes(c)" :disabled="uOps.busy" @change="uOpsCap(c)"> {{ OPS_CAP_LABEL[c] || c }}</label>
+                                </div>
+                                <p v-if="uOps.types.length" class="uops-note">Measures: {{ uOps.types.map(t=>t.label).join(' · ') }}</p>
+                                <div class="uops-tpl">
+                                    <select v-model="uOps.tpl" class="sm-select" aria-label="Start from a template" @change="uOpsPreview"><option value="">Start from a template…</option><option v-for="t in uOps.templates" :key="t.key" :value="t.key">{{ t.name }}</option></select>
+                                    <p v-if="uOps.tpl" class="uops-note">{{ (uOps.templates.find(t=>t.key===uOps.tpl)||{}).hint }}</p>
+                                    <div v-if="uOps.plan" class="uops-plan">
+                                        <p v-if="!uOps.plan.changes" class="uops-note">This unit already has everything in this template.</p>
+                                        <ul v-else>
+                                            <li v-if="uOps.plan.enable">Switch the unit on in the Ops Room</li>
+                                            <li v-if="uOps.plan.capabilities_add.length">Turn on: {{ uOpsCapText(uOps.plan.capabilities_add) }}</li>
+                                            <li v-for="m in uOps.plan.measures_add" :key="'a'+m.code">Add measure <strong>{{ m.label }}</strong> ({{ uOpsKind(m.kind) }})</li>
+                                            <li v-for="m in uOps.plan.measures_skip" :key="'s'+m.code" class="uops-skip">Keep {{ m.existing.label }}{{ m.existing.active ? '' : ' (switched off)' }} — already there</li>
+                                        </ul>
+                                        <button v-if="uOps.plan.changes" type="button" class="btn btn-primary btn-sm" :disabled="uOps.busy" @click="uOpsApply">{{ uOps.busy ? 'Applying…' : 'Apply template' }}</button>
+                                        <small class="uops-note">Only adds. Nothing is removed or renamed; rename measures afterwards in the unit's Activity tab.</small>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
                     </div>
                     <div class="sm-form-footer">
                         <button class="sm-btn-back" @click="trainingUnitModal.show = false">Cancel</button>
@@ -13710,7 +13740,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.52-20261017-audit"></script>
+    <script src="app.js?v=5.4-production.53-20261017-templates"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

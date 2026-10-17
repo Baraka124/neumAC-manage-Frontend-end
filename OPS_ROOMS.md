@@ -201,6 +201,7 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 |---|---|
 | `GET /api/ops/units`, `GET /api/ops/units/:id` | Units read |
 | `PUT /api/ops/units/:id/profile` | head of department / admin |
+| `GET /api/ops/units/:unitId/profile` (profile + measures + templates, any unit) · `POST /api/ops/units/:id/template` (`dry_run` = preview; adds only) | Units read · head of department / admin |
 | `POST/PUT/DELETE /api/ops/units/:unitId/staff[/:entryId]` | Units write (residents refused — they come from Rotations) |
 | `GET/POST/PUT/DELETE /api/ops/units/:unitId/resources[/:resourceId]`, `POST …/resources/:resourceId/events` | read / Units write |
 | `GET/PUT /api/ops/units/:unitId/measures`, `DELETE …/measures/:measureId`, `POST/PUT …/measure-types[/:typeId]` | read / Units write |
@@ -258,7 +259,8 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 ### Rule: no second way to do the same thing
 - **Units are created and edited only in the clinical units module** (Units view, `/api/training-units`). Ops Room never
   creates units. A unit's Ops settings (`ops_enabled`, `ops_capabilities`, profile preset) are edited in that same unit
-  form (OR-C step 3). `PUT /api/ops/units/:id/profile` is the API behind it; there must be no separate Ops Room screen for it.
+  form (OR-C step 3, built 17 Oct: "Ops Room" block in the unit modal, saved immediately). `PUT /api/ops/units/:id/profile`
+  and `POST /api/ops/units/:id/template` are the API behind it; there must be no separate Ops Room screen for it.
 - Same for people (Staff module), rotations (Rotations), guardias (On-call): Ops Room links to them, never re-creates them.
 - Configuration principle: configure the *what* and *how much* (lists, capabilities, targets, thresholds, labels), never
   the *how* that protects the data (privacy, one-rotation-at-a-time, audit, permissions, indicator formulas). Config changes

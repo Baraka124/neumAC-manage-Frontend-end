@@ -1249,3 +1249,15 @@ html body #app .sys-errors code{color:#1f2937}
 .aud-list .aud-what{font-weight:600}
 .aud-list .aud-DELETE .aud-what{color:var(--danger,#b91c1c)}
 @media (max-width:560px){.aud-list li{grid-template-columns:1fr}.aud-list .aud-fields{grid-column:1}}
+
+/* OR-C 3 · Ops Room profile in the units form */
+.uops{border-top:1px solid var(--border,rgba(127,127,127,.25));padding-top:10px;margin-top:6px}
+.uops-note{font-size:.82rem;opacity:.8;margin:4px 0}
+.uops-switch{display:flex;gap:8px;align-items:center;font-weight:600;margin:4px 0 8px}
+.uops-caps{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.uops-cap{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--border,rgba(127,127,127,.35));border-radius:999px;padding:3px 10px;font-size:.82rem;cursor:pointer}
+.uops-cap.on{border-color:#00B3B3;background:rgba(0,179,179,.12)}
+.uops-tpl{margin-top:8px}
+.uops-plan ul{margin:6px 0 8px;padding-left:18px;font-size:.86rem}
+.uops-plan .uops-skip{opacity:.65}
+.uops-plan small.uops-note{display:block;margin-top:6px}
