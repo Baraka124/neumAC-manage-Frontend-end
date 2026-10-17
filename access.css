@@ -1154,3 +1154,22 @@ body:has(.nd-focus) .grounded-orb-wrap{display:none!important}
 .nd-today-tags .nd-linkish{width:auto;padding:0;font-weight:600;color:#0b6f6f}
 .nd-today-tags li:has(.nd-linkish){padding:0;background:none}
 .nd-today-tags .nd-linkish{padding:3px 10px;border-radius:999px;background:rgba(14,143,143,.1);min-height:0;line-height:1.5}
+/* ── Outlook · Coming up · report narrative ── */
+.nd-outlook{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.nd-outlook-bar{align-items:flex-end;gap:8px;flex-wrap:wrap}
+.nd-outlook-bar h3{margin:2px 0 0;color:var(--nd-ink)}
+.nd-outlook-unit{width:auto!important;max-width:220px}
+.nd-outlook-notes{margin:0;padding:8px 12px 8px 28px;border-radius:10px;background:rgba(217,154,30,.10);font-size:13px;color:#5e4500}
+.nd-weeks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.nd-week{background:var(--surface,#fff);border:1px solid var(--nd-line);border-top:4px solid var(--nd-ok);border-radius:12px;padding:10px 12px;min-width:0}
+.nd-week[data-level="alert"]{border-top-color:var(--nd-alert)}.nd-week[data-level="watch"]{border-top-color:var(--nd-watch)}
+.nd-week-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--nd-ink);font-size:14px}
+.nd-week-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:#22313c}
+.nd-week-list li[data-level="alert"]{color:#7e2415}.nd-week-list li[data-level="watch"]{color:#5e4500}
+.nd-week-kind{display:inline-block;min-width:78px;font:700 10.5px/1.6 system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:var(--nd-muted)}
+.nd-soon .opsr-today-list li{display:flex;align-items:center;gap:8px;padding:3px 0}
+.nd-narrative{border:1px solid var(--nd-line);border-left:4px solid var(--nd-ink);border-radius:10px;padding:10px 14px;margin:0 0 14px;background:rgba(15,40,60,.02)}
+.nd-narrative strong{display:block;color:var(--nd-ink);margin:2px 0 4px}
+.nd-narrative ul{list-style:none;margin:0 0 4px;padding:0;font-size:14px;color:#22313c;display:flex;flex-direction:column;gap:3px}
+.nd-narrative li[data-k="rose"]{color:#16725a}.nd-narrative li[data-k="fell"]{color:#1d5f80}.nd-narrative li[data-k="watch"]{color:#7e2415}
+@media print{.nd-narrative{break-inside:avoid}}

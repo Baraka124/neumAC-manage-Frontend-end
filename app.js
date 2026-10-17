@@ -9142,7 +9142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ── OR-2b Interconsultas (department-wide) ──
         const opsMyStaffId=computed(()=>currentUser.value?.medical_staff_id||null)
         const opsCanLogIc=computed(()=>!!opsMyStaffId.value||opsCanManage.value)
-        const opsSection=key=>{opsRoom.section=key;opsRoom.unit=null;if(key==='today'){opsLoad();opsLoadIc();opsLoadDept()}if(key==='reports'){if(!opsRoom.units.length)opsLoad();opsLoadRep()}if(key==='interconsults')opsLoadIc();if(key==='objectives')opsLoadDept();if(key==='units')opsLoad();if(key==='config')opsLoadCat();if((key==='interconsults'||key==='objectives')&&!opsRoom.staff.length)API.request('/api/identity/staff',{skipCache:true}).then(s=>{opsRoom.staff=s.data||s||[]}).catch(()=>{})}
+        const opsSection=key=>{opsRoom.section=key;opsRoom.unit=null;if(key==='today'){opsLoad();opsLoadIc();opsLoadDept();outlookSoonLoad()}if(key==='outlook')outlookLoad();if(key==='reports'){if(!opsRoom.units.length)opsLoad();opsLoadRep()}if(key==='interconsults')opsLoadIc();if(key==='objectives')opsLoadDept();if(key==='units')opsLoad();if(key==='config')opsLoadCat();if((key==='interconsults'||key==='objectives')&&!opsRoom.staff.length)API.request('/api/identity/staff',{skipCache:true}).then(s=>{opsRoom.staff=s.data||s||[]}).catch(()=>{})}
         const opsLoadIc=async()=>{const c=opsRoom.ic;c.loading=true;c.error='';try{const d=await API.request('/api/ops/interconsults?days='+c.days,{skipCache:true});Object.assign(c,{now:d.now,open:d.open||[],recent:d.recent||[],stats:d.stats||null,targets:d.targets||{},priorities:d.priorities||{},statuses:d.statuses||{},services:(d.services||[]).map(x=>typeof x==='string'?{code:x,label:x,active:true}:x),service_labels:d.service_labels||{},reasons:d.reasons||{},reasons_active:d.reasons_active||Object.keys(d.reasons||{}),calls:d.calls||null,channels:d.channels||{},outcomes:d.outcomes||{}})}catch(e){c.error=e.message}finally{c.loading=false}}
         // A call / in-person request is logged once it is over: it is saved as resolved, with how it ended and the minutes it took.
         const opsIcIsCall=ic=>!!ic&&!!ic.channel&&ic.channel!=='formal'
@@ -9313,6 +9313,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const inboxVisible=computed(()=>inbox.list.filter(m=>inbox.showArchived?true:!m.archived_at))
         watch(()=>currentView.value,v=>{if(v==='mi_espacio')inboxLoad()})
         watch(()=>entry.state,s=>{if(s==='ready')inboxLoad()})
+        // Grounded's department snapshot (Ops Room, interconsultas, next 2 weeks, last month, today's Parte). Refreshed at most every 2 min.
+        const opsGround=reactive({data:null,at:0,error:'',loading:false})
+        const opsGroundLoad=async(force=false)=>{if(opsGround.loading||(!force&&opsGround.data&&Date.now()-opsGround.at<120000))return;opsGround.loading=true;opsGround.error='';try{opsGround.data=await API.request('/api/ops/grounded',{skipCache:true});opsGround.at=Date.now()}catch(e){opsGround.error=e.message}finally{opsGround.loading=false}}
+        // ── Outlook: the next weeks (facts from the plan + trends against set targets) ──
+        const outlook=reactive({loading:false,error:'',data:null,weeks:8,unit:'',soon:null})
+        const outlookLoad=async()=>{const o=outlook;o.loading=true;o.error='';try{o.data=await API.request('/api/ops/outlook?weeks='+o.weeks,{skipCache:true})}catch(e){o.error=e.message}finally{o.loading=false}}
+        const outlookSoonLoad=async()=>{try{const d=await API.request('/api/ops/outlook?weeks=2',{skipCache:true});outlook.soon=d}catch{outlook.soon=null}}
+        const outlookWeeks=computed(()=>{const d=outlook.data;if(!d)return [];const u=outlook.unit;return d.weeks.map(w=>({...w,signals:u?w.signals.filter(s=>!s.unit||s.unit===u):w.signals}))})
+        const outlookSoonSignals=computed(()=>{const d=outlook.soon;if(!d)return [];return d.weeks.flatMap((w,i)=>w.signals.filter(s=>s.level!=='info').map(s=>({...s,week:i===0?'This week':'Next week'}))).slice(0,6)})
+        const outlookWeekLabel=(w,i)=>{const f=d=>new Date(d+'T12:00:00Z').toLocaleDateString('es-ES',{day:'numeric',month:'short',timeZone:'UTC'});return (i===0?'This week · ':i===1?'Next week · ':'')+f(w.start)+' – '+f(w.end)}
         // ── Mi espacio — "Hoy para ti": my operational day (own records only) ──
         const myDay=reactive({loading:false,data:null,busy:''})
         const myDayLoad=async()=>{if(!currentUser.value)return;myDay.loading=true;try{myDay.data=await API.request('/api/me/today',{skipCache:true})}catch{myDay.data=null}finally{myDay.loading=false}}
@@ -9353,8 +9363,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // ── UX-1: shareable views. ?view=<route> (legacy ?c=…) opens ONE view in a focus frame, without the rest of
         // neumDesk. Sign-in is still required (the link carries no data). "Abrir neumDesk completo" leaves focus mode. ──
         const ND_ID='[0-9a-f-]{36}'
-        const ND_VIEW_RE=new RegExp('^(mensajes|hoy|interconsultas|objetivos|pendientes|informes(:'+ND_ID+')?|unit:'+ND_ID+'(:(who|resources|activity|pending|incidents|indicators))?|report:(dept|'+ND_ID+'):'+ND_ID+'|parte(:\\d{4}-\\d{2}-\\d{2})?|brief:\\d{4}-\\d{2}-\\d{2}|agenda(:'+ND_ID+')?|meeting:'+ND_ID+'|post:'+ND_ID+')$','i')
-        const ND_TITLES={mensajes:'Mensajes',hoy:'Hoy',interconsultas:'Interconsultas',objetivos:'¿Cumplimos? · Objetivos',pendientes:'Pendientes',informes:'Informes',unit:'Unidad',report:'Informe',parte:'Parte del día',brief:'Parte del día',agenda:'Agenda',meeting:'Evento',post:'Comunicación'}
+        const ND_VIEW_RE=new RegExp('^(mensajes|proximas|hoy|interconsultas|objetivos|pendientes|informes(:'+ND_ID+')?|unit:'+ND_ID+'(:(who|resources|activity|pending|incidents|indicators))?|report:(dept|'+ND_ID+'):'+ND_ID+'|parte(:\\d{4}-\\d{2}-\\d{2})?|brief:\\d{4}-\\d{2}-\\d{2}|agenda(:'+ND_ID+')?|meeting:'+ND_ID+'|post:'+ND_ID+')$','i')
+        const ND_TITLES={mensajes:'Mensajes',proximas:'Próximas semanas',hoy:'Hoy',interconsultas:'Interconsultas',objetivos:'¿Cumplimos? · Objetivos',pendientes:'Pendientes',informes:'Informes',unit:'Unidad',report:'Informe',parte:'Parte del día',brief:'Parte del día',agenda:'Agenda',meeting:'Evento',post:'Comunicación'}
         const ndFocus=reactive({on:false,route:'',title:''})
         const ndReadRoute=()=>{try{const p=new URLSearchParams(window.location.search);const r=p.get('view')||p.get('c');return r&&ND_VIEW_RE.test(r)?r:null}catch{return null}}
         const ndViewLink=route=>{try{const u=new URL(window.location.href);u.search='';u.hash='';u.searchParams.set('view',route);return u.toString()}catch{return 'https://desk.neumact.org/?view='+encodeURIComponent(route)}}
@@ -9362,8 +9372,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const ndApplyRoute=async route=>{const [k,a,b]=route.split(':');ndFocus.on=true;ndFocus.route=route;ndFocus.title=ND_TITLES[k]||'neumDesk';
           try{
             if(k==='mensajes'){ndFocus.on=false;await switchView('mi_espacio');inboxLoad();return}   // messages open in the full Mi espacio
-            if(['hoy','interconsultas','objetivos','informes','unit','report'].includes(k)){await switchView('opsroom');
-              if(k==='hoy')opsSection('today');else if(k==='interconsultas')opsSection('interconsults');else if(k==='objetivos')opsSection('objectives');
+            if(['hoy','proximas','interconsultas','objetivos','informes','unit','report'].includes(k)){await switchView('opsroom');
+              if(k==='hoy')opsSection('today');else if(k==='proximas')opsSection('outlook');else if(k==='interconsultas')opsSection('interconsults');else if(k==='objetivos')opsSection('objectives');
               else if(k==='informes'){opsRoom.rep.scope=a?'unit':'department';opsRoom.rep.unitId=a||'';opsSection('reports')}
               else if(k==='report'){opsRoom.rep.scope=a==='dept'?'department':'unit';opsRoom.rep.unitId=a==='dept'?'':a;opsSection('reports');setTimeout(()=>opsRepOpen({id:b}),500)}
               else if(k==='unit'){opsSection('units');await opsLoad();const u=opsRoom.units.find(x=>x.id===a);if(u){await opsOpen(u);ndFocus.title=u.unit_name;if(b)opsTab(b)}else showToast('Not available','This unit is not in the Ops Room, or you cannot see it.','warning')}
@@ -9381,7 +9391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ndShareView=(route,title,extra='')=>{const link=ndViewLink(route);commsShareOpen((title?'*'+title+'*\n':'')+(extra?extra+'\n':'')+link,'Share this view')}
         const ndShareCurrent=()=>{if(ndFocus.route)ndShareView(ndFocus.route,ndFocus.title)}
         // The route that describes what is on screen now (for "Share this view" buttons).
-        const ndRouteHere=computed(()=>{const v=currentView.value;if(v==='opsroom'){const s=opsRoom.section;if(s==='units'&&opsRoom.unit)return 'unit:'+opsRoom.unit.id+(opsRoom.tab&&opsRoom.tab!=='who'?':'+opsRoom.tab:'');if(s==='today')return 'hoy';if(s==='interconsults')return 'interconsultas';if(s==='objectives')return 'objetivos';
+        const ndRouteHere=computed(()=>{const v=currentView.value;if(v==='opsroom'){const s=opsRoom.section;if(s==='units'&&opsRoom.unit)return 'unit:'+opsRoom.unit.id+(opsRoom.tab&&opsRoom.tab!=='who'?':'+opsRoom.tab:'');if(s==='today')return 'hoy';if(s==='outlook')return 'proximas';if(s==='interconsults')return 'interconsultas';if(s==='objectives')return 'objetivos';
             if(s==='reports'){const r=opsRoom.rep;if(r.open)return 'report:'+(r.scope==='department'?'dept':r.unitId)+':'+r.open.id;return 'informes'+(r.scope==='unit'&&r.unitId?':'+r.unitId:'')}return null}
           if(v==='communications'){const t=comms.tab;if(t==='parte')return 'parte:'+(comms.bf.date||comms.today);if(t==='agenda')return comms.mt.open?'meeting:'+comms.mt.open.meeting.id:'agenda';if(t==='pendientes')return 'pendientes';return null}return null})
         const ndShareHere=title=>{const r=ndRouteHere.value;if(r)ndShareView(r,title||ND_TITLES[r.split(':')[0]]||'neumDesk')}
@@ -13877,7 +13887,19 @@ document.addEventListener('DOMContentLoaded', () => {
       // Anticipatory suggestions: react to the module/subject in view so the agent
       // offers the RELEVANT next actions (chat-executable first), not a fixed list.
       const _SUGGEST_BY_VIEW = {
+        opsroom: [
+          { t: 'Which units need attention?',        d: 'Ops Room · now',             icon: 'gap',      intent: 'ops_units_status' },
+          { t: 'What is coming in the next weeks?',  d: 'Outlook · 2 weeks',          icon: 'briefing', intent: 'ops_outlook' },
+          { t: 'How are interconsultas going?',      d: 'Interconsultas · 30 days',   icon: 'oncall',   intent: 'ops_ic_status' },
+          { t: 'How did we do last month?',          d: 'Report · in plain words',    icon: 'briefing', intent: 'ops_month_review' },
+        ],
+        communications: [
+          { t: "Today's Parte del día",              d: 'Comunicación · today',       icon: 'briefing', intent: 'ops_parte' },
+          { t: 'Which units need attention?',        d: 'Ops Room · now',             icon: 'gap',      intent: 'ops_units_status' },
+          { t: 'What is coming in the next weeks?',  d: 'Outlook · 2 weeks',          icon: 'briefing', intent: 'ops_outlook' },
+        ],
         dashboard: [
+          { t: 'Which units need attention?',        d: 'Ops Room · now',             icon: 'gap',      intent: 'ops_units_status' },
           { t: "What's happening today?",            d: 'Snapshot · right now',       icon: 'briefing', intent: 'today_snapshot' },
           { t: 'Any risks I should know about?',     d: 'Risk · scan all',            icon: 'gap',      intent: 'risk_scan' },
           { t: "This week ahead",                    d: 'Synthesis · the week',       icon: 'briefing', intent: 'this_week_ahead' },
@@ -14317,6 +14339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const openAskBar  = () => {
         if (!currentUser.value) return
+        if (hasPermission('training_units','read')) opsGroundLoad()
         askBarCaptureReturnFocus()
         const visibleSubject = askBarInferVisibleSubject()
         const oldCtx = askBar.subject || askBar.context
@@ -15868,6 +15891,12 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'callouts_recent', priority: 98, patterns: [/(recent|latest|last) callouts?/i, /callouts? (this|last) (month|week|night|weekend)/i, /callouts? (in|during|for)\s+\w+/i, /(night|weekend|holiday) callouts?/i], anti: [/put|assign|log|who.*most/] },
         { intent: 'callout_by_person', priority: 99, patterns: [/(how many|number of) (times )?(was|has)\s+[a-zñáéíóú]+\s+(called|been called)/i, /callouts? (for|by|of)\s+[a-zñáéíóú]{3,}/i], anti: [/put|assign|log|most|recent|night|weekend|holiday|daytime|this month|last month|this week/] },
         { intent: 'callouts_overview', priority: 77, patterns: [/emergency callout/, /\bcallout/, /called in/, /emergency cover/, /urgent cover/] },
+        // — Ops Room / Comunicación / reports / outlook (department snapshot) —
+        { intent: 'ops_parte', priority: 110, patterns: [/parte del d[ií]a/i, /\bparte\b/i, /draft (the )?(daily )?(brief|briefing|parte)/i] },
+        { intent: 'ops_month_review', priority: 106, patterns: [/how (did|have) we (do|done)/i, /(last|this|previous) month.*(vs|versus|compared|review|summary|report)/i, /month(ly)? (review|summary|report|in review)/i, /compared? (to|with) last month/i, /c[oó]mo (nos ha ido|hemos ido)/i, /resumen (del )?mes/i] },
+        { intent: 'ops_outlook', priority: 105, patterns: [/(next|coming|upcoming) (few |two |2 |8 )?(weeks|fortnight)/i, /what.?s coming/i, /\boutlook\b/i, /look(ing)? ahead/i, /pr[oó]ximas semanas/i, /qu[eé] (viene|se viene)/i, /(gaps|problems|risks) (in|for) the plan/i], anti: [/units? (will be|are going to be|become) (empty|free|available|full)/i] },
+        { intent: 'ops_ic_status', priority: 96, patterns: [/interconsult/i, /consults? (waiting|pending|overdue)/i, /calls? from other (services|departments)/i] },
+        { intent: 'ops_units_status', priority: 96, patterns: [/which units? (need|needs|are|is) (attention|struggling|in trouble|at risk|flagged)/i, /struggling units?/i, /units?.*(struggl|need(s)? attention|in trouble)/i, /how are (the )?units( doing| today)?/i, /ops room (status|today)?/i, /estado de (las )?unidades/i, /qu[eé] unidades/i, /c[oó]mo (est[aá]n|van) las unidades/i] },
         { intent: 'announcements_overview', priority: 77, patterns: [/announcement/, /\bnotice/, /\bmemo\b/, /what.*(posted|announced)/, /department news/, /any news/] },
         { intent: 'coverage_areas_overview', priority: 77, patterns: [/coverage area/, /which areas/, /areas.*(cover|coverage)/, /cover(age)? zones?/] },
         { intent: 'ops_metrics_overview', priority: 76, patterns: [/ops metric/, /operational metric/, /\bkpi/, /department metric/, /how are we doing/, /metrics? (today|now)/] },
@@ -16216,6 +16245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', help: 'medical_staff', today_snapshot: 'medical_staff', this_week_ahead: 'medical_staff', risk_scan: 'medical_staff', dept_health: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', callout_fairness: 'oncall_schedule', callouts_recent: 'oncall_schedule', callout_by_person: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
+        ops_units_status: 'training_units', ops_ic_status: 'training_units', ops_outlook: 'training_units', ops_month_review: 'training_units', ops_parte: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
         recommend_backup: null, draft_email: null  // agent synthesis — allowed (read multiple)
       }
@@ -18426,6 +18456,42 @@ document.addEventListener('DOMContentLoaded', () => {
           const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) } catch(e){ return '' } }
           return { text: `${cos.length} emergency callout${cos.length===1?'':'s'} on record. Most recent: ${recent.map(c => `${getStaffName(c.staff_id)} (${fmt(c.called_at)})`).join(', ')}.${top ? ` By reason: ${top}.` : ''}`, chips: recent.slice(0,4).map(c=>({label:getStaffName(c.staff_id),id:c.staff_id})), actions: [{ label: 'Open callouts', view: 'oncall_schedule', primary: true }], sources: ['emergency callouts', 'staff'], followups: [], confidence: 'high' }
         }
+        // ── Grounded × Ops Room / Comunicación / reports / outlook (answers from the department snapshot) ──
+        if (['ops_units_status','ops_ic_status','ops_outlook','ops_month_review','ops_parte'].includes(intent)) {
+          const g = opsGround.data
+          const src = ['Ops Room snapshot' + (opsGround.at ? ' · ' + new Date(opsGround.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '')]
+          if (!g) return { text: opsGround.error ? 'I could not load the Ops Room snapshot (' + opsGround.error + ').' : 'The Ops Room snapshot is still loading — ask again in a moment.', chips: [], actions: [{ label: 'Open Hoy', route: 'hoy', primary: true }], sources: [], followups: [], confidence: 'low' }
+          const lvl = { alert: 'Needs action', watch: 'Watch', ok: 'In order' }
+          if (intent === 'ops_units_status') {
+            const bad = g.units.filter(u => u.level !== 'ok').sort((a, b) => (a.level === 'alert' ? 0 : 1) - (b.level === 'alert' ? 0 : 1))
+            const okN = g.units.length - bad.length
+            const text = bad.length ? `${bad.filter(u=>u.level==='alert').length} unit${bad.filter(u=>u.level==='alert').length===1?'':'s'} need action and ${bad.filter(u=>u.level==='watch').length} to watch; ${okN} in order.` : `All ${g.units.length} units are in order — nothing flagged.`
+            return { text, visual: { type: 'reslist', items: bad.map(u => ({ title: u.name, meta: u.reasons.slice(0, 3).join(' · '), badge: lvl[u.level], tone: u.level === 'alert' ? 'danger' : 'warn' })) },
+              chips: [], actions: [{ label: 'Open Hoy', route: 'hoy', primary: true }, ...bad.slice(0, 2).map(u => ({ label: 'Open ' + u.name, route: 'unit:' + u.id }))], sources: src, followups: [{ label: 'What is coming in the next weeks?', intent: 'ops_outlook' }], confidence: 'high' }
+          }
+          if (intent === 'ops_ic_status') {
+            const i = g.interconsults, c = i.calls_30d || {}
+            const text = `${i.waiting} interconsulta${i.waiting===1?'':'s'} waiting${i.overdue ? `, ${i.overdue} over target` : ''}${i.unassigned ? `, ${i.unassigned} unassigned` : ''}. Last 30 days: ${i.received_30d} received, median response ${i.median_hours === null ? '—' : Math.round(i.median_hours) + ' h'}${i.within_target_pct === null ? '' : `, ${i.within_target_pct} % within target`}; ${c.total || 0} calls from other services (${c.minutes || 0} min).`
+            return { text, chips: [], actions: [{ label: 'Open Interconsultas', route: 'interconsultas', primary: true }], sources: src, followups: [{ label: 'How are the units?', intent: 'ops_units_status' }], confidence: 'high' }
+          }
+          if (intent === 'ops_outlook') {
+            const items = g.outlook.weeks.flatMap((w, wi) => w.signals.map(s => ({ title: s.text, meta: wi === 0 ? 'This week' : 'Next week', badge: s.level === 'alert' ? 'Needs action' : 'Watch', tone: s.level === 'alert' ? 'danger' : 'warn' })))
+            const trends = (g.outlook.trends || []).map(t => ({ title: `${t.unit} · ${t.label}`, meta: t.crosses ? 'would pass its target around ' + Utils.formatDateShort(t.crosses) : 'already beyond its target', badge: 'Trend', tone: 'warn' }))
+            const text = items.length || trends.length ? `For the next two weeks, ${items.length} thing${items.length===1?'':'s'} in the plan need attention.${(g.outlook.notes || []).length ? ' ' + g.outlook.notes.join(' ') : ''}` : `Nothing flagged in the plan for the next two weeks.${(g.outlook.notes || []).length ? ' ' + g.outlook.notes.join(' ') : ''}`
+            return { text, visual: { type: 'reslist', items: [...items, ...trends] }, chips: [], actions: [{ label: 'Open Próximas semanas', route: 'proximas', primary: true }], sources: [...src, 'guardias · absences · rotations · unit capacity'], followups: [], confidence: 'high' }
+          }
+          if (intent === 'ops_month_review') {
+            const m = g.last_month
+            if (!m) return { text: 'There is no monthly department report yet — it is created the first time Informes is opened after a month ends.', chips: [], actions: [{ label: 'Open Informes', route: 'informes', primary: true }], sources: src, followups: [], confidence: 'medium' }
+            const n = m.narrative, items = [...n.rose.map(x => ({ title: x, badge: 'Rose', tone: 'success' })), ...n.fell.map(x => ({ title: x, badge: 'Fell', tone: 'default' })), ...n.watch.map(x => ({ title: x, badge: 'Watch', tone: 'warn' })), ...n.notes.map(x => ({ title: x, badge: 'Note', tone: 'default' }))]
+            return { text: `${Utils.formatDateShort(m.period_start)} – ${Utils.formatDateShort(m.period_end)} compared with the month before: ${n.headline.toLowerCase()}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open the report', route: 'report:dept:' + m.id, primary: true }], sources: ['Department report · ' + Utils.formatDateShort(m.period_start)], followups: [], confidence: 'high' }
+          }
+          if (intent === 'ops_parte') {
+            const p = g.parte_today
+            return { text: p && p.status === 'sent' ? `Today's Parte del día was sent at ${new Date(p.sent_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}.` : `Today's Parte del día is not sent yet. It is drafted from today's records — add your message, choose the sections and send it.`,
+              chips: [], actions: [{ label: p && p.status === 'sent' ? 'Open the Parte' : 'Draft the Parte', route: 'parte', primary: true }], sources: src, followups: [], confidence: 'high' }
+          }
+        }
         if (intent === 'announcements_overview') {
           const anns = (commsOps.announcements.value) || []
           if (!anns.length) return { text: 'No announcements are posted right now.', chips: [], actions: [{ label: 'Open comms', view: 'communications' }], sources: ['announcements'], followups: [], confidence: 'high' }
@@ -19252,6 +19318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarGoTo = (action) => {
         if (!action) return
+        if (action.route) { askBarLog('action', { label: action.label, route: action.route }); closeAskBar(); myDayGo(action.route); return }
         if (action.researchType && action.id) {
           askBarLog('action', { label:action.label, researchType:action.researchType, id:action.id })
           try {
@@ -19813,7 +19880,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
           oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSyncForget, oncallSyncPools, oncallSyncStaffName, oncallSyncAcceptSwap, oncallSyncRemoveCount, oncallSyncRemoveSelected, oncallSyncVerdict, importMonthLabel, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
-          myDay, myDayLoad, myDayGo, myDayDone, myDayWhen, MYDAY_STATE, myDayScrollInbox, emailPrefs, emailPrefSet, emailAdmin, emailAdminTest, emailAdminLoad, msg, inbox, msgSend, msgWithdraw, msgLoadSent, inboxLoad, inboxOpen, inboxArchive, inboxVisible, ql, QL_CHANNELS, QL_OUTCOMES, QL_PRIORITIES, QL_MINUTES, qlOpen, qlChips, qlServices, qlSave, opsStep, ndFocus, ndExitFocus, ndShareView, ndShareCurrent, ndShareHere, ndRouteHere, comms, COMMS_TABS, COMMS_FILTERS, COMMS_ROLES, COMMS_ACTION_STATE, commsCanPost, commsCanEdit, commsStaff, commsUnits, commsLoad, commsTab, commsFeed, commsOpenActions, commsMyOpenCount, commsAgo, commsFmtWhen, commsFmtTime, commsAudienceText, commsPostText, commsPlain, commsShareOpen, commsCopy, commsOpenWa, commsWa, commsComposeOpen, commsPost, commsRemovePost, commsCanChange, commsPostActions, commsActionAdd, commsActionSet, commsActionRemove, commsMtUpcoming, commsMtPast, commsMtOpen, commsMtNew, commsMtEdit, commsMtItemAdd, commsMtItemMove, commsMtSave, commsMtStatus, commsMtAnnounce, commsMtRemove, commsMtCanChange, COMMS_WEEKDAYS, commsCalLoad, commsCalShift, commsCalToday, commsCalTitle, commsCalGrid, commsAgendaView, commsMtFile, commsMtFileRemove, commsBriefLoad, commsBriefToggle, commsBriefSave, commsBriefSend, commsBriefShown, commsBriefHas, commsDayTitle, opsRoom, OPS_QUESTIONS, opsTodayItems, opsTodayOffTrack, opsTodayOpenUnit, opsTodayUnitById, OPS_LEVEL, opsLevel, opsReasons, opsUnitsSorted, opsLevelCount, opsAgo, opsQStatus, opsBdItems, opsBdName, opsBdSum, opsBdList, opsIcIsCall, opsLoadRep, opsRepScope, opsRepOpen, opsRepCanGenerate, opsRepGenerate, opsRepFromUnit, opsRepTitle, opsPct, opsPctCls, opsRepPrint, opsRepUnitName, OPS_CAP_LABEL, OPS_ROLES, opsRoleOptions, opsIncCatOptions, OPS_CATALOG_ORDER, opsLoadCat, opsCatItems, opsCatOptions, opsCatLabel, opsCatSave, opsCatAdd, opsIcTargetSave, opsIcHistory, opsTgtOpen, opsTgtSave, opsTgtDelete, opsDeviceDefault, OPS_RES_STATUS, OPS_RES_KIND, OPS_INC_CAT, OPS_INC_STATUS, opsHas, opsDaysAgo, opsLoadRes, opsAddRes, opsResToggle, opsResEvent, opsRemoveRes, opsResEvents, opsLoadMeas, opsSaveFlows, opsSaveSnap, opsAddMeasure, opsLoadInc, opsAddInc, opsUpdInc, opsRemoveInc, opsOwners, opsTrend, opsTab, opsMyStaffId, opsCanLogIc, opsSection, opsLoadIc, opsIcLog, opsIcAct, opsIcRemove, opsIcMine, opsIcCanAct, opsStaffName, opsHours, opsFmtTs, opsClinicians, OPS_IND_STATUS, opsIndKindsFor, opsIndNeedsType, opsIndTypesFor, opsIndFmt, opsLoadInd, opsLoadDept, opsIndSuggestions, opsIndStart, opsIndSave, opsIndUpdate, opsIndRemove, opsIndValue, opsCanManage, opsIsAdmin, opsLoad, opsOpen, opsClose, opsCandidates, opsAdd, opsSetRole, opsRemove, opsQuestionOn, opsPlanFor,
+          outlook, outlookLoad, outlookWeeks, outlookSoonSignals, outlookWeekLabel, myDay, myDayLoad, myDayGo, myDayDone, myDayWhen, MYDAY_STATE, myDayScrollInbox, emailPrefs, emailPrefSet, emailAdmin, emailAdminTest, emailAdminLoad, msg, inbox, msgSend, msgWithdraw, msgLoadSent, inboxLoad, inboxOpen, inboxArchive, inboxVisible, ql, QL_CHANNELS, QL_OUTCOMES, QL_PRIORITIES, QL_MINUTES, qlOpen, qlChips, qlServices, qlSave, opsStep, ndFocus, ndExitFocus, ndShareView, ndShareCurrent, ndShareHere, ndRouteHere, comms, COMMS_TABS, COMMS_FILTERS, COMMS_ROLES, COMMS_ACTION_STATE, commsCanPost, commsCanEdit, commsStaff, commsUnits, commsLoad, commsTab, commsFeed, commsOpenActions, commsMyOpenCount, commsAgo, commsFmtWhen, commsFmtTime, commsAudienceText, commsPostText, commsPlain, commsShareOpen, commsCopy, commsOpenWa, commsWa, commsComposeOpen, commsPost, commsRemovePost, commsCanChange, commsPostActions, commsActionAdd, commsActionSet, commsActionRemove, commsMtUpcoming, commsMtPast, commsMtOpen, commsMtNew, commsMtEdit, commsMtItemAdd, commsMtItemMove, commsMtSave, commsMtStatus, commsMtAnnounce, commsMtRemove, commsMtCanChange, COMMS_WEEKDAYS, commsCalLoad, commsCalShift, commsCalToday, commsCalTitle, commsCalGrid, commsAgendaView, commsMtFile, commsMtFileRemove, commsBriefLoad, commsBriefToggle, commsBriefSave, commsBriefSend, commsBriefShown, commsBriefHas, commsDayTitle, opsRoom, OPS_QUESTIONS, opsTodayItems, opsTodayOffTrack, opsTodayOpenUnit, opsTodayUnitById, OPS_LEVEL, opsLevel, opsReasons, opsUnitsSorted, opsLevelCount, opsAgo, opsQStatus, opsBdItems, opsBdName, opsBdSum, opsBdList, opsIcIsCall, opsLoadRep, opsRepScope, opsRepOpen, opsRepCanGenerate, opsRepGenerate, opsRepFromUnit, opsRepTitle, opsPct, opsPctCls, opsRepPrint, opsRepUnitName, OPS_CAP_LABEL, OPS_ROLES, opsRoleOptions, opsIncCatOptions, OPS_CATALOG_ORDER, opsLoadCat, opsCatItems, opsCatOptions, opsCatLabel, opsCatSave, opsCatAdd, opsIcTargetSave, opsIcHistory, opsTgtOpen, opsTgtSave, opsTgtDelete, opsDeviceDefault, OPS_RES_STATUS, OPS_RES_KIND, OPS_INC_CAT, OPS_INC_STATUS, opsHas, opsDaysAgo, opsLoadRes, opsAddRes, opsResToggle, opsResEvent, opsRemoveRes, opsResEvents, opsLoadMeas, opsSaveFlows, opsSaveSnap, opsAddMeasure, opsLoadInc, opsAddInc, opsUpdInc, opsRemoveInc, opsOwners, opsTrend, opsTab, opsMyStaffId, opsCanLogIc, opsSection, opsLoadIc, opsIcLog, opsIcAct, opsIcRemove, opsIcMine, opsIcCanAct, opsStaffName, opsHours, opsFmtTs, opsClinicians, OPS_IND_STATUS, opsIndKindsFor, opsIndNeedsType, opsIndTypesFor, opsIndFmt, opsLoadInd, opsLoadDept, opsIndSuggestions, opsIndStart, opsIndSave, opsIndUpdate, opsIndRemove, opsIndValue, opsCanManage, opsIsAdmin, opsLoad, opsOpen, opsClose, opsCandidates, opsAdd, opsSetRole, opsRemove, opsQuestionOn, opsPlanFor,
           rotationImport, rotationImportCanCommit, rotationImportVisible, rotationImportSelectedKeys, rotationImportReady, rotationImportFile, rotationImportResidentMap,rotationImportResidents,rotationImportRegister,rotationImportBandCounts,rotationImportPerson,rotationImportSelectPerson,rotationImportHiddenSelected,rotationImportRemoveCount,rotationImportRemoveSelected,rotationImportTrim,rotationImportUntrim,rotationImportChoice,rotationImportUseUnit,rotationImportCapacity,rotationImportForget,rotationImportTargetName,rotationImportVerdict,rotationImportCheckKey, rotationImportUnitChoice, rotationImportSelectReady, rotationImportClearSel, rotationImportReset, rotationImportCheck, rotationImportCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
