@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-cm3">
+<link rel="stylesheet" href="access.css?v=20261017-nt1">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -1856,6 +1856,16 @@
                         <li v-if="!inboxVisible.length" class="ac-meta">No messages.</li>
                     </ul>
                 </section>
+                <!-- NT-1: my email notifications -->
+                <details v-if="currentView === 'mi_espacio' &amp;&amp; emailPrefs.loaded" class="nd-inbox nd-emailprefs">
+                    <summary><strong>Email notifications</strong><small>{{ emailPrefs.email ? 'to ' + emailPrefs.email : 'no email on your account' }}</small></summary>
+                    <p v-if="!emailPrefs.email" class="ac-meta">Your account has no email address, so nothing is sent.</p>
+                    <p v-else-if="!emailPrefs.enabled" class="ac-meta">Notifications are switched off for your account.</p>
+                    <ul v-else class="nd-pref-list">
+                        <li v-for="k in emailPrefs.kinds" :key="k.key"><label class="nd-switch"><input type="checkbox" :checked="k.on" :disabled="emailPrefs.busy" @change="emailPrefSet(k,$event.target.checked)"><span>{{ k.label }}</span><small>{{ k.instant ? 'as it happens' : 'one email at 07:00, only if there is something' }}</small></label></li>
+                    </ul>
+                    <p v-if="emailPrefs.mode==='test'" class="ac-meta">neumDesk email is in test mode: nothing reaches you yet.</p>
+                </details>
                 <mi-espacio-view v-if="currentView === 'mi_espacio'" :active="currentView === 'mi_espacio'" :user="currentUser" :can-open-view="canOpenView" @navigate="switchView"></mi-espacio-view>
 
                 <!-- ============ DASHBOARD VIEW ============ -->
@@ -5355,6 +5365,14 @@
                             <div class="cm-row cm-actions"><button type="submit" class="btn btn-primary btn-sm" :disabled="!msg.form.body.trim() || msg.busy">Send privately</button></div>
                         </form>
                         <p v-if="!msg.migrated" class="sync-check-error">Private messages need the CM-3 database update (see COMMS.md).</p>
+                        <div v-if="opsIsAdmin &amp;&amp; emailAdmin.status" class="cm-note nd-email-admin">
+                            <strong>Email</strong>
+                            <span>{{ emailAdmin.status.mode==='live' ? 'Live' : 'Test mode → ' + emailAdmin.status.test_inbox }}</span>
+                            <span :class="emailAdmin.status.provider_configured ? 'opsr-ok' : 'sync-check-error'">{{ emailAdmin.status.provider_configured ? 'provider ready' : 'no provider (RESEND_API_KEY missing)' }}</span>
+                            <span v-if="emailAdmin.status.last_7_days">7 days: {{ emailAdmin.status.last_7_days.sent || 0 }} sent · {{ emailAdmin.status.last_7_days.queued || 0 }} waiting · {{ emailAdmin.status.last_7_days.failed || 0 }} failed</span>
+                            <button type="button" class="btn btn-secondary btn-sm" :disabled="emailAdmin.busy" @click="emailAdminTest">Send test email</button>
+                            <small v-if="emailAdmin.status.last_error" class="ac-meta">Last error: {{ emailAdmin.status.last_error }}</small>
+                        </div>
                         <p class="admin-kicker">SENT</p>
                         <ul class="cm-actions-list">
                             <li v-for="m in msg.sent" :key="m.id"><span><b v-if="m.subject">{{ m.subject }} · </b>{{ m.body.length > 140 ? m.body.slice(0,140)+'…' : m.body }}<small> · {{ commsFmtWhen(m.created_at) }}</small></span>
@@ -13447,7 +13465,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.45-20261017-noiso"></script>
+    <script src="app.js?v=5.4-production.46-20261017-nt1"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
