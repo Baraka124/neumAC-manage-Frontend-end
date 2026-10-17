@@ -201,6 +201,7 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 |---|---|
 | `GET /api/ops/units`, `GET /api/ops/units/:id` | Units read |
 | `PUT /api/ops/units/:id/profile` | head of department / admin |
+| `GET /api/ops/alert-rules` · `POST/PUT/DELETE /api/ops/alert-rules[/:ruleId]` · `POST /api/ops/alert-rules/check` (dry run, no email) | Units read · head of department / admin (OR-C 4) |
 | `GET /api/ops/units/:unitId/profile` (profile + measures + templates, any unit) · `POST /api/ops/units/:id/template` (`dry_run` = preview; adds only) | Units read · head of department / admin |
 | `POST/PUT/DELETE /api/ops/units/:unitId/staff[/:entryId]` | Units write (residents refused — they come from Rotations) |
 | `GET/POST/PUT/DELETE /api/ops/units/:unitId/resources[/:resourceId]`, `POST …/resources/:resourceId/events` | read / Units write |

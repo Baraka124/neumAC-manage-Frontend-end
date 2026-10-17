@@ -76,7 +76,10 @@ Only what the pilot shows is needed, roughly in this order:
 1. **OR-4** remaining units, each with its coordinator.
 2. **OR-C 3:** ✅ built 17 Oct. Unit templates (Laboratorio / Planta / Procedimientos / Consulta) in the existing units
    form: switch a unit on, choose its areas, start from a template with a preview. Templates only add.
-3. **OR-C 4:** alert rules (threshold → owner, on the existing outbox).
+3. **OR-C 4:** ✅ built 17 Oct. Alert rules in Ops Room → Configuración: pending above N, oldest pending > N days,
+   calibration due within N days, urgent interconsulta unassigned > N h, incident open > N days, no activity for N days.
+   Checked hourly 07–21 h; one email per rule per day to the owner (else coordinators, else head of department); every
+   firing kept in `ops_alert_events`; never fires on missing or stale numbers; "Check now" previews without emailing.
 4. **Disease programmes (counts):** EPOC, Asma, Asma grave, EPID, SAHS… as cross-unit programmes built on the
    `clinical_condition` breakdown; a programme dashboard; then the **care map** (disease → units → outcomes).
 5. **OR-5:** resident visibility of incidents, Grounded from Ops records, leadership overview.
