@@ -111,7 +111,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 | Activity counts | unit, activity type, period, count, source, entered by | What *happened* — aggregated only |
 | Pending work | unit, type, pending count, oldest pending date, snapshot date | Waiting lists, studies to read |
 | Incidents | unit, resource (optional), type (out of service, room closed, cancellation…), reason, opened/closed, owner | |
-| Indicators | definition (from activity/pending/resources), target, owner, unit, ISO 7101 clause (optional), values per period | Quality objectives live here |
+| Indicators | definition (from activity/pending/resources), target, owner, unit, values per period | Quality objectives live here |
 | **Interconsult requests** | requesting service, priority, received/assigned/answered/closed times, assignee, status, reason category | Department-wide; no patient identifiers (§3b) |
 
 ## 5. Connections — why this beats a stand-alone tool
@@ -143,7 +143,7 @@ Capabilities a unit can switch on: **Roster · Resources · Activity · Pending 
 | ✅ OR-1 | Unit identity + operational profile + **unit roster** (backend #51, frontend #180) |
 | ✅ OR-2 | All units: resources + events, activity catalogue + counts, pending work, incidents (backend #52, frontend #181) |
 | ✅ OR-2b | **Interconsultas**: request record, board, take/assign/answer/follow-up/close, response-time stats |
-| ✅ OR-3 | Indicators (targets, owners, ISO 7101 clause, week/month/quarter, last 6 periods computed from records) |
+| ✅ OR-3 | Indicators (targets, owners, week/month/quarter, last 6 periods computed from records) |
 | ◐ OR-C | **Configuration** — steps 1 ✅ and 2 ✅ built 17 Oct (see §8); steps 3–4 pending: (1) catalogues as data — interconsulta services/reasons/priorities/**targets**, incident categories, roster roles, device types with default calibration interval; (2) **target history** (valid-from dates; past periods judged with the target in force then); (3) unit **Ops profile inside the existing clinical units module** (see rule below); (4) alert rules (thresholds → owner notifications) |
 | ✅ UI 1–2 | Status first: unit pulse (level + reasons), six-question control panel, drawers, **Hoy** department screen (backend `unitPulse`) |
 | ✅ OR-R | **Clinical counts + calls + reports** (17 Oct): a measure may carry ONE breakdown (`clinical_condition` / `age_band` / `sex`, catalogues; never crossed, counts only); phone / in-person calls from other departments logged in Interconsultas (channel, outcome, minutes; saved as resolved; excluded from response times; `calls_total` indicator); **Informes**: fixed weekly/monthly snapshots per unit and a department roll-up, generated lazily for the last complete week/month, regenerable, printable |
@@ -260,7 +260,7 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 ### Open items
 - Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
   response targets, whether follow-ups are tracked.
-- Ask on the Urology visit (Monday): how the ADX data reaches them (export, API, manual), which ISO 7101 indicators they track.
+- Ask on the Urology visit (Monday): how the ADX data reaches them (export, API, manual).
 - "IIP" (mentioned for returning exacerbated patients) — meaning to confirm; no readmissions measure was pre-created. Units add their own (e.g. "Reingresos a 30 días" by condition).
 - The 11 conditions are a starting list for the department to rename / extend in Configuración.
 - OR-4: walk each unit with its coordinator — add/rename measures, set indicator targets, register resources.
@@ -303,3 +303,6 @@ outcome, minutes; remembers choices per device) from Hoy and Interconsultas. (3)
 
 Possible pass 3 (not started): Interconsultas board as a queue (oldest first, one-tap take/answer); Objetivos as a
 grid by unit; consistent empty states for brand-new units.
+
+### Decision (17 Oct 2026)
+- **No ISO.** The optional "ISO clause" field was removed from indicators, reports and screens (Baraka: ISO is study-specific, not for this system). The old database column stays, unused.
