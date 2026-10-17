@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-quality">
+<link rel="stylesheet" href="access.css?v=20261017-review">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4646,6 +4646,8 @@
                             <div class="dz-tools">
                                 <button v-if="dz.canEdit &amp;&amp; !dz.form" type="button" class="btn btn-secondary btn-sm" @click="dzNew">+ Disease</button>
                                 <label v-if="dz.canEdit" class="ac-meta"><input type="checkbox" v-model="dz.showOff" @change="dzLoad"> show switched-off</label>
+                                <label class="ac-meta" title="For anything leaving the department: counts from 1 to 4 show as &lt;5"><input type="checkbox" v-model="oqShare.safe"> hide counts under 5</label>
+                                <button type="button" class="btn btn-secondary btn-sm" @click="oqCsvDiseases">Download CSV</button>
                             </div>
                             <form v-if="dz.form" class="opsr-add dz-form" @submit.prevent="dzCreate">
                                 <p class="admin-kicker">NEW DISEASE</p>
@@ -4889,7 +4891,7 @@
                             <p v-if="opsRoom.meas.error" class="sync-check-error">{{ opsRoom.meas.error }}</p>
                             <div class="opsr-row">
                                 <p class="admin-kicker">ACTIVITY · {{ opsRoom.meas.from ? formatDateShort(opsRoom.meas.from)+' → '+formatDateShort(opsRoom.meas.to) : '' }}</p>
-                                <select v-model.number="opsRoom.meas.days" class="form-select form-select-sm opsr-period" aria-label="Period" @change="opsLoadMeas"><option :value="7">Last 7 days</option><option :value="30">Last 30 days</option><option :value="90">Last 90 days</option><option :value="365">Last 12 months</option></select>
+                                <button type="button" class="btn btn-secondary btn-sm" @click="oqCsvActivity">CSV</button><select v-model.number="opsRoom.meas.days" class="form-select form-select-sm opsr-period" aria-label="Period" @change="opsLoadMeas"><option :value="7">Last 7 days</option><option :value="30">Last 30 days</option><option :value="90">Last 90 days</option><option :value="365">Last 12 months</option></select>
                             </div>
                             <p v-if="opsRoom.meas.completeness &amp;&amp; opsRoom.meas.completeness.level!=='none'" :class="['oq-comp','oq-'+opsRoom.meas.completeness.level]">Last 2 weeks: {{ oqCompText(opsRoom.meas.completeness) || 'recorded every weekday' }}<template v-if="opsRoom.meas.completeness.flow &amp;&amp; opsRoom.meas.completeness.flow.missing.length"> · missing {{ opsRoom.meas.completeness.flow.missing.map(d=>formatDateShort(d)).join(', ') }}</template></p>
                             <table class="sync-table opsr-table"><thead><tr><th scope="col">Activity</th><th scope="col">Total</th><th scope="col">vs before</th><th scope="col">Days recorded</th></tr></thead><tbody>
@@ -5131,7 +5133,7 @@
                                     <div><span class="module-header-kicker">PNEUMO OPS ROOM · {{ opsRoom.rep.open.period==='week' ? 'INFORME SEMANAL' : 'INFORME MENSUAL' }}</span>
                                         <h3>{{ opsRoom.rep.open.scope==='department' ? 'Servicio de Neumología' : opsRoom.rep.open.content.unit.name }} — {{ opsRepTitle(opsRoom.rep.open) }}</h3>
                                         <small>Compared with {{ formatDateShort(opsRoom.rep.open.content.previous.start) }} – {{ formatDateShort(opsRoom.rep.open.content.previous.end) }} · generated {{ opsFmtTs(opsRoom.rep.open.generated_at) }}<template v-if="opsRoom.rep.open.content.complete===false"> · <b>period still running (preview)</b></template> · counts only, no patient data</small></div>
-                                    <span class="no-print"><button type="button" class="btn btn-secondary btn-sm" @click="opsRepPrint">Print / PDF</button><button v-if="opsRepCanGenerate" type="button" class="btn btn-secondary btn-sm" :disabled="opsRoom.rep.busy" @click="opsRepGenerate(opsRoom.rep.open)">Regenerate</button></span>
+                                    <span class="no-print"><label class="oq-safe" title="For anything leaving the department: counts from 1 to 4 show as &lt;5"><input type="checkbox" v-model="oqShare.safe" @change="oqRepSafe"> Hide counts under 5</label><button type="button" class="btn btn-secondary btn-sm" @click="oqCsvReport">CSV</button><button v-if="opsIsAdmin &amp;&amp; opsRoom.rep.open.scope==='department' &amp;&amp; opsRoom.rep.open.period==='week'" type="button" class="btn btn-secondary btn-sm" :disabled="oqShare.busy" @click="oqAttachReview">Attach to next service meeting</button><button type="button" class="btn btn-secondary btn-sm" @click="opsRepPrint">Print / PDF</button><button v-if="opsRepCanGenerate" type="button" class="btn btn-secondary btn-sm" :disabled="opsRoom.rep.busy" @click="opsRepGenerate(opsRoom.rep.open)">Regenerate</button></span>
                                 </header>
 
                                 <div v-if="opsRoom.rep.open.narrative" class="nd-narrative">
@@ -5191,6 +5193,20 @@
                                             <td><span v-for="(h,hi) in u.headline" :key="hi" class="opsr-rep-head-line">{{ h.label }}: <b>{{ h.total }}</b> <span :class="['opsr-trend',opsPctCls(h.change_pct)]">{{ opsPct(h.change_pct) }}</span></span><span v-if="!u.headline.length" class="ac-meta">—</span></td>
                                             <td>{{ u.incidents_opened }} opened · {{ u.incidents_open }} open</td><td>{{ u.indicators_met }} met · {{ u.indicators_not_met }} not met</td></tr>
                                     </tbody></table>
+                                    <template v-if="opsRoom.rep.open.content.diseases &amp;&amp; opsRoom.rep.open.content.diseases.length">
+                                        <p class="admin-kicker">DISEASES · 30 DAYS TO THE END OF THE PERIOD</p>
+                                        <table class="sync-table opsr-table"><thead><tr><th scope="col">Disease</th><th scope="col">In hospital</th><th scope="col">By condition</th><th scope="col">Activity</th><th scope="col">Waiting</th><th scope="col">Interconsultas</th></tr></thead><tbody>
+                                            <tr v-for="d in opsRoom.rep.open.content.diseases" :key="d.id"><td><strong>{{ d.name }}</strong><small>{{ d.group }}</small></td><td>{{ d.census ?? '—' }}</td>
+                                                <td>{{ d.episodes_30d ?? '—' }}<small v-if="d.episodes_previous !== null &amp;&amp; d.episodes_previous !== undefined">before {{ d.episodes_previous }}</small></td>
+                                                <td>{{ d.activity_30d ?? '—' }}<small v-if="d.activity_previous !== null &amp;&amp; d.activity_previous !== undefined">before {{ d.activity_previous }}</small></td>
+                                                <td>{{ d.pending ?? '—' }}<small v-if="d.oldest_days">oldest {{ d.oldest_days }} d</small><small v-if="d.weeks_to_clear">≈ {{ d.weeks_to_clear }} weeks to clear</small></td>
+                                                <td>{{ d.ic_30d ?? '—' }}<small v-if="d.ic_open">{{ d.ic_open }} open</small></td></tr>
+                                        </tbody></table>
+                                    </template>
+                                    <template v-if="opsRoom.rep.open.content.data_quality &amp;&amp; opsRoom.rep.open.content.data_quality.length">
+                                        <p class="admin-kicker">CAN WE TRUST THESE NUMBERS?</p>
+                                        <ul class="opsr-list oq-dq"><li v-for="q in opsRoom.rep.open.content.data_quality" :key="q.id" :class="'oq-'+q.level"><strong>{{ q.name }}</strong> — <template v-if="q.flow">recorded {{ q.flow.recorded }}/{{ q.flow.expected }} weekdays</template><template v-else-if="q.level==='none'">nothing to record yet</template><template v-if="q.stale.length"> · out of date: {{ q.stale.join(', ') }}</template> · setup {{ q.setup.done }}/{{ q.setup.total }}<template v-if="q.open_alerts"> · {{ q.open_alerts }} alert{{ q.open_alerts===1?'':'s' }} open</template></li></ul>
+                                    </template>
                                 </template>
 
                                 <template v-if="opsRoom.rep.open.content.indicators &amp;&amp; opsRoom.rep.open.content.indicators.length">
@@ -13907,7 +13923,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.56-20261017-quality"></script>
+    <script src="app.js?v=5.4-production.57-20261017-review"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

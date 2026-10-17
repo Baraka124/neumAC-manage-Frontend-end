@@ -89,6 +89,19 @@ Only what the pilot shows is needed, roughly in this order:
    fill when neumACt sends those totals into a measure linked with that role. Next: the **care map** (disease → units).
 5. **OR-5:** resident visibility of incidents, Grounded from Ops records, leadership overview.
 
+### Phase 3b — Ops Room quality (built 17 Oct, OQ-1)
+1. **Live contract test**: the real server's database requests are checked against the live schema on every PR.
+2. **Measure definitions**: definition, owner, source, and which activity clears each waiting list.
+3. **Completeness** per unit (weekdays recorded, out-of-date snapshots) on cards, unit page and the weekly review.
+4. **Alert acknowledgement**: seen / acting / resolved with a note; closed automatically when back within the threshold.
+5. **Templates join up**: definitions, ward census by condition (feeds diseases), cleared-by links, default alert rules.
+6. **Setup checklist** per unit and *X of N units ready*.
+7. **Trends**: vs previous period and same period last year (activity and diseases); empty windows are never 0.
+8. **Demand vs capacity**: weeks to clear and growing/shrinking per waiting list.
+9. **Weekly review**: the department weekly report adds diseases and data quality and is attached to the next service
+   meeting in Comms (nightly, or the button in Informes).
+10. **Sharing**: *hide counts under 5* (report, disease table, CSVs) and CSV downloads.
+
 ### Phase 4 — Hospital data
 1. Agree keys and export with hospital IT (ADX — Urology visit on Monday) → mappings in Configuración → IM-1 upload.
 2. **OR-6:** the token feed for high-frequency activity, only with an approved source.
