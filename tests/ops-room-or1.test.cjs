@@ -14,7 +14,7 @@ test('Ops Room is its own view, opened with Units read access; communications ke
   assert.match(html, /aria-label="Communications" :aria-current="currentView === 'communications'/);
   // Entering the Ops Room opens the department's daily screen ("Hoy"), which loads the units.
   assert.match(app, /if \(view === 'opsroom'\) \{\s*currentView\.value = 'opsroom'\s*opsSection\('today'\)/);
-  assert.match(app, /if\(key==='today'\)\{opsLoad\(\);opsLoadIc\(\);opsLoadDept\(\)\}/);
+  assert.match(app, /if\(key==='today'\)\{opsLoad\(\);opsLoadIc\(\);opsLoadDept\(\)(;outlookSoonLoad\(\))?\}/);   // + Coming up since Outlook
 });
 
 test('purpose and the six questions are the structure of a unit', () => {
