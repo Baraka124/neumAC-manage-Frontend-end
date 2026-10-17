@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-ux1">
+<link rel="stylesheet" href="access.css?v=20261017-cm3">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -1317,7 +1317,7 @@
                             
                         </span>
                     </a></div>
-<div class="nmsb-section"><a href="#" class="nmsb-item" aria-label="Mi espacio" :aria-current="currentView === 'mi_espacio' ? 'page' : null" :class="{ active: currentView === 'mi_espacio' }" @click.prevent="switchView('mi_espacio'); mobileMenuOpen = false" :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Mi espacio' : null"><span class="nmsb-icon nmsb-icon--green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c0-4 2.8-6 6.5-6s6.5 2 6.5 6"/></svg></span><span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Mi espacio</span></a></div>
+<div class="nmsb-section"><a href="#" class="nmsb-item" aria-label="Mi espacio" :aria-current="currentView === 'mi_espacio' ? 'page' : null" :class="{ active: currentView === 'mi_espacio' }" @click.prevent="switchView('mi_espacio'); mobileMenuOpen = false" :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Mi espacio' : null"><span class="nmsb-icon nmsb-icon--green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c0-4 2.8-6 6.5-6s6.5 2 6.5 6"/></svg></span><span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Mi espacio</span><span v-if="inbox.unread" class="nmsb-badge" :title="inbox.unread + ' unread messages'">{{ inbox.unread }}</span></a></div>
 <div class="nmsb-section" v-if="['medical_staff','training_units','resident_rotations','oncall_schedule','staff_absence','communications'].some(m => hasPermission(m, 'read'))"><div class="nmsb-section-lbl" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Department</div>
 <a href="#" class="nmsb-item" aria-label="Medical Staff" :aria-current="currentView === 'medical_staff' ? 'page' : null" :class="{ active: currentView === 'medical_staff' }"
                        @click.prevent="switchView('medical_staff'); mobileMenuOpen = false"
@@ -1844,6 +1844,18 @@
                 </nav>
 
                 <!-- Mi espacio: authenticated personal view, not another app -->
+                <!-- CM-3: my private messages (only my own copies) -->
+                <section v-if="currentView === 'mi_espacio' &amp;&amp; (inbox.list.length || inbox.showArchived)" class="nd-inbox" aria-label="Mensajes">
+                    <div class="nd-inbox-head"><strong>Mensajes</strong><span v-if="inbox.unread" class="cm-badge">{{ inbox.unread }}</span><span class="cm-grow"></span>
+                        <button type="button" class="btn btn-secondary btn-sm" @click="inbox.showArchived=!inbox.showArchived; inboxLoad()">{{ inbox.showArchived ? 'Hide archived' : 'Archived' }}</button></div>
+                    <ul class="nd-inbox-list">
+                        <li v-for="m in inboxVisible" :key="m.id" :class="{unread:!m.read_at, open:inbox.open===m.id, archived:!!m.archived_at}">
+                            <button type="button" class="nd-inbox-row" :aria-expanded="inbox.open===m.id" @click="inboxOpen(m)"><span class="nd-inbox-dot" aria-hidden="true"></span><span class="nd-inbox-from">{{ m.author_name }}</span><span class="nd-inbox-subj">{{ m.subject || m.body.split('\n')[0] }}</span><span class="nd-inbox-when">{{ commsAgo(m.created_at) }}</span></button>
+                            <div v-if="inbox.open===m.id" class="nd-inbox-body"><p class="cm-post-text">{{ m.body }}</p><button type="button" class="btn btn-secondary btn-sm" @click="inboxArchive(m, !!m.archived_at)">{{ m.archived_at ? 'Restore' : 'Archive' }}</button></div>
+                        </li>
+                        <li v-if="!inboxVisible.length" class="ac-meta">No messages.</li>
+                    </ul>
+                </section>
                 <mi-espacio-view v-if="currentView === 'mi_espacio'" :active="currentView === 'mi_espacio'" :user="currentUser" :can-open-view="canOpenView" @navigate="switchView"></mi-espacio-view>
 
                 <!-- ============ DASHBOARD VIEW ============ -->
@@ -5089,7 +5101,7 @@
 
                     <!-- ═══ COMMUNICATION (CM-1): Feed · Parte del día · Agenda · Pendientes ═══ -->
                     <nav class="cm-tabs" aria-label="Communication">
-                        <button v-for="t in COMMS_TABS" :key="t.key" type="button" :class="['cm-tab',{active:comms.tab===t.key}]" @click="commsTab(t.key)">{{ t.l }}<span v-if="t.key==='pendientes' &amp;&amp; commsOpenActions.length" class="cm-badge">{{ commsOpenActions.length }}</span></button>
+                        <button v-for="t in COMMS_TABS.filter(x=>!x.post || commsCanPost)" :key="t.key" type="button" :class="['cm-tab',{active:comms.tab===t.key}]" @click="commsTab(t.key)">{{ t.l }}<span v-if="t.key==='pendientes' &amp;&amp; commsOpenActions.length" class="cm-badge">{{ commsOpenActions.length }}</span></button>
                         <button v-if="ndRouteHere" type="button" class="nd-share-view" title="A link that opens only this view (sign-in required)" @click="ndShareHere(comms.mt.open &amp;&amp; comms.tab==='agenda' ? comms.mt.open.meeting.title : '')">Share this view</button>
                     </nav>
                     <p v-if="comms.error" class="sync-check-error">Could not load: {{ comms.error }}</p>
@@ -5328,6 +5340,29 @@
                             </article>
                             <p v-else class="ac-meta cm-mt-detail">Choose an event, or create one.</p>
                         </div>
+                    </section>
+
+                    <!-- ── MENSAJES (CM-3): one message, a private copy for each clinician in Mi espacio ── -->
+                    <section v-if="comms.tab==='mensajes' &amp;&amp; commsCanPost" class="cm-msgs" aria-label="Mensajes">
+                        <form class="cm-compose cm-msg-form" @submit.prevent="msgSend">
+                            <p class="admin-kicker">PRIVATE MESSAGE</p>
+                            <div class="cm-seg" role="radiogroup" aria-label="Recipients"><label :class="{active:msg.form.mode==='clinicians'}"><input type="radio" value="clinicians" v-model="msg.form.mode"> Todos los clínicos</label><label :class="{active:msg.form.mode==='choose'}"><input type="radio" value="choose" v-model="msg.form.mode"> Choose…</label></div>
+                            <p v-if="msg.form.mode==='clinicians'" class="ac-meta">Every active adjunto and residente receives their own copy in Mi espacio. It is not posted in the feed, and nobody sees who else received it.</p>
+                            <div v-else class="cm-row">
+                                <fieldset class="cm-field"><legend>Profiles</legend><label v-for="r in COMMS_ROLES" :key="r.v" class="opsr-check"><input type="checkbox" :value="r.v" v-model="msg.form.roles"> {{ r.l }}</label></fieldset>
+                                <label class="cm-field cm-grow">Units <select multiple v-model="msg.form.units" class="form-select cm-multi"><option v-for="u in commsUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option></select></label>
+                            </div>
+                            <input v-model="msg.form.subject" class="form-control cm-text" maxlength="120" placeholder="Subject (optional)" aria-label="Subject">
+                            <textarea v-model="msg.form.body" class="form-control cm-text" rows="5" maxlength="4000" required placeholder="Your message to the team (no patient names or record numbers)"></textarea>
+                            <div class="cm-row cm-actions"><button type="submit" class="btn btn-primary btn-sm" :disabled="!msg.form.body.trim() || msg.busy">Send privately</button></div>
+                        </form>
+                        <p v-if="!msg.migrated" class="sync-check-error">Private messages need the CM-3 database update (see COMMS.md).</p>
+                        <p class="admin-kicker">SENT</p>
+                        <ul class="cm-actions-list">
+                            <li v-for="m in msg.sent" :key="m.id"><span><b v-if="m.subject">{{ m.subject }} · </b>{{ m.body.length > 140 ? m.body.slice(0,140)+'…' : m.body }}<small> · {{ commsFmtWhen(m.created_at) }}</small></span>
+                                <b>{{ m.recipient_count }} received · {{ m.read_count }} opened</b><button type="button" class="btn btn-secondary btn-sm" @click="msgWithdraw(m)">Withdraw</button></li>
+                            <li v-if="!msg.loading &amp;&amp; !msg.sent.length" class="ac-meta">No messages sent yet.</li>
+                        </ul>
                     </section>
 
                     <!-- ── PENDIENTES ── -->
@@ -13414,7 +13449,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.43-20261017-ux1"></script>
+    <script src="app.js?v=5.4-production.44-20261017-cm3"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

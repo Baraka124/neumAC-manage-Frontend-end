@@ -48,6 +48,16 @@ concerns ("Para mí").
 Links now open **only** the shared item in a focus frame (see OPS_ROOMS.md §9, UX-1). The share sheet is global
 (top of `content-area` in index.html). Backend links (`?c=post:…`) keep working.
 
+## 3d. CM-3 — private messages to clinicians (17 Oct 2026)
+- The head of department (anyone with Communications create, for now) writes ONE message in **Comunicación → Mensajes**.
+  Default recipients: **all active clinicians — adjuntos and residentes**; or choose profiles / units.
+- Each recipient gets **their own copy**, read in **Mi espacio** (card at the top, unread badge on the Mi espacio menu item).
+  Not posted in the feed; recipients never see who else received it; recipients are fixed at send time.
+- The sender sees "N received · M opened" (counts only, never who). Withdrawing removes it from everyone's Mi espacio.
+- Tables `comm_messages`, `comm_message_recipients`; routes `POST /api/comms/messages`, `GET /api/comms/messages/sent`,
+  `DELETE /api/comms/messages/:id`, `GET /api/me/messages`, `POST /api/me/messages/:id/read|archive`.
+- Migration `2026-10-17_comms_cm3_private_messages.sql` (after CM-1). Check: `select to_regclass('public.comm_message_recipients')`.
+
 ## 4. Where the code is
 | Layer | File / place |
 |---|---|
