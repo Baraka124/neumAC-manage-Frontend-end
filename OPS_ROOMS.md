@@ -216,6 +216,8 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 | `GET/POST/PUT/DELETE /api/ops/import/mappings[/:id]`, `POST /api/ops/import/preview`, `POST /api/ops/import/commit`, `GET /api/ops/import/batches`, `POST …/batches/:id/undo` | head of department / admin |
 | `POST /api/feed/ops/measurements` (no user: `OPS_FEED_TOKEN` bearer; 404 when unset) | feed token |
 | `GET /api/admin/jobs`, `POST /api/admin/jobs/:job/run` | head of department / admin |
+| `GET /api/admin/status`, `GET /api/admin/errors`, `POST /api/admin/backup`, `GET /api/admin/backups/link` | head of department / admin |
+| `POST /api/public/client-errors` (browser errors; scrubbed, capped, public limiter) | none |
 Measures accept `breakdown` on `POST …/measure-types` and `{type_id, breakdown:{code:n}}` items on `PUT …/measures`;
 `POST /api/ops/interconsults` with `channel: phone|in_person` + `outcome` (+ `duration_min`) logs a resolved call.
 Every `…?permanent=true` delete is head of department / admin only; normal removes are soft (restorable; audit keeps all).
@@ -266,8 +268,10 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 5. `2026-10-17_ops_room_orr_breakdowns_calls_reports.sql` ✅ applied 17 Oct (18 breakdown items, 5 new columns, `ops_reports` with RLS + unique index + audit trigger)
 6. `2026-10-17_jobs_jb1_runs_and_atomic_writes.sql` — scheduler log + atomic writes (the API falls back until applied)
 7. `2026-10-17_import_im1_mappings_batches.sql` — Importar datos (Configuración shows "needs IM-1" until applied)
+8. `2026-10-17_pilot_pr1_error_log.sql` — error log (`app_errors`) for Estado del sistema
 
 ### Open items
+- **Pilot:** follow `PILOT.md` (checks before day 1, routine, backup drill, how it is judged).
 - Confirm with the department: how interconsultas arrive (HIS / phone / paper), whether there is a rota, the real
   response targets, whether follow-ups are tracked.
 - Ask on the Urology visit (Monday): how the ADX data reaches them (export, API, manual).
