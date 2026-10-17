@@ -1240,3 +1240,12 @@ html body #app .sys-errors code{color:#1f2937}
 .opsr-sug .form-select{width:auto;max-width:220px}
 .imp-sheet{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.imp-sheet .form-control{flex:1 1 300px;min-width:0}
 @media(max-width:760px){.opsr-quick .btn,.imp-sheet .btn{flex:1 1 auto}}
+
+/* AUD-1 · Change history */
+.aud-filters{flex-wrap:wrap;gap:6px;margin:6px 0}
+.aud-list{list-style:none;margin:6px 0;padding:0;max-height:420px;overflow:auto}
+.aud-list li{display:grid;grid-template-columns:110px 1fr;gap:2px 10px;padding:5px 0;border-bottom:1px solid var(--border,#e5e7eb);font-size:.88rem}
+.aud-list .aud-fields{grid-column:2;overflow-wrap:anywhere}
+.aud-list .aud-what{font-weight:600}
+.aud-list .aud-DELETE .aud-what{color:var(--danger,#b91c1c)}
+@media (max-width:560px){.aud-list li{grid-template-columns:1fr}.aud-list .aud-fields{grid-column:1}}
