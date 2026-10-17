@@ -44,6 +44,10 @@ concerns ("Para mí").
 - Migration: `2026-10-17_comms_cm2_event_visibility_banner.sql` (run after CM-1). Check:
   `select count(*) from information_schema.columns where table_name='comm_meetings' and column_name in ('visibility','banner_path','flyer_path','description')` → 4.
 
+## 3c. UX-1 — sharing a view (17 Oct 2026)
+Links now open **only** the shared item in a focus frame (see OPS_ROOMS.md §9, UX-1). The share sheet is global
+(top of `content-area` in index.html). Backend links (`?c=post:…`) keep working.
+
 ## 4. Where the code is
 | Layer | File / place |
 |---|---|

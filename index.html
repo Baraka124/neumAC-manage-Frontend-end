@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-comms-cm2b">
+<link rel="stylesheet" href="access.css?v=20261017-ux1">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -1153,7 +1153,7 @@
     </main>
 
     <!-- ============ MAIN APPLICATION ============ -->
-    <div v-else class="app-layout">
+    <div v-else class="app-layout" :class="{'nd-focus': ndFocus.on}">
 
         <!-- ============ ONBOARDING OVERLAY (inside app, so currentUser always exists) ============ -->
         <div v-if="onboarding.active"  class="nd-l317">
@@ -1762,6 +1762,50 @@
 
 <!-- Content Area -->
             <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard', 'content-area--fullheight': ['research_hub','news'].includes(currentView)}">
+                <!-- UX-1: focus frame for a shared view (only this view; sign-in still required) -->
+                <div v-if="ndFocus.on" class="nd-focusbar" role="region" aria-label="Shared view">
+                    <span class="nd-focusbar-brand">neumDesk</span><strong class="nd-focusbar-title">{{ ndFocus.title }}</strong>
+                    <span class="nd-focusbar-sp"></span>
+                    <button type="button" class="btn btn-secondary btn-sm" @click="ndShareCurrent">Share</button>
+                    <button type="button" class="btn btn-secondary btn-sm" @click="ndExitFocus">Open full neumDesk</button>
+                </div>
+                <!-- UX-1: quick log sheet (phone-first) -->
+                <div v-if="ql.open" class="nd-sheet" role="dialog" aria-modal="true" aria-label="Quick log" @click.self="ql.open=false">
+                    <form class="nd-sheet-box" @submit.prevent="qlSave">
+                        <div class="nd-sheet-head"><strong>{{ ql.channel==='formal' ? 'Interconsulta' : 'Call from another service' }}</strong><button type="button" class="btn btn-secondary btn-sm" aria-label="Close" @click="ql.open=false">×</button></div>
+                        <div class="nd-chips" role="radiogroup" aria-label="How it arrived"><button v-for="c in QL_CHANNELS" :key="c.v" type="button" role="radio" :aria-checked="ql.channel===c.v" :class="['nd-chip',{on:ql.channel===c.v}]" @click="ql.channel=c.v">{{ c.l }}</button></div>
+                        <p class="nd-sheet-lbl">From</p>
+                        <div class="nd-chips" role="radiogroup" aria-label="Requesting service"><button v-for="sv in qlChips" :key="sv.code" type="button" role="radio" :aria-checked="ql.service===sv.code" :class="['nd-chip',{on:ql.service===sv.code}]" @click="ql.service=sv.code">{{ sv.label }}</button>
+                            <select class="form-select nd-chip-more" aria-label="Other service" :value="''" @change="ql.service=$event.target.value"><option value="">Other…</option><option v-for="sv in qlServices" :key="'o'+sv.code" :value="sv.code">{{ sv.label }}</option></select></div>
+                        <template v-if="ql.channel==='formal'">
+                            <p class="nd-sheet-lbl">Priority</p>
+                            <div class="nd-chips" role="radiogroup" aria-label="Priority"><button v-for="p in QL_PRIORITIES" :key="p.v" type="button" role="radio" :aria-checked="ql.priority===p.v" :class="['nd-chip','nd-chip--'+p.v,{on:ql.priority===p.v}]" @click="ql.priority=p.v">{{ p.l }}</button></div>
+                            <label v-if="opsMyStaffId" class="opsr-check nd-sheet-check"><input type="checkbox" v-model="ql.take"> I take it</label>
+                        </template>
+                        <template v-else>
+                            <p class="nd-sheet-lbl">How it ended</p>
+                            <div class="nd-chips" role="radiogroup" aria-label="Outcome"><button v-for="o in QL_OUTCOMES" :key="o.v" type="button" role="radio" :aria-checked="ql.outcome===o.v" :class="['nd-chip',{on:ql.outcome===o.v}]" @click="ql.outcome=o.v">{{ o.l }}</button></div>
+                            <p class="nd-sheet-lbl">Minutes</p>
+                            <div class="nd-chips" role="radiogroup" aria-label="Minutes"><button v-for="m in QL_MINUTES" :key="m" type="button" role="radio" :aria-checked="ql.minutes===m" :class="['nd-chip',{on:ql.minutes===m}]" @click="ql.minutes=m">{{ m }}</button></div>
+                        </template>
+                        <details class="nd-sheet-more"><summary>Reason · note</summary>
+                            <select v-model="ql.reason" class="form-select" aria-label="Reason"><option value="">— Reason (optional) —</option><option v-for="k in opsRoom.ic.reasons_active" :key="k" :value="k">{{ opsRoom.ic.reasons[k] }}</option></select>
+                            <input v-model="ql.notes" class="form-control" maxlength="300" placeholder="Note (no patient data)" aria-label="Note">
+                        </details>
+                        <button type="submit" class="btn btn-primary nd-sheet-save" :disabled="!ql.service || ql.busy">{{ ql.busy ? 'Saving…' : (ql.channel==='formal' ? 'Log interconsulta' : 'Log call') }}</button>
+                        <small class="ac-meta">Now, by you. No patient names or record numbers.</small>
+                    </form>
+                </div>
+                <!-- Share sheet (global: posts, agenda, Parte, shared views) -->
+                    <div v-if="comms.share" class="cm-share-sheet" role="dialog" aria-modal="true" :aria-label="comms.share.title" @click.self="comms.share=null">
+                        <div class="cm-share-box">
+                            <div class="cm-row"><strong>{{ comms.share.title }}</strong><span class="cm-grow"></span><button type="button" class="btn btn-secondary btn-sm" @click="comms.share=null" aria-label="Close">×</button></div>
+                            <textarea class="form-control cm-share-text" rows="10" readonly :value="comms.share.text"></textarea>
+                            <div class="cm-row cm-actions"><a :href="comms.share.wa" target="_blank" rel="noopener" class="btn btn-primary btn-sm cm-wa">Open in WhatsApp</a><button type="button" class="btn btn-secondary btn-sm" @click="commsCopy(comms.share.text)">Copy text</button></div>
+                            <small class="ac-meta">The link opens neumDesk (sign-in required). Check there is no patient data before sharing outside the hospital.</small>
+                        </div>
+                    </div>
+
 
                 <!-- Unit staffing alerts -->
                 <div v-if="understaffedUnitAlerts && understaffedUnitAlerts.length > 0 && !['research_hub','news'].includes(currentView)"  class="nd-l298">
@@ -4437,6 +4481,7 @@
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='objectives'}]" @click="opsSection('objectives')">¿Cumplimos? · Objetivos</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='reports'}]" @click="opsSection('reports')">Informes</button>
                         <button v-if="opsIsAdmin" type="button" :class="['opsr-section',{active:opsRoom.section==='config'}]" @click="opsSection('config')">Configuración</button>
+                        <button v-if="ndRouteHere" type="button" class="nd-share-view" title="A link that opens only this view (sign-in required)" @click="ndShareHere(opsRoom.unit ? opsRoom.unit.unit_name : '')">Share this view</button>
                     </nav>
                     <p v-if="opsRoom.error" class="sync-check-error">Could not load the Ops Room: {{ opsRoom.error }}</p>
                     <div v-if="opsRoom.loading && !opsRoom.units.length" class="ac-meta">Loading units…</div>
@@ -4445,6 +4490,11 @@
                     <section v-if="opsRoom.section==='today'" class="opsr-today" aria-label="Hoy">
                         <div class="opsr-today-head">
                             <div><p class="admin-kicker">HOY · {{ opsRoom.today ? formatDateShort(opsRoom.today) : '' }}</p><h3>How the department is doing</h3></div>
+                            <div class="nd-quick" aria-label="Quick actions">
+                                <button v-if="opsCanLogIc" type="button" class="nd-quick-btn nd-quick-btn--main" @click="qlOpen('phone')">+ Call</button>
+                                <button v-if="opsCanLogIc" type="button" class="nd-quick-btn" @click="qlOpen('formal')">+ Interconsulta</button>
+                                <button v-if="hasPermission('communications','read')" type="button" class="nd-quick-btn" @click="switchView('communications'); commsTab('parte')">Parte del día</button>
+                            </div>
                             <div v-if="opsRoom.units.length" class="opsr-overview">
                                 <span class="opsr-ov" data-level="alert"><b>{{ opsLevelCount('alert') }}</b> need action</span>
                                 <span class="opsr-ov" data-level="watch"><b>{{ opsLevelCount('watch') }}</b> to watch</span>
@@ -4639,9 +4689,9 @@
                             <form v-if="opsCanManage && opsRoom.meas.summary.some(x=>x.kind==='flow')" class="opsr-add" @submit.prevent="opsSaveFlows">
                                 <p class="admin-kicker">RECORD A DAY</p>
                                 <label>Day <input type="date" v-model="opsRoom.meas.date" :max="opsRoom.today" class="form-control" @change="opsLoadMeas"></label>
-                                <label v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow' &amp;&amp; !x.breakdown)" :key="'v'+m.type_id">{{ m.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.values[m.type_id]" class="form-control opsr-num"></label>
+                                <label v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow' &amp;&amp; !x.breakdown)" :key="'v'+m.type_id">{{ m.label }} <span class="nd-step"><button type="button" :aria-label="'Less '+m.label" @click="opsStep(opsRoom.meas.values,m.type_id,-1)">−</button><input type="number" min="0" step="1" v-model="opsRoom.meas.values[m.type_id]" class="form-control opsr-num" inputmode="numeric"><button type="button" :aria-label="'More '+m.label" @click="opsStep(opsRoom.meas.values,m.type_id,1)">+</button></span></label>
                                 <fieldset v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow' &amp;&amp; x.breakdown &amp;&amp; opsRoom.meas.bd[x.type_id])" :key="'b'+m.type_id" class="opsr-bd-entry"><legend>{{ m.label }} · by {{ opsBdName(m.breakdown) }} <b>= {{ opsBdSum(opsRoom.meas.bd[m.type_id]) }}</b></legend>
-                                    <label v-for="c in opsBdItems(m.breakdown)" :key="c.code">{{ c.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.bd[m.type_id][c.code]" class="form-control opsr-num"></label></fieldset>
+                                    <label v-for="c in opsBdItems(m.breakdown)" :key="c.code">{{ c.label }} <span class="nd-step"><button type="button" :aria-label="'Less '+c.label" @click="opsStep(opsRoom.meas.bd[m.type_id],c.code,-1)">−</button><input type="number" min="0" step="1" v-model="opsRoom.meas.bd[m.type_id][c.code]" class="form-control opsr-num" inputmode="numeric"><button type="button" :aria-label="'More '+c.label" @click="opsStep(opsRoom.meas.bd[m.type_id],c.code,1)">+</button></span></label></fieldset>
                                 <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.meas.busy">Save day</button>
                                 <small class="ac-meta">Counts only — no patient data. Saving a day again replaces its values.</small>
                             </form>
@@ -4666,8 +4716,8 @@
                                     </template>
                                     <p v-else class="ac-meta">Nothing recorded yet.</p>
                                     <form v-if="opsCanManage" class="opsr-add" @submit.prevent="opsSaveSnap(m)">
-                                        <label v-if="!m.breakdown">Today <input type="number" min="0" step="1" v-model="opsRoom.meas.snap[m.type_id].value" class="form-control opsr-num" required></label>
-                                        <fieldset v-else-if="opsRoom.meas.bd[m.type_id]" class="opsr-bd-entry"><legend>Today by {{ opsBdName(m.breakdown) }} <b>= {{ opsBdSum(opsRoom.meas.bd[m.type_id]) }}</b></legend><label v-for="c in opsBdItems(m.breakdown)" :key="c.code">{{ c.label }} <input type="number" min="0" step="1" v-model="opsRoom.meas.bd[m.type_id][c.code]" class="form-control opsr-num"></label></fieldset>
+                                        <label v-if="!m.breakdown">Today <span class="nd-step"><button type="button" aria-label="Less" @click="opsStep(opsRoom.meas.snap[m.type_id],'value',-1)">−</button><input type="number" min="0" step="1" v-model="opsRoom.meas.snap[m.type_id].value" class="form-control opsr-num" inputmode="numeric" required><button type="button" aria-label="More" @click="opsStep(opsRoom.meas.snap[m.type_id],'value',1)">+</button></span></label>
+                                        <fieldset v-else-if="opsRoom.meas.bd[m.type_id]" class="opsr-bd-entry"><legend>Today by {{ opsBdName(m.breakdown) }} <b>= {{ opsBdSum(opsRoom.meas.bd[m.type_id]) }}</b></legend><label v-for="c in opsBdItems(m.breakdown)" :key="c.code">{{ c.label }} <span class="nd-step"><button type="button" :aria-label="'Less '+c.label" @click="opsStep(opsRoom.meas.bd[m.type_id],c.code,-1)">−</button><input type="number" min="0" step="1" v-model="opsRoom.meas.bd[m.type_id][c.code]" class="form-control opsr-num" inputmode="numeric"><button type="button" :aria-label="'More '+c.label" @click="opsStep(opsRoom.meas.bd[m.type_id],c.code,1)">+</button></span></label></fieldset>
                                         <label>Oldest pending since <input type="date" v-model="opsRoom.meas.snap[m.type_id].oldest" :max="opsRoom.today" class="form-control"></label>
                                         <button type="submit" class="btn btn-primary btn-sm" :disabled="opsRoom.meas.busy">Save</button>
                                     </form>
@@ -4757,6 +4807,7 @@
 
                     <!-- Interconsultas: department-wide service -->
                     <section v-if="opsRoom.section==='interconsults'" class="opsr-ic" aria-label="Interconsultas">
+                        <div v-if="opsCanLogIc" class="nd-quick nd-quick--bar"><button type="button" class="nd-quick-btn nd-quick-btn--main" @click="qlOpen('phone')">+ Call</button><button type="button" class="nd-quick-btn" @click="qlOpen('formal')">+ Interconsulta</button><small class="ac-meta">Quick log · the full form is below</small></div>
                         <p v-if="opsRoom.ic.error" class="sync-check-error">{{ opsRoom.ic.error }}</p>
                         <div v-if="opsRoom.ic.stats" class="opsr-ic-stats">
                             <div class="opsr-kpi"><span>Waiting</span><b>{{ opsRoom.ic.stats.waiting }}</b><small v-if="opsRoom.ic.stats.oldest_waiting_hours!==null">oldest {{ opsHours(opsRoom.ic.stats.oldest_waiting_hours) }}</small></div>
@@ -5039,6 +5090,7 @@
                     <!-- ═══ COMMUNICATION (CM-1): Feed · Parte del día · Agenda · Pendientes ═══ -->
                     <nav class="cm-tabs" aria-label="Communication">
                         <button v-for="t in COMMS_TABS" :key="t.key" type="button" :class="['cm-tab',{active:comms.tab===t.key}]" @click="commsTab(t.key)">{{ t.l }}<span v-if="t.key==='pendientes' &amp;&amp; commsOpenActions.length" class="cm-badge">{{ commsOpenActions.length }}</span></button>
+                        <button v-if="ndRouteHere" type="button" class="nd-share-view" title="A link that opens only this view (sign-in required)" @click="ndShareHere(comms.mt.open &amp;&amp; comms.tab==='agenda' ? comms.mt.open.meeting.title : '')">Share this view</button>
                     </nav>
                     <p v-if="comms.error" class="sync-check-error">Could not load: {{ comms.error }}</p>
                     <p v-if="!comms.migrated" class="sync-check-error">Agenda, Parte del día and follow-ups need the CM-1 database update (see COMMS.md).</p>
@@ -5299,15 +5351,6 @@
                             <ul class="cm-actions-list"><li v-for="a in comms.actions.filter(x=>x.status!=='open')" :key="'d'+a.id" :data-state="a.status"><span>{{ a.text }}<small v-if="a.owner_name"> — {{ a.owner_name }}</small></span><b>{{ COMMS_ACTION_STATE[a.status] }}</b><button type="button" class="btn btn-secondary btn-sm" @click="commsActionSet(a,'open')">Reopen</button></li></ul></details>
                     </section>
 
-                    <!-- Share sheet -->
-                    <div v-if="comms.share" class="cm-share-sheet" role="dialog" aria-modal="true" :aria-label="comms.share.title" @click.self="comms.share=null">
-                        <div class="cm-share-box">
-                            <div class="cm-row"><strong>{{ comms.share.title }}</strong><span class="cm-grow"></span><button type="button" class="btn btn-secondary btn-sm" @click="comms.share=null" aria-label="Close">×</button></div>
-                            <textarea class="form-control cm-share-text" rows="10" readonly :value="comms.share.text"></textarea>
-                            <div class="cm-row cm-actions"><a :href="comms.share.wa" target="_blank" rel="noopener" class="btn btn-primary btn-sm cm-wa">Open in WhatsApp</a><button type="button" class="btn btn-secondary btn-sm" @click="commsCopy(comms.share.text)">Copy text</button></div>
-                            <small class="ac-meta">The link opens neumDesk (sign-in required). Check there is no patient data before sharing outside the hospital.</small>
-                        </div>
-                    </div>
                 </div>
             
 
@@ -13371,7 +13414,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.42-20261017-comms-cm2"></script>
+    <script src="app.js?v=5.4-production.43-20261017-ux1"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

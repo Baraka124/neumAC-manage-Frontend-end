@@ -30,10 +30,10 @@ test('entrada: from which service, what came in, category, who it concerns, foll
 
 test('sharing: WhatsApp link + copy, link back into neumDesk, privacy reminder; deep links open the item', () => {
   assert.match(app, /const commsWa=text=>'https:\/\/wa\.me\/\?text='\+encodeURIComponent/);
-  assert.match(view, /<a :href="comms\.share\.wa" target="_blank" rel="noopener"/);
-  assert.match(view, /Check there is no patient data before sharing outside the hospital\./);
-  assert.match(app, /\/\^\(post\|meeting\|brief\):\[0-9A-Za-z-\]\{6,40\}\$\/\.test\(q\)/);
-  assert.match(app, /window\.history\.replaceState\(null,'',u\.toString\(\)\)/);
+  // The share sheet is global since UX-1 (posts, agenda, Parte and shared views use it).
+  assert.match(html, /<a :href="comms\.share\.wa" target="_blank" rel="noopener"/);
+  assert.match(html, /Check there is no patient data before sharing outside the hospital\./);
+  assert.match(app, /const r=p\.get\('view'\)\|\|p\.get\('c'\)/);             // legacy ?c= links still open the item
 });
 
 test('Parte del día: editable message, sections to include, send posts it; never the absence reason', () => {
