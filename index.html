@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-templates">
+<link rel="stylesheet" href="access.css?v=20261017-alerts">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -5140,7 +5140,7 @@
                                 <details class="sys-sub"><summary class="ac-meta">Background jobs</summary>
                                     <ul class="opsr-list"><li v-for="j in sysJobs()" :key="j.key" class="ac-meta sys-job"><span>{{ j.label }}</span> <strong :class="'sys-t-'+j.state">{{ j.state }}</strong>
                                         <template v-if="j.last"> · last {{ opsFmtTs(j.last.started_at) }}<template v-if="j.last.error"> · {{ j.last.error }}</template></template>
-                                        <button v-if="j.kind==='daily' &amp;&amp; j.key!=='backup'" type="button" class="btn-link" @click="sysRunJob(j.key)">run now</button></li>
+                                        <button v-if="(j.kind==='daily' || j.kind==='hourly') &amp;&amp; j.key!=='backup'" type="button" class="btn-link" @click="sysRunJob(j.key)">run now</button></li>
                                         <li v-if="!sysJobs().length" class="ac-meta">The job log appears after the JB-1 database update.</li></ul></details>
                                 <details class="sys-sub" :open="!!(sys.errors &amp;&amp; sys.errors.groups.length)"><summary class="ac-meta">Errors, last 7 days ({{ sys.errors ? sys.errors.groups.reduce((n,g)=>n+g.count,0) : '—' }})</summary>
                                     <p v-if="sys.errors &amp;&amp; !sys.errors.migrated" class="ac-meta">The error log appears after the PR-1 database update.</p>
@@ -5176,6 +5176,41 @@
                                     <button type="button" class="btn btn-secondary btn-sm" :disabled="sys.loading" @click="sysLoad">{{ sys.loading ? 'Checking…' : 'Check again' }}</button>
                                     <button type="button" class="btn btn-secondary btn-sm" :disabled="sys.busy" @click="sysBackup">{{ sys.busy ? 'Backing up…' : 'Back up now' }}</button>
                                 </div>
+                            </template>
+                        </details>
+
+                        <!-- OR-C 4 · Alert rules: thresholds on Ops Room records → email the owner. Checked every hour, 07–21 h. -->
+                        <details class="opsr-cfg alr-panel" open><summary><strong>Alert rules</strong> <span class="ac-meta">email the owner when a threshold is crossed · {{ alr.rules.filter(r=>r.active).length }} active</span></summary>
+                            <p v-if="alr.error" class="sync-check-error">{{ alr.error }}</p>
+                            <p v-if="alr.loaded &amp;&amp; !alr.migrated" class="sync-check-error">Alert rules appear after the OR-C4 database update (Estado del sistema → Database updates).</p>
+                            <template v-if="alr.loaded &amp;&amp; alr.migrated">
+                                <p class="ac-meta">Checked every hour from 07:00 to 21:00. When a rule holds, its owner gets one email that day (or the unit's coordinators; or the head of department). Nothing fires on missing or out-of-date numbers. People can switch these emails off in their email preferences.</p>
+                                <ul class="alr-list">
+                                    <li v-for="r in alr.rules" :key="r.id" :class="{off:!r.active}">
+                                        <div class="alr-main"><strong>{{ alrUnitName(r.unit_id) }}</strong> · <template v-if="r.type_id">{{ alrTypeLabel(r) }}: </template>{{ alrDesc(r) }}
+                                            <small class="ac-meta">→ {{ alrOwner(r) }} · {{ r.remind_every_days === 1 ? 'reminds daily' : 'reminds every ' + r.remind_every_days + ' days' }}<template v-if="r.note"> · {{ r.note }}</template></small>
+                                            <small v-if="alr.check &amp;&amp; alr.check[r.id]" :class="['alr-check', alr.check[r.id].fires ? 'alr-fires' : alr.check[r.id].skip ? 'alr-skip' : 'alr-ok']">{{ alr.check[r.id].fires ? '⚠ Would alert now: ' + alr.check[r.id].text : alr.check[r.id].skip ? 'Cannot judge: ' + alr.check[r.id].skip : '✓ Within the threshold' + (alr.check[r.id].text ? ' — ' + alr.check[r.id].text : '') }}</small>
+                                            <small v-for="e in r.events.slice(0,2)" :key="e.fired_on" class="ac-meta alr-ev">Alerted {{ formatDateShort(e.fired_on) }}: {{ e.text }} ({{ e.recipients }} email{{ e.recipients === 1 ? '' : 's' }})</small></div>
+                                        <div v-if="alr.canEdit" class="alr-acts"><button type="button" class="btn-link" @click="alrToggle(r)">{{ r.active ? 'pause' : 'resume' }}</button><button type="button" class="btn-link" @click="alrRemove(r)">remove</button></div>
+                                    </li>
+                                    <li v-if="!alr.rules.length" class="ac-meta">No alert rules yet.</li>
+                                </ul>
+                                <div class="im-buttons">
+                                    <button v-if="alr.canEdit &amp;&amp; !alr.form" type="button" class="btn btn-secondary btn-sm" @click="alrNew">+ Alert rule</button>
+                                    <button v-if="alr.rules.length" type="button" class="btn btn-secondary btn-sm" :disabled="alr.checking" @click="alrCheck">{{ alr.checking ? 'Checking…' : 'Check now (no email)' }}</button>
+                                </div>
+                                <form v-if="alr.form" class="opsr-add alr-form" @submit.prevent="alrSave">
+                                    <p class="admin-kicker">NEW ALERT RULE</p>
+                                    <select v-model="alr.form.kind" class="form-select" aria-label="What to watch" @change="alrFormKind"><option v-for="k in alr.kinds" :key="k.key" :value="k.key">{{ k.label }}</option></select>
+                                    <select v-model="alr.form.unit_id" class="form-select" aria-label="Unit" @change="alrTypes(alr.form.unit_id);alr.form.type_id=''"><option v-if="alrKind(alr.form.kind).dept_ok" value="">Whole department</option><option v-for="u in opsRoom.units" :key="u.id" :value="u.id">{{ u.unit_name }}</option></select>
+                                    <select v-if="alrKind(alr.form.kind).needs_type" v-model="alr.form.type_id" class="form-select" aria-label="Pending measure" required><option value="">— Pending measure —</option><option v-for="t in alrStocks(alr.form.unit_id)" :key="t.id" :value="t.id">{{ t.label }}</option></select>
+                                    <label>N = <input type="number" min="0" max="100000" step="1" v-model="alr.form.threshold" class="form-control opsr-num" required> {{ alrKind(alr.form.kind).unit }}</label>
+                                    <select v-model="alr.form.owner_id" class="form-select" aria-label="Who is told"><option value="">{{ alr.form.unit_id ? 'Unit coordinators' : 'Head of department' }}</option><option v-for="s in opsClinicians" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
+                                    <label>remind every <input type="number" min="1" max="30" step="1" v-model="alr.form.remind_every_days" class="form-control opsr-num"> day(s)</label>
+                                    <input v-model="alr.form.note" class="form-control opsr-grow" maxlength="300" placeholder="Note for the email (e.g. what to do)" aria-label="Note">
+                                    <button type="submit" class="btn btn-primary btn-sm" :disabled="alr.busy || alr.form.threshold === ''">Save</button><button type="button" class="btn btn-secondary btn-sm" @click="alr.form=null">Cancel</button>
+                                    <small v-if="alrKind(alr.form.kind).needs_type &amp;&amp; alr.form.unit_id &amp;&amp; !alrStocks(alr.form.unit_id).length" class="ac-meta">This unit has no pending (snapshot) measure yet — add one in its Activity tab.</small>
+                                </form>
                             </template>
                         </details>
 
@@ -13740,7 +13775,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.53-20261017-templates"></script>
+    <script src="app.js?v=5.4-production.54-20261017-alerts"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

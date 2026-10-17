@@ -1261,3 +1261,14 @@ html body #app .sys-errors code{color:#1f2937}
 .uops-plan ul{margin:6px 0 8px;padding-left:18px;font-size:.86rem}
 .uops-plan .uops-skip{opacity:.65}
 .uops-plan small.uops-note{display:block;margin-top:6px}
+
+/* OR-C 4 · Alert rules */
+.alr-list{list-style:none;margin:6px 0;padding:0}
+.alr-list li{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border,rgba(127,127,127,.2))}
+.alr-list li.off{opacity:.55}
+.alr-main{min-width:0;overflow-wrap:anywhere}
+.alr-main small{display:block}
+.alr-acts{display:flex;gap:8px;flex-shrink:0}
+.alr-check{margin-top:3px;font-weight:600}
+.alr-fires{color:#b45309}.alr-skip{color:#6b7280}.alr-ok{color:#047857}
+.alr-form{flex-wrap:wrap}
