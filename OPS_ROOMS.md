@@ -292,5 +292,14 @@ resource, incident) sit in drawers; status refreshes after every write (`opsRefr
 action" and "To look at today" (every unit reason + interconsultas over target / unassigned, each clickable to the
 unit), interconsultas at a glance, objectives off track (from `GET /api/ops/indicators`), and every unit as one row.
 
+**Built — UX-1 (17 Oct):** (1) **shareable views** — `?view=<route>` opens ONE view in a focus frame (no sidebar,
+top bar or other modules; sign-in still required; whitelisted routes `ND_VIEW_RE` in app.js: hoy · interconsultas ·
+objetivos · informes[:unit] · report:<dept|unit>:<id> · unit:<id>[:tab] · parte[:date] · agenda[:id] · meeting:<id> ·
+post:<id> · pendientes; legacy `?c=` links map to the same). "Share this view" in Ops Room and Comunicación shares
+exactly what is on screen (WhatsApp / copy). (2) **Quick log** sheet (chips: channel, most-used services, priority or
+outcome, minutes; remembers choices per device) from Hoy and Interconsultas. (3) **Steppers** (−/+) on every count.
+(4) Shared components in access.css (`--nd-*` tokens, `.nd-chip`, `.nd-sheet`, `.nd-quick-btn`, `.nd-step`,
+`.nd-focusbar`) — reuse these for new screens.
+
 Possible pass 3 (not started): Interconsultas board as a queue (oldest first, one-tap take/answer); Objetivos as a
 grid by unit; consistent empty states for brand-new units.
