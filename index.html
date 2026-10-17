@@ -4774,7 +4774,7 @@
                             <table class="sync-table opsr-table opsr-ind"><thead><tr><th scope="col">Indicator</th><th scope="col">Now</th><th scope="col">Target</th><th scope="col">Last 6 periods</th><th scope="col">Owner</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
                                 <tr v-for="i in opsRoom.ind.list" :key="'i'+i.id">
                                     
-                                    <td><strong>{{ i.name }}</strong><small>{{ i.kind_label }}<template v-if="i.params &amp;&amp; i.params.priority"> · {{ ({urgent:'Urgente',preferente:'Preferente',ordinary:'Ordinaria'})[i.params.priority] }}</template> · per {{ i.period }}</small><small v-if="i.iso_clause" class="opsr-iso">ISO {{ i.iso_clause }}</small></td>
+                                    <td><strong>{{ i.name }}</strong><small>{{ i.kind_label }}<template v-if="i.params &amp;&amp; i.params.priority"> · {{ ({urgent:'Urgente',preferente:'Preferente',ordinary:'Ordinaria'})[i.params.priority] }}</template> · per {{ i.period }}</small></td>
                                     <td><strong>{{ opsIndFmt(i, i.result.last_value ? i.result.last_value.value : null) }}</strong><small v-if="i.result.last_value">{{ formatDateShort(i.result.last_value.start) }}{{ i.result.last_value.partial ? ' (so far)' : '' }}</small><span class="opsr-ind-status" :data-status="i.result.status">{{ OPS_IND_STATUS[i.result.status] }}</span></td>
                                     <td>{{ i.result.target_now ? ((i.result.target_now.direction||i.direction)==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.result.target_now.value) : '—' }}<button v-if="opsCanManage &amp;&amp; i.targets" type="button" class="btn btn-secondary btn-sm opsr-tgt-btn" @click="opsTgtOpen(i)">{{ opsRoom.tgt.open===i.id ? 'Close' : 'Change' }}</button>
                                         <div v-if="opsRoom.tgt.open===i.id" class="opsr-tgt">
@@ -4805,7 +4805,6 @@
                                 <select v-model="opsRoom.ind.form.direction" class="form-select" aria-label="Direction"><option value="min">Target is a minimum (≥)</option><option value="max">Target is a maximum (≤)</option></select>
                                 <label>Target <input type="number" min="0" step="any" v-model="opsRoom.ind.form.target" class="form-control opsr-num"></label>
                                 <select v-model="opsRoom.ind.form.owner_id" class="form-select" aria-label="Owner"><option value="">— Owner —</option><option v-for="s in opsOwners" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
-                                <input v-model="opsRoom.ind.form.iso_clause" class="form-control" maxlength="40" placeholder="ISO 7101 clause (optional)" aria-label="ISO clause">
                                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.ind.form.name||opsRoom.ind.busy">Save</button><button type="button" class="btn btn-secondary btn-sm" @click="opsRoom.ind.form=null">Cancel</button>
                                 <small class="ac-meta">The value is computed from the Ops Room records; only “entered by hand” indicators take values. Leave the target empty until the department sets it.</small>
                             </form>
@@ -4967,7 +4966,7 @@
                                 <template v-if="opsRoom.rep.open.content.indicators &amp;&amp; opsRoom.rep.open.content.indicators.length">
                                     <p class="admin-kicker">¿CUMPLIMOS? · TARGET IN FORCE AT THE END OF THE PERIOD</p>
                                     <table class="sync-table opsr-table"><thead><tr><th scope="col">Indicator</th><th scope="col">Value</th><th scope="col">Target</th><th scope="col">Result</th></tr></thead><tbody>
-                                        <tr v-for="(i,ii) in opsRoom.rep.open.content.indicators" :key="'i'+ii"><td><strong>{{ i.name }}</strong><small v-if="i.iso_clause" class="opsr-iso">ISO {{ i.iso_clause }}</small></td><td>{{ opsIndFmt(i, i.value) }}</td><td>{{ i.target===null ? '—' : (i.direction==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.target) }}</td>
+                                        <tr v-for="(i,ii) in opsRoom.rep.open.content.indicators" :key="'i'+ii"><td><strong>{{ i.name }}</strong></td><td>{{ opsIndFmt(i, i.value) }}</td><td>{{ i.target===null ? '—' : (i.direction==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.target) }}</td>
                                             <td><span class="opsr-ind-status" :data-status="i.met===null ? (i.target===null ? 'no_target' : 'no_data') : (i.met ? 'met' : 'not_met')">{{ i.met===null ? (i.target===null ? 'No target' : 'No data') : (i.met ? 'Met' : 'Not met') }}</span></td></tr>
                                     </tbody></table>
                                 </template>
@@ -4982,7 +4981,7 @@
                         <table class="sync-table opsr-table opsr-ind"><thead><tr><th scope="col">Unit</th><th scope="col">Indicator</th><th scope="col">Now</th><th scope="col">Target</th><th scope="col">Last 6 periods</th><th scope="col">Owner</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
                                 <tr v-for="i in opsRoom.dept.list" :key="'i'+i.id">
                                     <td>{{ i.unit ? i.unit.unit_name : 'Departamento' }}</td>
-                                    <td><strong>{{ i.name }}</strong><small>{{ i.kind_label }}<template v-if="i.params &amp;&amp; i.params.priority"> · {{ ({urgent:'Urgente',preferente:'Preferente',ordinary:'Ordinaria'})[i.params.priority] }}</template> · per {{ i.period }}</small><small v-if="i.iso_clause" class="opsr-iso">ISO {{ i.iso_clause }}</small></td>
+                                    <td><strong>{{ i.name }}</strong><small>{{ i.kind_label }}<template v-if="i.params &amp;&amp; i.params.priority"> · {{ ({urgent:'Urgente',preferente:'Preferente',ordinary:'Ordinaria'})[i.params.priority] }}</template> · per {{ i.period }}</small></td>
                                     <td><strong>{{ opsIndFmt(i, i.result.last_value ? i.result.last_value.value : null) }}</strong><small v-if="i.result.last_value">{{ formatDateShort(i.result.last_value.start) }}{{ i.result.last_value.partial ? ' (so far)' : '' }}</small><span class="opsr-ind-status" :data-status="i.result.status">{{ OPS_IND_STATUS[i.result.status] }}</span></td>
                                     <td>{{ i.result.target_now ? ((i.result.target_now.direction||i.direction)==='min' ? '≥ ' : '≤ ') + opsIndFmt(i, i.result.target_now.value) : '—' }}<button v-if="opsIsAdmin &amp;&amp; i.targets" type="button" class="btn btn-secondary btn-sm opsr-tgt-btn" @click="opsTgtOpen(i)">{{ opsRoom.tgt.open===i.id ? 'Close' : 'Change' }}</button>
                                         <div v-if="opsRoom.tgt.open===i.id" class="opsr-tgt">
@@ -5009,7 +5008,6 @@
                                 <select v-model="opsRoom.dept.form.direction" class="form-select" aria-label="Direction"><option value="min">Target is a minimum (≥)</option><option value="max">Target is a maximum (≤)</option></select>
                                 <label>Target <input type="number" min="0" step="any" v-model="opsRoom.dept.form.target" class="form-control opsr-num"></label>
                                 <select v-model="opsRoom.dept.form.owner_id" class="form-select" aria-label="Owner"><option value="">— Owner —</option><option v-for="s in opsClinicians" :key="s.id" :value="s.id">{{ s.full_name }}</option></select>
-                                <input v-model="opsRoom.dept.form.iso_clause" class="form-control" maxlength="40" placeholder="ISO 7101 clause (optional)" aria-label="ISO clause">
                                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!opsRoom.dept.form.name||opsRoom.dept.busy">Save</button><button type="button" class="btn btn-secondary btn-sm" @click="opsRoom.dept.form=null">Cancel</button>
                                 <small class="ac-meta">The value is computed from the Ops Room records (interconsultas); only “entered by hand” indicators take values. Leave the target empty until the department sets it.</small>
                             </form>
@@ -13449,7 +13447,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.44-20261017-cm3"></script>
+    <script src="app.js?v=5.4-production.45-20261017-noiso"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
