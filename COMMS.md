@@ -1,6 +1,6 @@
 # Communication (Comunicación) — plan of record and handoff
 
-Status (17 Oct 2026): **CM-1 built** — Feed with *entradas* (what comes in from other services, briefed to the team),
+Status (17 Oct 2026): **CM-1 and CM-2 built** — Feed with *entradas* (what comes in from other services, briefed to the team),
 **Parte del día**, **Agenda** (clinical sessions, seminars, service meetings) and **Pendientes** (follow-ups), with
 WhatsApp sharing. Permissions are deliberately simple for now (one map — see below); they will be set later.
 If you are continuing this work in a new session or with another assistant, read this file and `OPS_ROOMS.md` §8
@@ -31,6 +31,18 @@ concerns ("Para mí").
 | Parte del día | Communications → Parte del día | Built live from records: mensaje del día (editable), entradas (yesterday + today), guardia, ausencias (who + cover, no reason), unidades (Ops Room status; units in order collapsed to a count), interconsultas (waiting / over target / unassigned / calls today), agenda de hoy, pendientes, residentes por unidad (optional). Save draft · **Send** = freeze snapshot + post to feed (re-send replaces the post) + WhatsApp share. Printable. |
 | Agenda | Communications → Agenda | Meetings: kind (list), title, start/end, place, online link (https), organiser, audience, **orden del día** (topic, presenter from staff or guest name, minutes → times computed), materials (https links), minutes (acta), status planned/held/cancelled, follow-ups. Post to feed, share, print. Meetings also appear in the department calendar. |
 | Pendientes | Communications → Pendientes | Every open follow-up (from posts, meetings or added directly): owner, due, overdue / due today; done, cancel, reopen. |
+
+## 3b. CM-2 — programmed events (17 Oct 2026)
+- Agenda opens as a **month calendar** (Monday first; list view kept). On phones the calendar becomes a list of days with events.
+- Each event is **internal** or **public**, with a description, a **banner** (JPEG/PNG/WEBP ≤ 5 MB) and a **flyer**
+  (PDF or image ≤ 10 MB). Files are checked by type *and* content, stored in the private `attachments` bucket under
+  `comms/meetings/<id>/`, and served through 1-hour signed links (an internal flyer is never exposed).
+- **Public feed**: `GET /api/public/events[?from&to]` and `GET /api/public/events/:id`, no sign-in, website rate limiter,
+  only safe fields (`publicEvent` in `comms.js`); internal events answer 404.
+- **Open decision (Baraka):** how events and communication are displayed — a public page / neumact.org section fed by
+  the public feed, an overview pop-up, banners in Hoy or Mi espacio. Nothing public is rendered yet.
+- Migration: `2026-10-17_comms_cm2_event_visibility_banner.sql` (run after CM-1). Check:
+  `select count(*) from information_schema.columns where table_name='comm_meetings' and column_name in ('visibility','banner_path','flyer_path','description')` → 4.
 
 ## 4. Where the code is
 | Layer | File / place |
