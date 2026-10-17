@@ -6,6 +6,7 @@ Clinical counts can be broken down by condition, age band or sex (counts only).
 **Interface pass 1–2 built (17 Oct):** status first everywhere and a department daily screen, **Hoy** (see §9).
 Next: OR-C steps 3–4, OR-4, OR-5, OR-6 (and any interface pass 3 items in §9).
 **§8 is the handoff** — read it first if you are continuing this work in a new session or with another assistant.
+**Backend design guide:** `OPS_ROOM_BACKEND.md` in the backend repo (principles, layers, current weaknesses, checklist).
 
 ## 1. Purpose
 
