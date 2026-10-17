@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-nt1">
+<link rel="stylesheet" href="access.css?v=20261017-today">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -1844,6 +1844,43 @@
                 </nav>
 
                 <!-- Mi espacio: authenticated personal view, not another app -->
+                <!-- Mi espacio — Hoy para ti: my operational day (own records only) -->
+                <section v-if="currentView === 'mi_espacio' &amp;&amp; myDay.data &amp;&amp; myDay.data.linked" class="nd-today" aria-label="Hoy para ti">
+                    <header class="nd-today-head">
+                        <div><p class="admin-kicker">HOY PARA TI</p><h3>{{ myDay.data.needs_you ? myDay.data.needs_you + (myDay.data.needs_you === 1 ? ' cosa necesita' : ' cosas necesitan') + ' tu atención' : 'Nada urgente para ti' }}</h3></div>
+                        <ul class="nd-today-tags"><li v-for="(h,hi) in myDay.data.headline" :key="hi">{{ h }}</li><li v-if="myDay.data.unread"><button type="button" class="nd-linkish" @click="myDayScrollInbox">{{ myDay.data.unread }} mensaje{{ myDay.data.unread === 1 ? '' : 's' }} sin leer</button></li></ul>
+                    </header>
+                    <div class="nd-today-grid">
+                        <div v-if="myDay.data.oncall.length" class="nd-today-box nd-today-box--oncall">
+                            <p class="nd-today-lbl">Guardia</p>
+                            <p>Hoy estás de guardia<template v-for="(o,oi) in myDay.data.oncall" :key="oi"> · {{ o.role }}<template v-if="o.shift"> ({{ o.shift }})</template></template>.</p>
+                        </div>
+                        <div v-if="myDay.data.actions.length" class="nd-today-box">
+                            <p class="nd-today-lbl">Tus pendientes</p>
+                            <ul><li v-for="a in myDay.data.actions.slice(0,5)" :key="a.id" :data-state="a.state"><span><b v-if="MYDAY_STATE[a.state]" class="nd-state">{{ MYDAY_STATE[a.state] }}</b> {{ a.text }}<small v-if="a.due_on &amp;&amp; a.state==='open'"> · {{ formatDateShort(a.due_on) }}</small></span><button type="button" class="btn btn-secondary btn-sm" :disabled="myDay.busy===a.id" @click="myDayDone(a)">Hecho</button></li></ul>
+                            <button v-if="myDay.data.actions.length > 5" type="button" class="nd-linkish" @click="myDayGo('pendientes')">Ver los {{ myDay.data.actions.length }}</button>
+                        </div>
+                        <div v-if="myDay.data.interconsults.length" class="nd-today-box">
+                            <p class="nd-today-lbl">Interconsultas a tu cargo</p>
+                            <ul><li v-for="ic in myDay.data.interconsults.slice(0,5)" :key="ic.id" :data-state="ic.over ? 'overdue' : ''"><span><b>{{ ic.service }}</b> · {{ ic.over ? 'fuera de plazo' : 'en plazo' }}<small> · {{ Math.round(ic.hours) }} h</small></span></li></ul>
+                            <button type="button" class="nd-linkish" @click="myDayGo('interconsultas')">Abrir Interconsultas</button>
+                        </div>
+                        <div v-if="myDay.data.meetings.length" class="nd-today-box">
+                            <p class="nd-today-lbl">Agenda</p>
+                            <ul><li v-for="m in myDay.data.meetings.slice(0,5)" :key="m.id"><button type="button" class="nd-linkish" @click="myDayGo('meeting:'+m.id)"><b>{{ myDayWhen(m.starts_at) }}</b> {{ m.title }}<small v-if="m.location"> · {{ m.location }}</small><span v-if="m.presenting" class="cm-forme">Presentas</span></button></li></ul>
+                        </div>
+                        <div v-if="myDay.data.units.length" class="nd-today-box">
+                            <p class="nd-today-lbl">{{ myDay.data.rotation ? 'Tu rotación y tus unidades' : 'Tus unidades' }}</p>
+                            <ul><li v-for="u in myDay.data.units" :key="u.id"><button type="button" class="nd-linkish" @click="myDayGo('unit:'+u.id)"><span class="opsr-level" :data-level="u.level">{{ u.name }}</span> <small>{{ u.reasons.length ? u.reasons.join(' · ') : 'sin incidencias' }}</small></button></li></ul>
+                            <small v-if="myDay.data.rotation" class="ac-meta">Rotación hasta {{ formatDateShort(myDay.data.rotation.end_date) }}</small>
+                        </div>
+                        <div v-if="myDay.data.posts.length" class="nd-today-box">
+                            <p class="nd-today-lbl">Para ti</p>
+                            <ul><li v-for="p in myDay.data.posts" :key="p.id"><button type="button" class="nd-linkish" @click="myDayGo('post:'+p.id)"><b v-if="p.urgent" class="nd-state">Urgente</b> {{ p.title }}<small> · {{ p.by }}</small></button></li></ul>
+                        </div>
+                    </div>
+                    <p v-if="myDay.data.empty" class="ac-meta">Nada asignado a ti hoy. Lo que te asignen (pendientes, interconsultas, sesiones) aparecerá aquí.</p>
+                </section>
                 <!-- CM-3: my private messages (only my own copies) -->
                 <section v-if="currentView === 'mi_espacio' &amp;&amp; (inbox.list.length || inbox.showArchived)" class="nd-inbox" aria-label="Mensajes">
                     <div class="nd-inbox-head"><strong>Mensajes</strong><span v-if="inbox.unread" class="cm-badge">{{ inbox.unread }}</span><span class="cm-grow"></span>
@@ -13465,7 +13502,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.46-20261017-nt1"></script>
+    <script src="app.js?v=5.4-production.47-20261017-today"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
