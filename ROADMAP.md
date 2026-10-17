@@ -62,16 +62,20 @@ If not, fix the friction before building anything new.
 From `OPS_ROOM_BACKEND.md` §8, in order of risk:
 1. **Secrets:** rotate the committed `.env` keys, move them to Railway, untrack `.env`.
 2. **Role matrix:** one permission model for jefe / coordinador / adjunto / residente instead of three systems.
-3. **Database proof:** a migration check in CI (code expects table X → migration exists) and one integration test
-   against a real Postgres for the import and interconsulta flows.
-4. **One audit trail:** `audit_log` (1,280 rows, still written) and `audit_logs` (live) unified.
+3. **Database proof:** ✅ migration check in CI built 17 Oct (`tests/schema-contract.test.cjs`: every table/function the
+   code uses has a migration or predates `migrations/`; every migration is in Estado del sistema). Still open: one
+   integration test against a real Postgres for the import and interconsulta flows.
+4. **One audit trail:** ✅ built 17 Oct (AUD-1). `audit_log`, written by the database trigger, is the only trail: 57
+   tables watched (was 27). Legacy `audit_logs`/`system_audit_log` are read-only. CI requires the trigger on every new table.
+   Readable in Ops Room → Configuración → Estado del sistema → Change history.
 5. **Split `index.js`** one domain at a time when it is touched (Ops Room first), never as a big rewrite.
 6. One AI thread per file at a time — the cache-key collisions came from two threads editing `app.js`/`index.html`.
 
 ### Phase 3 — Extend, with evidence from the pilot
 Only what the pilot shows is needed, roughly in this order:
 1. **OR-4** remaining units, each with its coordinator.
-2. **OR-C 3:** unit templates (Laboratory / Ward / Procedures / Clinic) — the Ops settings live in the existing units form.
+2. **OR-C 3:** ✅ built 17 Oct. Unit templates (Laboratorio / Planta / Procedimientos / Consulta) in the existing units
+   form: switch a unit on, choose its areas, start from a template with a preview. Templates only add.
 3. **OR-C 4:** alert rules (threshold → owner, on the existing outbox).
 4. **Disease programmes (counts):** EPOC, Asma, Asma grave, EPID, SAHS… as cross-unit programmes built on the
    `clinical_condition` breakdown; a programme dashboard; then the **care map** (disease → units → outcomes).
