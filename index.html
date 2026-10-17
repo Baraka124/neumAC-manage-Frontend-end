@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-import">
+<link rel="stylesheet" href="access.css?v=20261017-pilot">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -5106,6 +5106,45 @@
                         <p v-if="opsRoom.cat.error" class="sync-check-error">{{ opsRoom.cat.error }}</p>
                         <p v-if="opsRoom.cat.loaded &amp;&amp; !opsRoom.cat.migrated" class="sync-check-error">The configuration tables are not in the database yet — run the OR-C SQL file. The built-in lists are in use until then.</p>
                         <p class="ac-meta">Lists used across the Ops Room. Rename freely; switching an item off hides it from new records but keeps it on the old ones. Items marked 🔒 are used by the system and stay on. Units are created and configured in the clinical units module.</p>
+
+                        <!-- PR-1 · Estado del sistema: one place to see that the system is healthy before and during the pilot. -->
+                        <details class="opsr-cfg sys-panel" open><summary><strong>Estado del sistema</strong>
+                            <span v-if="sys.data" :class="['sys-pill','sys-'+sys.data.level]">{{ SYS_LEVEL[sys.data.level] }}</span>
+                            <span v-if="sys.data" class="ac-meta">release {{ sys.data.release || '—' }} · up {{ Math.round(sys.data.uptime_s/3600) }} h</span></summary>
+                            <p v-if="sys.error" class="sync-check-error">{{ sys.error }}</p>
+                            <p v-if="sys.loading &amp;&amp; !sys.data" class="ac-meta">Checking…</p>
+                            <template v-if="sys.data">
+                                <ul class="sys-items">
+                                    <li v-for="(it,i) in sys.data.items" :key="'s'+i" :class="'sys-'+it.level">
+                                        <span class="sys-dot" aria-hidden="true"></span>
+                                        <div><span class="sys-area">{{ it.area }}</span> {{ it.text }}<small v-if="it.fix" class="ac-meta sys-fix">{{ it.fix }}</small>
+                                            <button v-if="it.area==='accounts' &amp;&amp; sys.data.accounts_without.length" type="button" class="btn-link sys-more" @click="sys.showAccounts=!sys.showAccounts">{{ sys.showAccounts ? 'Hide' : 'Who' }}</button>
+                                            <small v-if="it.area==='accounts' &amp;&amp; sys.showAccounts" class="ac-meta sys-who">{{ sys.data.accounts_without.join(' · ') }}</small></div>
+                                    </li>
+                                </ul>
+                                <details class="sys-sub"><summary class="ac-meta">Database updates ({{ sys.data.migrations.filter(m=>m.applied).length }}/{{ sys.data.migrations.length }} applied)</summary>
+                                    <ul class="opsr-list"><li v-for="m in sys.data.migrations" :key="m.key" class="ac-meta">{{ m.applied ? '✅' : '⛔' }} <strong>{{ m.key }}</strong> · {{ m.feature }}<template v-if="!m.applied"> — run <code>{{ m.file }}</code></template></li></ul></details>
+                                <details class="sys-sub"><summary class="ac-meta">Background jobs</summary>
+                                    <ul class="opsr-list"><li v-for="j in sysJobs()" :key="j.key" class="ac-meta sys-job"><span>{{ j.label }}</span> <strong :class="'sys-t-'+j.state">{{ j.state }}</strong>
+                                        <template v-if="j.last"> · last {{ opsFmtTs(j.last.started_at) }}<template v-if="j.last.error"> · {{ j.last.error }}</template></template>
+                                        <button v-if="j.kind==='daily' &amp;&amp; j.key!=='backup'" type="button" class="btn-link" @click="sysRunJob(j.key)">run now</button></li>
+                                        <li v-if="!sysJobs().length" class="ac-meta">The job log appears after the JB-1 database update.</li></ul></details>
+                                <details class="sys-sub" :open="!!(sys.errors &amp;&amp; sys.errors.groups.length)"><summary class="ac-meta">Errors, last 7 days ({{ sys.errors ? sys.errors.groups.reduce((n,g)=>n+g.count,0) : '—' }})</summary>
+                                    <p v-if="sys.errors &amp;&amp; !sys.errors.migrated" class="ac-meta">The error log appears after the PR-1 database update.</p>
+                                    <ul v-else-if="sys.errors &amp;&amp; sys.errors.groups.length" class="sys-errors">
+                                        <li v-for="g in sys.errors.groups.slice(0,15)" :key="g.fingerprint"><span :class="['sys-src','sys-src-'+g.source]">{{ g.source }}</span> <strong>×{{ g.count }}</strong> <code>{{ g.route || '—' }}</code><div class="ac-meta">{{ g.message }}</div><small class="ac-meta">last {{ opsFmtTs(g.last_seen) }} · {{ g.users }} user(s) · {{ g.release || '—' }}</small></li>
+                                    </ul>
+                                    <p v-else class="ac-meta">No errors. 🎉</p></details>
+                                <details class="sys-sub" open><summary class="ac-meta">Backups (kept 30 days, every night at 02:00)</summary>
+                                    <ul class="opsr-list"><li v-for="b in sys.data.backups" :key="b.path" class="ac-meta sys-job"><span>{{ b.path.split('/')[0] }}</span> · {{ sysKb(b.bytes) }} <button type="button" class="btn-link" @click="sysDownload(b)">download</button></li>
+                                        <li v-if="!sys.data.backups.length" class="ac-meta">No backups yet.</li></ul>
+                                    <p class="ac-meta">Restore: <code>node scripts/restore-backup.js file.json.gz</code> (dry run), then <code>--apply</code>. See PILOT.md.</p></details>
+                                <div class="im-buttons">
+                                    <button type="button" class="btn btn-secondary btn-sm" :disabled="sys.loading" @click="sysLoad">{{ sys.loading ? 'Checking…' : 'Check again' }}</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" :disabled="sys.busy" @click="sysBackup">{{ sys.busy ? 'Backing up…' : 'Back up now' }}</button>
+                                </div>
+                            </template>
+                        </details>
 
                         <details class="opsr-cfg" open><summary><strong>Interconsulta response targets</strong> <span class="ac-meta">hours, by priority — with history</span></summary>
                             <div v-for="(label,p) in { urgent:'urgent', preferente:'preferente', ordinary:'ordinary' }" :key="'t'+p" class="opsr-cfg-row">
@@ -13631,7 +13670,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.49-20261017-import"></script>
+    <script src="app.js?v=5.4-production.50-20261017-pilot"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

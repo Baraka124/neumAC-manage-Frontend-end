@@ -10,7 +10,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 test('the import panel lives in Configuración (head of department only) and loads with it', () => {
   const cfg = html.indexOf('aria-label="Configuración"'), panel = html.indexOf('Importar datos del hospital'), end = html.indexOf('</section>', cfg);
   assert.ok(cfg > 0 && panel > cfg && panel < end, 'inside the admin-only Configuración section');
-  assert.match(app, /if\(key==='config'\)\{opsLoadCat\(\);impLoad\(\)\}/);
+  assert.match(app, /if\(key==='config'\)\{opsLoadCat\(\);impLoad\(\)/);
 });
 
 test('preview before commit; commit only after a clean preview; undo per batch', () => {

@@ -1208,3 +1208,25 @@ body:has(.nd-focus) .grounded-orb-wrap{display:none!important}
   .im-actions .btn{margin-left:0}
   .im-form .form-control,.im-form .im-sys{flex:1 1 100%}
 }
+
+/* PR-1 · Estado del sistema */
+.sys-pill{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;margin:0 6px;vertical-align:1px}
+.sys-pill.sys-ok{background:#d1fae5;color:#065f46}.sys-pill.sys-watch{background:#fef3c7;color:#92400e}.sys-pill.sys-alert{background:#fee2e2;color:#991b1b}
+.sys-items{list-style:none;margin:8px 0;padding:0}
+.sys-items li{display:grid;grid-template-columns:14px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--nd-border,#eef0f3);font-size:.9rem;align-items:start}
+.sys-dot{width:9px;height:9px;border-radius:50%;margin-top:6px;background:#9ca3af}
+.sys-ok .sys-dot{background:#10b981}.sys-watch .sys-dot{background:#f59e0b}.sys-alert .sys-dot{background:#ef4444}.sys-info .sys-dot{background:#60a5fa}
+.sys-area{display:inline-block;min-width:68px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--nd-muted,#6b7280);font-weight:600}
+.sys-fix,.sys-who{display:block;margin-top:2px}
+.sys-more{margin-left:6px}
+.btn-link{background:none;border:0;padding:0 4px;color:#1d4ed8;cursor:pointer;font-size:.85rem;text-decoration:underline}
+.sys-sub{margin:6px 0}.sys-sub>summary{cursor:pointer}
+.sys-job{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline}
+.sys-t-ok{color:#047857}.sys-t-failed{color:#b91c1c}.sys-t-late{color:#b45309}.sys-t-waiting,.sys-t-running{color:#6b7280}
+.sys-errors{list-style:none;padding:0;margin:4px 0}
+.sys-errors li{padding:6px 0;border-bottom:1px solid var(--nd-border,#eef0f3);font-size:.86rem;word-break:break-word}
+.sys-src{font-size:.7rem;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:#e5e7eb}
+.sys-src-server{background:#fee2e2;color:#991b1b}.sys-src-browser{background:#e0e7ff;color:#3730a3}
+html body #app .sys-errors li .ac-meta,html body #app .sys-errors li small{color:var(--nd-muted,#6b7280)!important}
+html body #app .sys-errors li>div.ac-meta{color:#374151!important}
+html body #app .sys-errors code{color:#1f2937}
