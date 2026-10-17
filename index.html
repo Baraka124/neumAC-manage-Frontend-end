@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-today">
+<link rel="stylesheet" href="access.css?v=20261017-outlook">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4535,6 +4535,7 @@
                     <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">PNEUMO OPS ROOM</span><h2>Sala de Operaciones de Neumología</h2><p>Saber cada día cómo funciona cada unidad —quién está, con qué cuenta, qué se ha hecho y qué queda pendiente— y actuar antes de que un problema llegue al paciente.</p></div></header>
                     <nav class="opsr-sections" aria-label="Ops Room sections">
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='today'}]" @click="opsSection('today')">Hoy</button>
+                        <button type="button" :class="['opsr-section',{active:opsRoom.section==='outlook'}]" @click="opsSection('outlook')">Próximas semanas</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='units'}]" @click="opsSection('units')">Unidades</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='interconsults'}]" @click="opsSection('interconsults')">Interconsultas</button>
                         <button type="button" :class="['opsr-section',{active:opsRoom.section==='objectives'}]" @click="opsSection('objectives')">¿Cumplimos? · Objetivos</button>
@@ -4589,6 +4590,10 @@
                                     <li v-if="!opsRoom.dept.loading &amp;&amp; !opsTodayOffTrack.length" class="opsr-allgood">Every objective with data is on track.</li></ul>
                             </div>
                         </div>
+                        <div v-if="outlookSoonSignals.length" class="opsr-today-card nd-soon">
+                            <div class="opsr-row"><p class="admin-kicker">COMING UP · NEXT 2 WEEKS</p><button type="button" class="btn btn-secondary btn-sm" @click="opsSection('outlook')">Next 8 weeks</button></div>
+                            <ul class="opsr-today-list"><li v-for="(s,si) in outlookSoonSignals" :key="si" :data-level="s.level"><span class="opsr-level" :data-level="s.level">{{ s.week }}</span> {{ s.text }}</li></ul>
+                        </div>
                         <p class="admin-kicker">UNITS</p>
                         <div class="opsr-today-units">
                             <button v-for="u in opsUnitsSorted" :key="u.id" type="button" class="opsr-unit-row" :data-level="opsLevel(u)" @click="opsTodayOpenUnit(u)">
@@ -4598,6 +4603,31 @@
                                 <span class="opsr-unit-row-stats"><span>{{ u.roster.current.length }} team</span><span>{{ u.residents_this_week.length }} residents</span><span v-if="u.pulse &amp;&amp; u.pulse.indicators.total">{{ u.pulse.indicators.met }}/{{ u.pulse.indicators.total }} met</span><span v-if="u.pulse &amp;&amp; u.pulse.activity.measures">activity {{ opsAgo(u.pulse.activity.days_since) }}</span></span>
                             </button>
                             <p v-if="!opsRoom.loading &amp;&amp; !opsRoom.units.length" class="ac-meta">No units are switched on for the Ops Room yet.</p>
+                        </div>
+                    </section>
+
+                    <!-- Próximas semanas: facts from the plan (guardias, absences, rotations, capacity) + trends against set targets -->
+                    <section v-if="opsRoom.section==='outlook'" class="nd-outlook" aria-label="Próximas semanas">
+                        <div class="opsr-row nd-outlook-bar">
+                            <div><p class="admin-kicker">PRÓXIMAS SEMANAS</p><h3>What is coming</h3></div>
+                            <span class="cm-grow"></span>
+                            <select v-model="outlook.unit" class="form-select nd-outlook-unit" aria-label="Unit"><option value="">All units</option><option v-for="u in opsRoom.units" :key="u.id" :value="u.id">{{ u.unit_name }}</option></select>
+                            <select v-model.number="outlook.weeks" class="form-select nd-outlook-unit" aria-label="Weeks" @change="outlookLoad"><option :value="4">4 weeks</option><option :value="8">8 weeks</option><option :value="12">12 weeks</option></select>
+                        </div>
+                        <p v-if="outlook.error" class="sync-check-error">{{ outlook.error }}</p>
+                        <p v-if="outlook.loading &amp;&amp; !outlook.data" class="ac-meta">Looking ahead…</p>
+                        <ul v-if="outlook.data &amp;&amp; outlook.data.notes.length" class="nd-outlook-notes"><li v-for="(n,ni) in outlook.data.notes" :key="ni">{{ n }}</li></ul>
+                        <ol v-if="outlook.data" class="nd-weeks">
+                            <li v-for="(w,wi) in outlookWeeks" :key="w.start" :data-level="w.signals.some(s=>s.level==='alert') ? 'alert' : (w.signals.some(s=>s.level==='watch') ? 'watch' : 'ok')" class="nd-week">
+                                <div class="nd-week-head"><strong>{{ outlookWeekLabel(w,wi) }}</strong><span class="opsr-level" :data-level="w.signals.some(s=>s.level==='alert') ? 'alert' : (w.signals.some(s=>s.level==='watch') ? 'watch' : 'ok')">{{ w.signals.some(s=>s.level==='alert') ? 'Needs action' : (w.signals.some(s=>s.level==='watch') ? 'Watch' : 'Nothing flagged') }}</span></div>
+                                <ul class="nd-week-list"><li v-for="(s,si) in w.signals" :key="si" :data-level="s.level"><span class="nd-week-kind">{{ ({oncall:'Guardia',coverage:'Coverage',capacity:'Capacity',absence:'Absences',rotation:'Rotations',agenda:'Sessions',trend:'Trend'})[s.kind] || s.kind }}</span> {{ s.text }}</li>
+                                    <li v-if="!w.signals.length" class="ac-meta">Nothing in the plan for this week.</li></ul>
+                            </li>
+                        </ol>
+                        <div v-if="outlook.data &amp;&amp; outlook.data.trends.length" class="opsr-today-card">
+                            <p class="admin-kicker">PENDING WORK · AT THE CURRENT PACE</p>
+                            <ul class="opsr-today-list"><li v-for="(t,ti) in outlook.data.trends.filter(t=>!outlook.unit || t.unit_id===outlook.unit)" :key="ti"><b>{{ t.unit }} · {{ t.label }}</b> {{ t.latest }} now · {{ t.per_week > 0 ? '+' : '' }}{{ t.per_week }} per week<template v-if="t.crosses"> · would pass its target around {{ formatDateShort(t.crosses) }}</template><template v-else-if="t.off_target_now"> · already beyond its target</template></li></ul>
+                            <small class="ac-meta">A straight line through the last 60 days of snapshots. Flagged only against targets the department set.</small>
                         </div>
                     </section>
 
@@ -4962,6 +4992,17 @@
                                     <span class="no-print"><button type="button" class="btn btn-secondary btn-sm" @click="opsRepPrint">Print / PDF</button><button v-if="opsRepCanGenerate" type="button" class="btn btn-secondary btn-sm" :disabled="opsRoom.rep.busy" @click="opsRepGenerate(opsRoom.rep.open)">Regenerate</button></span>
                                 </header>
 
+                                <div v-if="opsRoom.rep.open.narrative" class="nd-narrative">
+                                    <p class="admin-kicker">IN PLAIN WORDS</p>
+                                    <strong>{{ opsRoom.rep.open.narrative.headline }}</strong>
+                                    <ul>
+                                        <li v-for="(x,xi) in opsRoom.rep.open.narrative.rose" :key="'r'+xi" data-k="rose">▲ {{ x }}</li>
+                                        <li v-for="(x,xi) in opsRoom.rep.open.narrative.fell" :key="'f'+xi" data-k="fell">▼ {{ x }}</li>
+                                        <li v-for="(x,xi) in opsRoom.rep.open.narrative.watch" :key="'w'+xi" data-k="watch">● {{ x }}</li>
+                                        <li v-for="(x,xi) in opsRoom.rep.open.narrative.notes" :key="'n'+xi" data-k="note">· {{ x }}</li>
+                                    </ul>
+                                    <small class="ac-meta">From this report's numbers only (changes of 10 % or more). Causes are not guessed.</small>
+                                </div>
                                 <!-- Unit report -->
                                 <template v-if="opsRoom.rep.open.content.kind==='unit'">
                                     <div class="opsr-ic-stats">
@@ -13502,7 +13543,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.47-20261017-today"></script>
+    <script src="app.js?v=5.4-production.48-20261017-outlook"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

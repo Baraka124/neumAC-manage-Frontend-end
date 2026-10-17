@@ -18,6 +18,6 @@ test('admins: email status and a test email from Comunicación → Mensajes', ()
   assert.match(app, /API\.request\('\/api\/admin\/email\/test',\{method:'POST',body:\{\}\}\)/);
 });
 test('links in message emails (?view=mensajes) open Mi espacio', () => {
-  assert.match(app, /new RegExp\('\^\(mensajes\|hoy\|/);
+  assert.match(app, /new RegExp\('\^\(mensajes\|(proximas\|)?hoy\|/);
   assert.match(app, /if\(k==='mensajes'\)\{ndFocus\.on=false;await switchView\('mi_espacio'\);inboxLoad\(\);return\}/);
 });

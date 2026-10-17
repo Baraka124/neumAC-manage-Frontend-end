@@ -30,7 +30,7 @@ jobs:
       - name: Import Phase D sync diff
         run: node --test tests/import-phase-d.test.cjs
       - name: Ops Room OR-1 (units + roster)
-        run: node --test tests/ops-room-or1.test.cjs tests/ops-room-or2.test.cjs tests/ops-room-or3.test.cjs tests/ops-room-orc.test.cjs tests/ops-room-orr.test.cjs tests/ops-room-ui.test.cjs tests/comms-cm1.test.cjs tests/comms-cm2.test.cjs tests/ux1.test.cjs tests/comms-cm3.test.cjs tests/nt1.test.cjs tests/mi-espacio-today.test.cjs
+        run: node --test tests/ops-room-or1.test.cjs tests/ops-room-or2.test.cjs tests/ops-room-or3.test.cjs tests/ops-room-orc.test.cjs tests/ops-room-orr.test.cjs tests/ops-room-ui.test.cjs tests/comms-cm1.test.cjs tests/comms-cm2.test.cjs tests/ux1.test.cjs tests/comms-cm3.test.cjs tests/nt1.test.cjs tests/mi-espacio-today.test.cjs tests/outlook-grounded.test.cjs
       - name: Mi espacio identity and shell contract
         run: node --test tests/mi-espacio-phase1.test.cjs
       - name: Clinician access to Mi espacio

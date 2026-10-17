@@ -306,6 +306,17 @@ only): on call today, current rotation, my units' status, my follow-ups (overdue
 assigned to me (over target first), sessions today + 2 days that concern me (or I present), posts for me (48 h),
 unread messages. Each item opens the right place in the full app (same routes as shared links).
 
+**Built — Outlook + Grounded (17 Oct):**
+- **Próximas semanas** (Ops Room section; `?view=proximas`; "Coming up" card on Hoy): `outlook.js` turns the plan into
+  weekly signals — guardias not planned / days without a guardia / without backup (only where backup is the norm), a unit
+  left with nobody from its team on a working day, residents over a unit's capacity, rotation starts and finishes,
+  sessions, and pending work that at the current pace would pass a target the department set. No invented thresholds.
+- **Report narrative**: every report shows "In plain words" (`narrative.js`): what rose / fell (≥ 10 %), what to watch,
+  what was not recorded. Causes are never guessed.
+- **Grounded** answers 5 new questions from one department snapshot (`GET /api/ops/grounded`, loaded when Grounded opens):
+  which units need attention · interconsultas · what is coming (2 weeks) · how did we do last month · today's Parte.
+  Answers show their sources and open the exact section (`action.route`). Rule-based and grounded — no AI model.
+
 Possible pass 3 (not started): Interconsultas board as a queue (oldest first, one-tap take/answer); Objetivos as a
 grid by unit; consistent empty states for brand-new units.
 
