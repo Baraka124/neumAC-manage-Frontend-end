@@ -30,7 +30,10 @@ Pull the department head's sheet on a schedule (or on demand), run the same dry-
 ### Tier 0 — Manual (works today)
 Sheet → File → Download → `.xlsx` → upload to the importer. No new code. Right answer for an occasional pull.
 
-### Tier 1 — Publish-to-web CSV (easiest automation)
+### Tier 1 — Link sharing or publish-to-web (BUILT 17 Oct: "Load from Google Sheets" on both imports)
+Paste the sheet link in the import card; the server fetches the whole workbook as .xlsx (`POST /api/import/sheet-source/:kind`) and it goes through the same preview → check → commit. Works when sharing is "Anyone with the link: Viewer" or the sheet is published to the web. Next: a scheduled pull.
+
+### Tier 1 (original note) — Publish-to-web CSV
 The **owner** (dept head) does File → Share → **Publish to web** → CSV, per tab.
 - Gives a plain URL our backend can `GET` with **no auth**.
 - A scheduled task fetches it, parses CSV → rows → existing pipeline.

@@ -19,6 +19,8 @@ jobs:
           find . -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Rotations import translator (matrix → rotation periods)
         run: node --test tests/rotation-import.test.cjs
+      - name: Ops Room quick entry + pre-fill + Google Sheets source
+        run: node --test tests/ops-quick-entry.test.cjs
       - name: Delete-anytime and Historial guards
         run: node --test tests/crud-history.test.cjs
       - name: Import Phase A time-aware preview
