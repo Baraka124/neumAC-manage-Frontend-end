@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-prefill">
+<link rel="stylesheet" href="access.css?v=20261017-audit">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -5152,6 +5152,26 @@
                                     <ul class="opsr-list"><li v-for="b in sys.data.backups" :key="b.path" class="ac-meta sys-job"><span>{{ b.path.split('/')[0] }}</span> · {{ sysKb(b.bytes) }} <button type="button" class="btn-link" @click="sysDownload(b)">download</button></li>
                                         <li v-if="!sys.data.backups.length" class="ac-meta">No backups yet.</li></ul>
                                     <p class="ac-meta">Restore: <code>node scripts/restore-backup.js file.json.gz</code> (dry run), then <code>--apply</code>. See PILOT.md.</p></details>
+                                <details class="sys-sub aud-panel" @toggle="audToggle"><summary class="ac-meta">Change history — who changed what, and when</summary>
+                                    <p class="ac-meta">One trail, written by the database itself on every change to units, teams, staff, rotations, guardias, activity, equipment, incidents, interconsultas, messages and settings. “System” means a scheduled job, a login, or a change from before authorship was tracked.</p>
+                                    <form class="opsr-inline aud-filters" @submit.prevent="audLoad()">
+                                        <select v-model="aud.f.table_name" class="form-select" aria-label="What"><option value="">Everything</option><option v-for="(l,t) in AUD_TABLES" :key="t" :value="t">{{ l }}</option></select>
+                                        <select v-model="aud.f.action" class="form-select" aria-label="Change"><option value="">Any change</option><option value="INSERT">Created</option><option value="UPDATE">Changed</option><option value="DELETE">Deleted</option></select>
+                                        <select v-model="aud.f.changed_by" class="form-select" aria-label="Who"><option value="">Anyone</option><option value="system">System only</option></select>
+                                        <label>since <input type="date" v-model="aud.f.since" class="form-control"></label>
+                                        <button type="submit" class="btn btn-secondary btn-sm" :disabled="aud.loading">{{ aud.loading ? 'Loading…' : 'Show' }}</button>
+                                    </form>
+                                    <p v-if="aud.error" class="sync-check-error">{{ aud.error }}</p>
+                                    <ul class="aud-list">
+                                        <li v-for="r in aud.rows" :key="r.id" :class="'aud-'+r.action">
+                                            <small class="ac-meta">{{ opsFmtTs(r.changed_at) }}</small>
+                                            <span><strong>{{ audWho(r) }}</strong> {{ AUD_ACTION[r.action] || r.action }} <span class="aud-what">{{ audWhat(r) }}</span><template v-if="audName(r)"> · {{ audName(r) }}</template></span>
+                                            <small v-if="r.action==='UPDATE' &amp;&amp; audFields(r).length" class="ac-meta aud-fields">{{ audFields(r).join(', ') }}</small>
+                                        </li>
+                                        <li v-if="!aud.loading &amp;&amp; aud.open &amp;&amp; !aud.rows.length &amp;&amp; !aud.error" class="ac-meta">No changes match.</li>
+                                    </ul>
+                                    <p class="ac-meta" v-if="aud.rows.length">{{ aud.rows.length }} of {{ aud.total }} <button v-if="audHasMore()" type="button" class="btn-link" :disabled="aud.loading" @click="audLoad(true)">load more</button></p>
+                                </details>
                                 <div class="im-buttons">
                                     <button type="button" class="btn btn-secondary btn-sm" :disabled="sys.loading" @click="sysLoad">{{ sys.loading ? 'Checking…' : 'Check again' }}</button>
                                     <button type="button" class="btn btn-secondary btn-sm" :disabled="sys.busy" @click="sysBackup">{{ sys.busy ? 'Backing up…' : 'Back up now' }}</button>
@@ -13690,7 +13710,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.51-20261017-prefill"></script>
+    <script src="app.js?v=5.4-production.52-20261017-audit"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
