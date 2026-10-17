@@ -1230,3 +1230,13 @@ body:has(.nd-focus) .grounded-orb-wrap{display:none!important}
 html body #app .sys-errors li .ac-meta,html body #app .sys-errors li small{color:var(--nd-muted,#6b7280)!important}
 html body #app .sys-errors li>div.ac-meta{color:#374151!important}
 html body #app .sys-errors code{color:#1f2937}
+/* Pre-fill (17 Oct): quick entry, roster suggestions, Google Sheets source */
+.opsr-quick{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px;width:100%}
+.opsr-quick .form-control{flex:1 1 280px;min-width:0}
+.opsr-quick-res{width:100%;margin:2px 0 8px;padding:9px 12px;border-radius:10px;background:var(--ac-tint,#eef6f5);color:var(--ac-ink,#16302b);font-size:13px;line-height:1.45}
+.opsr-sug{margin:12px 0;padding:12px 14px;border:1px dashed #b9d3cf;border-radius:12px;background:var(--ac-soft,#f6faf9)}
+.opsr-sug .opsr-list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.opsr-sug-who{flex:1 1 220px;min-width:0}.opsr-sug-who small{display:block;color:#5b6f69;font-size:12px}
+.opsr-sug .form-select{width:auto;max-width:220px}
+.imp-sheet{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.imp-sheet .form-control{flex:1 1 300px;min-width:0}
+@media(max-width:760px){.opsr-quick .btn,.imp-sheet .btn{flex:1 1 auto}}

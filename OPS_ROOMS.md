@@ -218,6 +218,8 @@ Each step: migrations with RLS, permission checks on every route, tests, rendere
 | `GET /api/admin/jobs`, `POST /api/admin/jobs/:job/run` | head of department / admin |
 | `GET /api/admin/status`, `GET /api/admin/errors`, `POST /api/admin/backup`, `GET /api/admin/backups/link` | head of department / admin |
 | `POST /api/public/client-errors` (browser errors; scrubbed, capped, public limiter) | none |
+| `GET /api/ops/units/:unitId/staff/suggestions` (roster pre-fill: unit supervisor in Units + rotation supervisors, last 12 months; resident coordinator ignored as evidence) | Units read |
+| `POST /api/import/sheet-source/:kind` (`rotations`·`oncall`: fetch a shared/published Google Sheet as .xlsx; docs.google.com only, redirects only to Google hosts, 10 MB, nothing stored) | `sync.<kind>.commit` |
 Measures accept `breakdown` on `POST …/measure-types` and `{type_id, breakdown:{code:n}}` items on `PUT …/measures`;
 `POST /api/ops/interconsults` with `channel: phone|in_person` + `outcome` (+ `duration_min`) logs a resolved call.
 Every `…?permanent=true` delete is head of department / admin only; normal removes are soft (restorable; audit keeps all).
@@ -240,6 +242,7 @@ Every `…?permanent=true` delete is head of department / admin only; normal rem
 - **Calls never distort interconsulta response times**: stats and indicators use `channel = formal` only; calls have their own counts.
 - **Reports are snapshots**: they keep what the records said when generated; "Regenerate" replaces one period on purpose.
 - Routes keep working before a migration (`opsCompat` retries without new columns; reports answer `migrated:false`).
+- **Pre-fill never saves**: quick entry (`ops-quick-entry.js`, rule-based, unit's own measures only) and "Same as last day" only fill the form; roster suggestions add nobody until "Add". Unclear phrases are reported, never guessed.
 - Bump cache keys in `index.html` (`app.js?v=…`, `access.css?v=…`) on every frontend change; `scripts/integrity_check.py` must pass.
 
 ### How changes have been shipped

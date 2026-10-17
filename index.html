@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261017-pilot">
+<link rel="stylesheet" href="access.css?v=20261017-prefill">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -4683,6 +4683,13 @@
                                     </tbody></table>
                                     <template v-if="opsRoom.unit.roster.upcoming.length"><p class="admin-kicker">JOINING SOON</p>
                                         <ul class="opsr-list"><li v-for="e in opsRoom.unit.roster.upcoming" :key="'u'+e.id"><strong>{{ e.staff?.full_name }}</strong> · {{ e.role_label }} · from {{ formatDateShort(e.assigned_from) }}<button v-if="opsCanManage" type="button" class="btn btn-secondary btn-sm" @click="opsRemove(e)">Cancel</button></li></ul></template>
+                                    <div v-if="opsCanManage &amp;&amp; opsRoom.sug.list.length" class="opsr-sug">
+                                        <p class="admin-kicker">SUGGESTED <span class="opsr-src">from Units and Rotations</span></p>
+                                        <ul class="opsr-list"><li v-for="s in opsRoom.sug.list" :key="'s'+s.staff_id"><span class="opsr-sug-who"><strong>{{ s.full_name }}</strong><small>{{ s.reasons.join(' · ') }}</small></span>
+                                            <select v-model="s.role" class="form-select form-select-sm" :aria-label="'Role for '+s.full_name"><option v-for="r in OPS_ROLES" :key="r.v" :value="r.v">{{ r.l }}</option></select>
+                                            <button type="button" class="btn btn-primary btn-sm" :disabled="opsRoom.saving" @click="opsSugAdd(s)">Add</button></li></ul>
+                                        <small class="ac-meta">Nobody is added until you press Add. The resident coordinator is not used as evidence: imported rotations name them as supervisor by default.</small>
+                                    </div>
                                     <details v-if="opsCanManage" class="opsr-drawer"><summary>+ Add to the team</summary>
                                     <form class="opsr-add" @submit.prevent="opsAdd">
                                         
@@ -4777,6 +4784,12 @@
                             </tbody></table>
                             <form v-if="opsCanManage && opsRoom.meas.summary.some(x=>x.kind==='flow')" class="opsr-add" @submit.prevent="opsSaveFlows">
                                 <p class="admin-kicker">RECORD A DAY</p>
+                                <div class="opsr-quick">
+                                    <input type="text" v-model="opsRoom.meas.quick" class="form-control" maxlength="500" placeholder="Escribe: hoy 6 broncoscopias, 1 EBUS, lista de espera 40" aria-label="Quick entry: write the day's counts" @keydown.enter.prevent="opsQuickApply">
+                                    <button type="button" class="btn btn-secondary btn-sm" :disabled="!opsRoom.meas.quick" @click="opsQuickApply">Fill from text</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="opsCopyLast">Same as last day</button>
+                                </div>
+                                <p v-if="opsRoom.meas.quickResult" class="opsr-quick-res" role="status">{{ opsQuickSummary(opsRoom.meas.quickResult) }}</p>
                                 <label>Day <input type="date" v-model="opsRoom.meas.date" :max="opsRoom.today" class="form-control" @change="opsLoadMeas"></label>
                                 <label v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow' &amp;&amp; !x.breakdown)" :key="'v'+m.type_id">{{ m.label }} <span class="nd-step"><button type="button" :aria-label="'Less '+m.label" @click="opsStep(opsRoom.meas.values,m.type_id,-1)">−</button><input type="number" min="0" step="1" v-model="opsRoom.meas.values[m.type_id]" class="form-control opsr-num" inputmode="numeric"><button type="button" :aria-label="'More '+m.label" @click="opsStep(opsRoom.meas.values,m.type_id,1)">+</button></span></label>
                                 <fieldset v-for="m in opsRoom.meas.summary.filter(x=>x.kind==='flow' &amp;&amp; x.breakdown &amp;&amp; opsRoom.meas.bd[x.type_id])" :key="'b'+m.type_id" class="opsr-bd-entry"><legend>{{ m.label }} · by {{ opsBdName(m.breakdown) }} <b>= {{ opsBdSum(opsRoom.meas.bd[m.type_id]) }}</b></legend>
@@ -5630,6 +5643,9 @@
                                     <input type="file" accept=".xlsx,.xls" @change="oncallSyncFile"  class="nd-l114">
                                     Choose Excel file
                                 </label>
+                                <div class="imp-sheet"><input type="url" v-model="sheetUrls.oncall" class="form-control" placeholder="…or paste the Google Sheets link" aria-label="Google Sheets link"><button type="button" class="btn btn-secondary" :disabled="!sheetUrls.oncall || !!sheetUrls.busy" @click="sheetLoad('oncall')">{{ sheetUrls.busy==='oncall' ? 'Loading…' : 'Load from Google Sheets' }}</button></div>
+                                <p v-if="sheetUrls.error.oncall" class="nd-l250 nd-v240">⚠ {{ sheetUrls.error.oncall }}</p>
+                                <small class="ac-meta">The sheet must be shared “Anyone with the link: Viewer” or published to the web. The link is remembered on this device.</small>
                             </div>
                             <div v-if="oncallSync.parsing"  class="nd-v241">Parsing {{ oncallSync.fileName }}…</div>
                             <div v-if="oncallSync.error"  class="nd-l250 nd-v240">⚠ {{ oncallSync.error }}</div>
@@ -5739,6 +5755,9 @@
                             <div class="nd-l222 nd-v242">Upload the <b>Rotaciones</b> Excel. The system reads the <b>MIR NML</b> cohort grids (resident × month), matches residents and units, and shows exactly what it <i>would</i> import — nothing is saved until you apply. Ambiguous names and unknown units are flagged for you to map or create.</div>
                             <div v-if="!rotationImport.done && !rotationImport.parsing">
                                 <label class="btn btn-primary nd-l251"><input type="file" accept=".xlsx,.xls" @change="rotationImportFile" class="nd-l114"> Choose Excel file</label>
+                                <div class="imp-sheet"><input type="url" v-model="sheetUrls.rotations" class="form-control" placeholder="…or paste the Google Sheets link" aria-label="Google Sheets link"><button type="button" class="btn btn-secondary" :disabled="!sheetUrls.rotations || !!sheetUrls.busy" @click="sheetLoad('rotations')">{{ sheetUrls.busy==='rotations' ? 'Loading…' : 'Load from Google Sheets' }}</button></div>
+                                <p v-if="sheetUrls.error.rotations" class="nd-l250 nd-v240">⚠ {{ sheetUrls.error.rotations }}</p>
+                                <small class="ac-meta">The sheet must be shared “Anyone with the link: Viewer” or published to the web. The link is remembered on this device.</small>
                             </div>
                             <div v-if="rotationImport.parsing" class="nd-v241">Parsing {{ rotationImport.fileName }}…</div>
                             <div v-if="rotationImport.error" class="nd-l250 nd-v240">⚠ {{ rotationImport.error }}</div>
@@ -13658,6 +13677,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="oncall-sync.js?v=20261016-import-sync"></script>
     <script src="import-memory.js?v=20261016-phase-b"></script>
     <script src="rotation-import.js?v=20261016-import-chain"></script>
+    <script src="ops-quick-entry.js?v=20261017-prefill1"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=20261016-ops-room"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
@@ -13670,7 +13690,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="mi-espacio/mi-espacio-data.js?v=20261016-audit-activity"></script>
     <script src="mi-espacio/mi-espacio-workspace.js?v=20261014-phase26d-activity"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261016-audit-activity"></script>
-    <script src="app.js?v=5.4-production.50-20261017-pilot"></script>
+    <script src="app.js?v=5.4-production.51-20261017-prefill"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
